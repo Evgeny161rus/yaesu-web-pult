@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FTX-1 Пульт — сервер</title>
+<title>Yaesu Web Pult — Панель управления</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="app.css">
 <style>
@@ -71,7 +71,7 @@
 <div class="wrap">
   <div class="head">
     <img src="icon.svg" alt="">
-    <div><h1>FTX-1 Пульт — сервер</h1><div class="ver" id="ver"></div></div>
+    <div><h1>Yaesu Web Pult — Панель управления</h1><div class="ver" id="ver"></div></div>
     <span class="spacer"></span>
     <span class="saved" id="saved">✓ Сохранено</span>
     <select id="scale" title="Масштаб окна" class="scale-sel">
@@ -83,7 +83,7 @@
   <section class="panel wizard hidden" id="wizard">
     <h3>👋 Первый запуск</h3>
     <ol>
-      <li>Подключите FTX-1 к этому ПК кабелем USB и включите его (нужен драйвер Yaesu CP210x).</li>
+      <li>Подключите трансивер Yaesu к этому ПК кабелем USB и включите его (нужен драйвер Virtual COM Port от Yaesu).</li>
       <li>Проверьте поля в карточке «Трансивер» — программа подобрала их сама. Если порт не найден, нажмите ↻.</li>
       <li>Нажмите <b>«Запустить»</b>, затем <b>«Открыть пульт»</b>.</li>
     </ol>
@@ -122,13 +122,13 @@
         <label class="field"><span>Путь к rigctld (Hamlib)</span><input id="hamlib_path" type="text" placeholder="rigctld"></label>
         <label class="field"><span>Модель из установленного Hamlib</span><select id="hamlib_model"></select></label>
         <button class="btn" id="hamlibReload">Обновить модели</button>
-        <p class="hint" id="hamlibHint">В режиме Hamlib PTT управляется через CAT. Цифровые режимы и EX-меню FTX-1 отключены.</p>
+        <p class="hint" id="hamlibHint">В режиме Hamlib PTT управляется через CAT. Некоторые расширенные функции могут быть недоступны.</p>
       </div>
-      <label class="field"><span>COM-порт CAT (у FTX-1 — «Enhanced COM Port»)</span>
+      <label class="field"><span>COM-порт CAT (Enhanced COM Port)</span>
         <div class="row"><select id="cat_port"></select><button class="btn" id="btnRefresh" title="Обновить список">↻</button><button class="btn" id="btnDetect" title="Подобрать автоматически">Найти</button></div></label>
       <label class="field"><span>Скорость CAT (как в меню трансивера CAT RATE)</span>
         <select id="cat_baud"><option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>115200</option></select></label>
-      <label class="field"><span>Звуковая карта трансивера (USB-звук FTX-1: приём и передача)</span><select id="audio_dev"></select></label>
+      <label class="field"><span>Звуковая карта трансивера (USB Audio)</span><select id="audio_dev"></select></label>
       <details class="advanced"><summary>Драйвер звука</summary>
         <label class="field"><span>Драйвер Windows</span>
           <select id="audio_api">
@@ -147,7 +147,7 @@
           <option value="RTS">Линией RTS второго порта</option>
           <option value="DTR">Линией DTR второго порта</option>
         </select></label>
-      <label class="field hidden" id="pttPortField"><span>Порт для PTT (у FTX-1 — «Standard COM Port»)</span><select id="ptt_port"></select></label>
+      <label class="field hidden" id="pttPortField"><span>Порт для PTT (Standard COM Port, если отдельный)</span><select id="ptt_port"></select></label>
       <label class="chk"><input type="checkbox" id="simulate"> Режим симулятора — проверка без трансивера</label>
     </section>
 
@@ -180,7 +180,7 @@
           <option value="dtr">Манипуляция линией DTR второго порта</option>
           <option value="rts">Манипуляция линией RTS второго порта</option>
         </select></label>
-      <label class="field hidden" id="cwPortField"><span>Порт манипуляции (у FTX-1 — «Standard COM Port»); в меню трансивера CW_PC_KEYING = DTR/RTS</span><select id="cw_port"></select></label>
+      <label class="field hidden" id="cwPortField"><span>Порт манипуляции (Standard COM Port); в меню ТРХ: CW_PC_KEYING = DTR/RTS</span><select id="cw_port"></select></label>
     </section>
 
     <section class="panel card">

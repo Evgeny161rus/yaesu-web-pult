@@ -1,7 +1,7 @@
 {
-  "name": "FTX-1 Пульт",
-  "short_name": "FTX-1",
-  "description": "Удалённое управление трансивером Yaesu FTX-1: CAT, звук, водопад",
+  "name": "Yaesu Web Pult",
+  "short_name": "Yaesu",
+  "description": "Удалённое управление трансиверами Yaesu: CAT, звук, водопад, цифровые режимы",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

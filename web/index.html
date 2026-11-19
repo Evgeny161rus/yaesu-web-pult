@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0d1117">
 <meta name="mobile-web-app-capable" content="yes">
-<title>FTX-1 Пульт</title>
+<title>Yaesu Web Pult</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -20,7 +20,7 @@
 <!-- Вход -->
 <div id="login" class="overlay hidden">
   <div class="dialog">
-    <h2>FTX-1 Пульт</h2>
+    <h2>Yaesu Web Pult</h2>
     <p id="loginMsg" class="muted">Введите пароль сервера</p>
     <input id="loginPw" type="password" autocomplete="current-password" placeholder="Пароль">
     <button id="loginBtn" class="btn primary wide">Войти</button>
@@ -28,7 +28,7 @@
 </div>
 
 <header class="topbar">
-  <div class="brand"><span class="dot" id="linkDot"></span><b>FTX-1</b><span id="rigInfo" class="muted small">нет связи</span></div>
+  <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" class="muted small">нет связи</span></div>
   <div class="top-actions">
     <button id="btnAudio" class="btn chip" title="Звук приёмника на этом устройстве">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером">⏺ Запись</button>
@@ -301,7 +301,7 @@
         <label>Позывной<input id="opCall" class="text mono" placeholder="R6AAF"></label>
         <label>Имя<input id="opName" class="text" placeholder="EUGENE"></label>
         <label>QTH<input id="opQth" class="text" placeholder="GELENDZHIK"></label>
-        <label class="grow">Ещё о себе (для ИИ)<input id="opExtra" class="text" placeholder="RIG FTX-1 10W ANT VERTICAL"></label>
+        <label class="grow">Ещё о себе (для шаблонов)<input id="opExtra" class="text" placeholder="RIG YAESU 10W ANT VERTICAL"></label>
       </div>
 
       <h4>Ключ трансивера</h4>
@@ -565,7 +565,7 @@
         <b>Для связи через микрофон ПК</b> в меню трансивера для нужных видов работы
         (SSB / AM / FM / DATA) параметр <code>…_MOD_SOURCE</code> должен указывать на USB,
         а <code>…_USB_MOD_GAIN</code> задаёт уровень звука с ПК. <code>…_USB_OUT_LEVEL</code> — громкость
-        приёма, идущая в ПК. Номера значений сверьте со страницей «MOD SOURCE» в инструкции FTX-1.
+        приёма, идущая в ПК. Номера значений сверьте со страницей «MOD SOURCE» в инструкции к трансиверу.
         <button class="btn small" id="menuUsbShow">Показать эти пункты</button>
       </div>
       <div id="menuList" class="menu-list"></div>
@@ -648,7 +648,7 @@
 
 <div id="memEd" class="memed hidden" role="dialog" aria-label="Редактор каналов памяти">
   <div class="me-top">
-    <b class="me-title">Каналы памяти FTX-1</b>
+    <b class="me-title">Каналы памяти трансивера</b>
     <span class="muted small" id="meFile">не сохранено</span>
     <span class="spacer"></span>
     <button class="btn" id="meClose" title="Закрыть (изменения сохранятся как черновик)">✕</button>
@@ -675,7 +675,7 @@
       <label class="btn" title="CSV: свой формат или из CHIRP">Импорт CSV<input type="file" id="meCsvIn" accept=".csv,.txt" hidden></label>
       <button class="btn" id="meCsvOut">Экспорт CSV</button>
     </div>
-    <div class="me-grp" title="Бэкап каналов с флешки трансивера: папка FTX-1\\MemList">
+    <div class="me-grp" title="Бэкап каналов с флешки трансивера (если поддерживается)">
       <label class="btn">💾 Открыть с SD<input type="file" id="meSdIn" accept=".dat" hidden></label>
       <button class="btn" id="meSdOut" title="Сохранить .dat для загрузки в трансивер с флешки">💾 Сохранить для SD</button>
     </div>
@@ -717,7 +717,7 @@
         <span class="spacer"></span>
         <span class="muted small" id="meStatus"></span>
       </div>
-      <p class="muted small me-note">Запись проверена на FTX-1 (прошивка 1.13): частота, вид, сдвиг и клар — командой MW; номер тона CTCSS и DCS — через VFO-A и «VFO-A в память» (VFO-A и положение трансивера после записи возвращаются); имя и отдельная частота передачи («отд. TX») — отдельными командами. Каждый записанный канал читается обратно для проверки.
+      <p class="muted small me-note">Запись каналов: частота, режим, сдвиг и CLAR через CAT команды; имя канала и отдельная частота TX — отдельными командами. Каждый записанный канал читается обратно для проверки. Поддержка зависит от модели трансивера.
         Очистить канал по CAT нельзя — только с трансивера. Разнос ретранслятора в трансивере общий для диапазона (меню FM → RPT SHIFT), в канале хранится направление; для нестандартного разноса выберите «отд. TX» и впишите частоту передачи. Группы хранятся в файле редактора и в CSV.</p>
     </div>
   </div>

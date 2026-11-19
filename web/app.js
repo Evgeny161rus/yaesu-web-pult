@@ -1208,7 +1208,7 @@ const cwDesk = (() => {
       ${chip('RST вам', a.rst)}${chip('Имя', a.name)}${chip('QTH', a.qth)}${kind ? `<span class="chip">${kind}</span>` : ''}
       ${a.confidence ? `<span class="chip">уверенность <b>${Math.round(a.confidence * 100)}%</b></span>` : ''}</div>`;
   }
-  function aiStatus(text, bad) { const s = $('#cwAiStatus'); s.textContent = text; s.style.color = bad ? 'var(--tx)' : ''; }
+  function aiStatus(text, bad) { const s = $('#cwAiStatus'); if (!s) return; s.textContent = text; s.style.color = bad ? 'var(--tx)' : ''; }
   $('#cwAnalyze').onclick = () => send({ t: 'cw_ai_analyze' });
   $('#cwReply').onclick = () => send({ t: 'cw_ai_reply' });
 
@@ -1325,7 +1325,7 @@ const cwDesk = (() => {
       case 'cw_clear': if (cur) { cur.remove(); cur = null; } break;
       case 'cw_new': scr.innerHTML = ''; cur = null; renderAnalysis(null); st.lastCall = ''; toast('Новая связь'); break;
       case 'cw_dec': break;
-      case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? 'LM Studio: готов' : 'LM Studio'), false); $('#cwAiStatus').classList.toggle('cw-busy', m.on); break;
+      case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? 'LM Studio: готов' : 'LM Studio'), false); $('#cwAiStatus')?.classList.toggle('cw-busy', m.on); break;
       case 'cw_ai': renderAnalysis(m.a); aiStatus(m.a.note ? m.a.note : (m.a.model === 'правила (без ИИ)' ? 'Разбор по правилам (ИИ выключен)' : 'LM Studio: готов · ' + (m.a.model || '')), !!m.a.note); break;
       case 'cw_ai_err': aiStatus('ИИ недоступен — работаю по правилам', true); toast(m.msg, 6000); break;
       case 'cw_ai_test':
@@ -1444,12 +1444,12 @@ const digiDesk = (() => {
     if (scr.textContent.length > 30000) scr.textContent = scr.textContent.slice(-20000);
     if (end) scr.scrollTop = scr.scrollHeight;
   }
-  $('#rtAiBtn').onclick = () => {
+  if ($('#rtAiBtn')) $('#rtAiBtn').onclick = () => {
     const t = scr.textContent.trim(); if (!t) return toast('Пока нечего переводить');
     $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = 'Перевожу…'; $('#rtAiModel').textContent = '';
     send({ t: 'rt_ai', text: t.slice(-3000) });
   };
-  $('#rtAiClose').onclick = () => $('#rtAi').classList.add('hidden');
+  if ($('#rtAiClose')) $('#rtAiClose').onclick = () => $('#rtAi').classList.add('hidden');
   // передача
   const myCall = () => ($('#opCall').value || '').toUpperCase();
   const RT_MACROS = [['CQ', 'RYRYRY CQ CQ CQ DE {MY} {MY} {MY} PSE K'], ['RYRY', 'RYRYRYRYRYRYRYRYRY'],
@@ -2065,11 +2065,11 @@ const digi2 = (() => {
     e.target.value = '';
   };
   $('#nxClear').onclick = () => { $('#nxScreen').textContent = ''; $('#nxMsgs').innerHTML = ''; };
-  $('#nxAiBtn').onclick = () => {
+  if ($('#nxAiBtn')) $('#nxAiBtn').onclick = () => {
     const t = $('#nxScreen').textContent.trim(); if (!t) return toast('Пока нечего переводить');
     $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = 'Перевожу…'; send({ t: 'nx_ai', text: t.slice(-3000) });
   };
-  $('#nxAiClose').onclick = () => $('#nxAi').classList.add('hidden');
+  if ($('#nxAiClose')) $('#nxAiClose').onclick = () => $('#nxAi').classList.add('hidden');
 
   // ================= SSTV
   const SV = [['', '— выбрать —'], ['s20', '14,230 МГц USB — главная', 14230000, 'USB'], ['s20b', '14,233 МГц USB', 14233000, 'USB'],
@@ -2139,8 +2139,8 @@ const digi2 = (() => {
         $('#nxMsgs').insertAdjacentHTML('afterbegin', `<span class="m">${m.time} <b>${esc(m.b1)}${esc(m.b2)}${esc(m.num)}</b> ${esc(m.station || 'станция ' + m.b1)} — ${esc(m.subject || m.b2)}</span>`);
         addText($('#nxScreen'), '#nxHint', `\n──── ${m.station || m.b1}: ${m.subject || m.b2} (${m.time}) ────\n`); break;
       case 'nx_end': addText($('#nxScreen'), '#nxHint', '\n──── конец сообщения ────\n'); break;
-      case 'nx_ai': $('#nxAiBody').textContent = m.ru; $('#nxAiModel').textContent = m.model || ''; break;
-      case 'nx_ai_err': $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = 'Перевод недоступен: ' + m.msg + ' Приём NAVTEX работает и без ИИ.'; break;
+      case 'nx_ai': if ($('#nxAiBody')) $('#nxAiBody').textContent = m.ru; if ($('#nxAiModel')) $('#nxAiModel').textContent = m.model || ''; break;
+      case 'nx_ai_err': if ($('#nxAi')) $('#nxAi').classList.remove('hidden'); if ($('#nxAiBody')) $('#nxAiBody').textContent = 'Перевод недоступен: ' + m.msg + ' Приём NAVTEX работает и без ИИ.'; break;
       case 'sstv_state':
         if (m.modes && $('#svMode').options.length < 2) $('#svMode').insertAdjacentHTML('beforeend', m.modes.map(x => `<option>${x}</option>`).join(''));
         if (m.state === 'image' && m.w) svSize(m.w, m.h);
@@ -2330,9 +2330,9 @@ const ft8Desk = (() => {
     if (call) send({ t: 'ft_dx', call, grid: $('#ftDxGrid').value.trim().toUpperCase(), rst: rpt($('#ftRpt').value) });
     send({ t: 'ft_text', text });
   });
-  const sendText = () => { const t = $('#ftText').value.trim(); if (t) { turnOn(); send({ t: 'ft_text', text: t }); } };
-  $('#ftFreeBtn').onclick = sendText;
-  $('#ftText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendText(); } });
+  const sendText = () => { const el = $('#ftText'); if (!el) return; const t = el.value.trim(); if (t) { turnOn(); send({ t: 'ft_text', text: t }); } };
+  if ($('#ftFreeBtn')) $('#ftFreeBtn').onclick = sendText;
+  if ($('#ftText')) $('#ftText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); sendText(); } });
   function renderCur() {
     $$('#ftMsgs .ft-msg').forEach(r => { const inp = $('input', r); r.classList.toggle('cur', !!st.txMsg && inp.value.trim() === st.txMsg); });
   }

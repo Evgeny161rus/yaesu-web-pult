@@ -20,19 +20,19 @@ if exist dist rmdir /s /q dist
 
 echo.
 echo [3/3] Сборка EXE файла...
-python -m PyInstaller --clean ^
-    --name "Yaesu-Web-Pult" ^
-    --noconsole ^
-    --onefile ^
+python -m PyInstaller --noconfirm --clean --onefile --windowed --name Yaesu-Web-Pult ^
     --icon web\icon.ico ^
     --add-data "web;web" ^
-    --add-data "server;server" ^
+    --add-data "server\menu_ftx1.json;." ^
+    --add-data "cty.dat;." ^
     --hidden-import numpy ^
     --hidden-import numpy.core ^
     --hidden-import numpy.core.multiarray ^
+    --hidden-import pystray._win32 ^
+    --hidden-import _ftx ^
     --collect-all sounddevice ^
     --version-file version_info.txt ^
-    Yaesu-Web-Pult.pyw
+    --paths server server\main.py
 
 echo.
 if exist "dist\Yaesu-Web-Pult.exe" (

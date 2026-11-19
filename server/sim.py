@@ -1,0 +1,565 @@
+"""
+Симулятор FTX-1: отвечает на CAT-команды как трансивер и выдаёт «эфир»
+(шум + несколько сигналов) вместо USB-звука. Нужен, чтобы проверить
+пульт без трансивера:  python main.py --sim
+"""
+import os
+import threading
+import time
+import re
+import logging
+import numpy as np
+
+from audio import SR, BLOCK, TxBuffer
+
+log = logging.getLogger('sim')
+
+
+class SimCwOp:
+    """Корреспондент-телеграфист UA3ABC: даёт CQ, отвечает на наш вызов и проводит связь."""
+    CALL, NAME, QTH = 'UA3ABC', 'IVAN', 'MOSCOW'
+    FREQ = 14025500
+
+    def __init__(self):
+        self.wpm = 18
+        self.on = np.zeros(0)
+        self.off = np.zeros(0)
+        self.busy_until = 0.0
+        self.stage = 'cq'
+        self.their = ''
+        self.next_cq = time.monotonic() + 3
+        self.lock = threading.Lock()
+
+    def schedule(self, text, at=None):
+        from cw import text_units
+        at = max(at or time.monotonic(), self.busy_until)
+        u = 1.2 / self.wpm
+        t, on, off = at, [], []
+        for k, n in text_units(text):
+            if k:
+                on.append(t); off.append(t + n * u)
+            t += n * u
+        with self.lock:
+            self.on, self.off = np.array(on), np.array(off)
+        self.busy_until = t + 0.3
+
+    def keyed(self, tm):
+        with self.lock:
+            on, off = self.on, self.off
+        if not len(on):
+            return np.zeros(len(tm), bool)
+        i = np.searchsorted(on, tm, 'right') - 1
+        ok = i >= 0
+        res = np.zeros(len(tm), bool)
+        res[ok] = tm[ok] < off[i[ok]]
+        return res
+
+    def tick(self):
+        now = time.monotonic()
+        if self.stage in ('cq', 'done') and now > self.next_cq and now > self.busy_until:
+            self.stage = 'cq'
+            self.schedule('CQ CQ CQ DE %s %s K' % (self.CALL, self.CALL))
+            self.next_cq = self.busy_until + 20
+
+    def heard(self, text):
+        """Мы передали text (через память ключа)."""
+        t = text.upper()
+        m = re.search(r'DE\s+([A-Z0-9/]+)', t)
+        if self.CALL not in t or not m:
+            return
+        self.their = m.group(1)
+        at = time.monotonic() + 1.5
+        if self.stage == 'cq':
+            self.stage = 'report'
+            self.schedule('%s DE %s GM TNX FER CALL UR RST 599 599 NAME %s %s QTH %s %s HW? %s DE %s KN'
+                          % (self.their, self.CALL, self.NAME, self.NAME, self.QTH, self.QTH, self.their, self.CALL), at)
+        elif self.stage == 'report':
+            self.stage = 'done'
+            self.schedule('R %s DE %s TNX FER QSO 73 GL <SK>' % (self.their, self.CALL), at)
+            self.next_cq = at + 30
+
+
+class SimRadio:
+    def __init__(self):
+        self.s = {
+            'FA': '014074000', 'FB': '007100000', 'MD0': '2', 'MD1': '1', 'TX': '0',
+            'AG0': '128', 'RG0': '255', 'SQ0': '000', 'PC': '2050', 'MG': '050', 'VX': '0',
+            'VG': '050', 'VD': '10', 'NL0': '000', 'RL0': '00', 'BC0': '0', 'BP00': '000',
+            'BP01': '100', 'CO00': '0000', 'CO01': '1000', 'CO02': '0000', 'CO03': '0025',
+            'IS0': '0+0000', 'SH0': '012', 'GT0': '2', 'PA0': '1', 'PA1': '0', 'PA2': '0',
+            'RA0': '0', 'NA0': '0', 'FT': '0', 'ST': '0', 'VS': '0', 'FR': '00', 'PR0': '1', 'PL': '050',
+            'ML0': '000', 'ML1': '050', 'KS': '020', 'BI': '0', 'KP': '30', 'KR': '1', 'SD': '05',
+            'CF000': '00000', 'CF001': '+0000', 'LK': '0', 'AC': '000', 'CT0': '0', 'CN00': '012',
+            'CN01': '000', 'OS0': '0', 'TS': '0', 'AO': '050', 'AI': '0', 'MS': '00', 'DA': '10',
+        }
+        self.s.update({'CT1': '0', 'CN10': '000', 'CN11': '000', 'OS1': '0'})
+        self.s['CT0'] = '0'
+        # память: канал -> поля как в MR (режим тона в кодировке MR: 1 TSQ, 2 ENC, 3 DCS)
+        self.mem = {
+            1: {'f': 145500000, 'md': '4', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Lybit 2m'},
+            2: {'f': 145650000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'R1 GELEND'},
+            3: {'f': 433500000, 'md': '4', 'ctm': 3, 'tone': 12, 'dcs': 5, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'DCS 70CM'},
+            5: {'f': 7074000, 'md': 'C', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'FT8 40M'},
+            7: {'f': 14230000, 'md': '2', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 50, 'rx': 1, 'tx': 0, 'name': 'SSTV 20M'},
+            100: {'f': 145625000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Rep Kerch'},
+        }
+        self.cursor = {'0': 1, '1': 1}
+        self.vm = 0
+        self.cf1 = {'rx': 0, 'tx': 0, 'off': 0}
+        self.menu = {}
+        self.cwop = SimCwOp()
+        self.kmem = {}
+        self.tx_level = 0.0
+        self.t0 = time.time()
+
+    def freq(self):
+        return int(self.s['FA'])
+
+    def handle(self, cmd):
+        """Одна команда без ';' -> ответ (строка с ';') или ''."""
+        if cmd == 'ID':
+            return 'ID0840;'
+        if cmd.startswith('VE') and len(cmd) == 3:
+            return {'VE0': 'VE00110;', 'VE1': 'VE10107;', 'VE2': 'VE20103;', 'VE3': 'VE30104;', 'VE4': 'VE40102;'}.get(cmd, '?;')
+        if re.match(r'^MD0.$', cmd) and len(cmd) == 4:      # как у Yaesu: смена вида — полоса по умолчанию
+            self.s['SH0'] = '000'
+        if cmd == 'RI0':
+            sig = 60 + 40 * np.sin(time.time() / 3)
+            busy = self.s['TX'] == '0' and sig > int(self.s['SQ0'])
+            return 'RI0000000%d;' % (1 if busy else 0)
+        if cmd in ('SM0', 'SM1'):
+            v = 0 if self.s['TX'] != '0' else int(60 + 40 * np.sin(time.time() / 3) + np.random.randint(0, 12))
+            return '%s%03d;' % (cmd, max(0, v))
+        m = re.match(r'^RM(\d)$', cmd)
+        if m:
+            n = int(m.group(1))
+            tx = self.s['TX'] != '0'
+            pw = int(self.s['PC'][1:]) if self.s['PC'][0] == '2' else 10
+            v = {5: int(min(255, self.tx_level * 900 * pw / 50)) if tx else 0,
+                 6: 30 if tx else 0, 4: int(min(255, self.tx_level * 300)) if tx else 0,
+                 3: int(min(255, self.tx_level * 400)) if tx else 0, 8: 196, 7: 120 if tx else 20}.get(n, 0)
+            return 'RM%d%03d000;' % (n, v)
+        m = re.match(r'^EX(\d{6})(.*)$', cmd)
+        if m:
+            ex, val = m.groups()
+            if val:
+                self.menu[ex] = val
+                return ''
+            return 'EX%s%s;' % (ex, self.menu.get(ex, '0'))
+        r = self._mem_cmd(cmd)
+        if r is not None:
+            return r
+        acts = {'AB': lambda: self.s.update(FB=self.s['FA']), 'BA': lambda: self.s.update(FA=self.s['FB']),
+                'SV': lambda: self.s.update(FA=self.s['FB'], FB=self.s['FA']),
+                'UP': lambda: self.s.update(FA='%09d' % (self.freq() + 100)),
+                'DN': lambda: self.s.update(FA='%09d' % (self.freq() - 100))}
+        if cmd in acts:
+            acts[cmd]()
+            return ''
+        if cmd.startswith('BS0'):
+            bands = [1840000, 3650000, 5357000, 7074000, 10136000, 14074000, 18100000, 21074000,
+                     24915000, 28074000, 50313000, 70200000, 118100000, 145500000, 433500000]
+            i = int(cmd[3:5])
+            if i < len(bands):
+                self.s['FA'] = '%09d' % bands[i]
+            return ''
+        m = re.match(r'^KM([1-5])(.*)$', cmd)
+        if m:
+            if m.group(2):
+                self.kmem[m.group(1)] = m.group(2)
+                return ''
+            return 'KM%s%s;' % (m.group(1), self.kmem.get(m.group(1), ''))
+        m = re.match(r'^KY0([0-5])$', cmd)
+        if m:
+            n = m.group(1)
+            if n == '0':
+                self.s['TX'] = '0'
+                return ''
+            text = self.kmem.get(n, '')
+            if text and self.s['MD0'] in ('3', '7') and self.s.get('BI') == '1':
+                from cw import text_units
+                dur = sum(u for _, u in text_units(text)) * 1.2 / max(4, int(self.s.get('KS', '020')))
+                self.s['TX'] = '1'
+                def done(txt=text):
+                    if self.s['TX'] != '0':
+                        self.s['TX'] = '0'
+                        self.cwop.heard(txt)
+                threading.Timer(0.3 + dur, done).start()
+            return ''
+        if cmd in ('BU0', 'BD0', 'ZI0', 'QI', 'QR') or cmd.startswith(('KY', 'KM', 'PB', 'CS', 'SC', 'VM', 'MC', 'PS')):
+            return ''
+        # чтение: ключ целиком совпадает
+        if cmd in self.s:
+            return cmd + self.s[cmd] + ';'
+        # запись: самый длинный подходящий ключ
+        for k in sorted(self.s, key=len, reverse=True):
+            if cmd.startswith(k) and len(cmd) > len(k):
+                v = cmd[len(k):]
+                if k == 'TX':
+                    v = '0' if v == '0' else '1'
+                if k == 'PC' and v[0] == '2':
+                    v = '2%03d' % max(5, min(100, int(float(v[1:]))))
+                self.s[k] = v
+                if k == 'AC' and v.endswith('3'):
+                    threading.Timer(2.5, lambda: self.s.update(AC='000')).start()
+                return ''
+        return '?;'
+
+
+def _sim_mem(self, cmd):
+    """Каналы памяти в симуляторе — как ведёт себя FTX-1 (прошивка 1.13, проверено 13.11.2026)."""
+    CT2MR = {0: 0, 1: 2, 2: 1, 3: 0}            # режим CT -> поле MR (DCS в MR = 0)
+    m = re.match(r'^MR(\d{5})$', cmd)
+    if m:
+        c = self.mem.get(int(m.group(1)))
+        if not c:
+            return '?;'
+        return 'MR%s%09d%s%04d%d%d%s1%d00%d;' % (m.group(1), c['f'], '-' if c['clar'] < 0 else '+', abs(c['clar']),
+                                                 c['rx'], c['tx'], c['md'], CT2MR[c['ctm']], c['sh'])
+    m = re.match(r'^MW(\d{5})(\d{9})([+-])(\d{4})(\d)(\d)(\w)(\d)(\d)(\d\d)(\d)$', cmd)
+    if m:
+        ch, f, sg, off, rx, tx, md, p7, ct, _r, sh = m.groups()
+        if p7 != '1' or ct == '3':
+            return '?;'
+        ch = int(ch)
+        old = self.mem.get(ch, {'tone': 12, 'dcs': 0, 'name': '', 'split': 0, 'txf': int(f)})
+        self.mem[ch] = dict(old, f=int(f), md=md, clar=int(off) * (-1 if sg == '-' else 1), rx=int(rx), tx=int(tx),
+                            ctm={'0': 0, '1': 2, '2': 1}[ct], sh=int(sh))
+        return ''
+    if cmd.startswith('MW'):
+        return '?;'
+    m = re.match(r'^MT(\d{5})(.*)$', cmd)
+    if m:
+        c = self.mem.get(int(m.group(1)))
+        if not c:
+            return '?;'
+        if m.group(2):
+            c['name'] = m.group(2)[:12].rstrip()
+            return ''
+        return 'MT%s%s;' % (m.group(1), c['name'])
+    m = re.match(r'^MZ(\d{5})(?:([01])(\d{9}))?$', cmd)
+    if m:
+        c = self.mem.get(int(m.group(1)))
+        if not c:
+            return '?;'
+        if m.group(2):
+            c['split'], c['txf'] = int(m.group(2)), int(m.group(3))
+            return ''
+        return 'MZ%s%d%09d;' % (m.group(1), c.get('split', 0), c.get('txf', c['f']))
+    m = re.match(r'^MC([01])(\d{5})$', cmd)
+    if m:
+        side, ch = m.group(1), int(m.group(2))
+        self.cursor[side] = ch
+        c = self.mem.get(ch)
+        if not c:
+            return '?;'
+        if side == '0':
+            self.vm = 1
+            self.s.update(FA='%09d' % c['f'], MD0=c['md'], CT0=str(c['ctm']), CN00='%03d' % c['tone'],
+                          CN01='%03d' % c['dcs'], OS0=str(c['sh']))
+        return ''
+    if cmd in ('MC0', 'MC1'):
+        return 'MC%s%05d;' % (cmd[2], self.cursor[cmd[2]])
+    if cmd == 'VM0':
+        return 'VM0%s;' % ('11' if self.vm else '00')
+    if cmd == 'VM000':
+        self.vm = 0
+        return ''
+    if cmd == 'AM':
+        ch = self.cursor['0']
+        old = self.mem.get(ch, {})
+        self.mem[ch] = {'f': int(self.s['FA']), 'md': self.s['MD0'], 'ctm': int(self.s['CT0']),
+                        'tone': int(self.s['CN00']), 'dcs': int(self.s['CN01']), 'sh': int(self.s['OS0']),
+                        'clar': 0, 'rx': 0, 'tx': 0, 'name': '', 'split': old.get('split', 0), 'txf': old.get('txf', 0)}
+        return ''
+    return None
+
+
+SimRadio._mem_cmd = _sim_mem
+
+
+class SimTransport:
+    def __init__(self, radio):
+        self.radio = radio
+        self.buf = ''
+        self.on_bytes = None
+        self.failed = False
+
+    def open(self, on_bytes):
+        self.on_bytes = on_bytes
+
+    def write(self, data):
+        self.buf += data.decode()
+        while ';' in self.buf:
+            cmd, self.buf = self.buf.split(';', 1)
+            ans = self.radio.handle(cmd)
+            if ans:
+                threading.Timer(0.004, self.on_bytes, args=(ans.encode(),)).start()
+
+    def close(self):
+        pass
+
+
+class SimDigi:
+    """Метеостанции в эфире симулятора: телетайп DWD (10100,8 кГц, 50 Бод / 450 Гц)
+    и метеофакс DWD (3855 кГц): циклы, которые слышны при настройке на них."""
+    RTTY_F, FAX_F = 10100800, 3855000
+
+    def __init__(self):
+        self.rt = self.fx = None
+        self.audio_st = []
+        threading.Thread(target=self._build, daemon=True).start()
+
+    def _build(self):
+        import digi
+        txt = ('\nZCZC 123\nSEEWETTERBERICHT DWD HAMBURG / FORECAST BLACK SEA:\n'
+               'WESTERN PART: SW 4 TO 5, LATER W 6, SEA 1.5 M. VIS GOOD.\n'
+               'EASTERN PART: S 3 TO 4, RAIN SHOWERS, VIS MODERATE. 73 NNNN\n')
+        f = digi.rtty_freqs(txt * 3, baud=50, shift=450, fc=0, lead=1.0)
+        self.rt = np.cumsum(2 * np.pi * f.astype(np.float64) / SR)
+        self.rt_w = self.rt[-1] + 2 * np.pi * f[-1] / SR
+        # «карта»: сетка, побережье, изобары и рамка
+        H, W = 160, 600
+        yy, xx = np.mgrid[0:H, 0:W]
+        img = np.ones((H, W))
+        img[(xx % 75 < 2) | (yy % 40 < 2)] = 0.55
+        coast = 80 + 30 * np.sin(xx / 70.0) + 10 * np.sin(xx / 17.0)
+        img[np.abs(yy - coast) < 2] = 0
+        for r in (30, 50, 70):
+            d = np.hypot(xx - 380, (yy - 70) * 1.3)
+            img[np.abs(d - r) < 1.2] = 0.2
+        img[:4], img[-4:], img[:, :4], img[:, -4:] = 0, 0, 0, 0
+        # «звуковые» станции: слышны, когда трансивер настроен точно (±300 Гц) — для проверки декодеров
+        import navtex, psk31, sstv
+        nx = navtex.navtex_synth('ZCZC AE12\nNOVOROSSIYSK RADIO\nWEATHER FORECAST BLACK SEA 0600 UTC:\n'
+                                 'WIND SW 10-15 M/S, SEA 2 M, VIS 5-10 NM.\nNNNN\n', fc=1700, amp=0.1)
+        ps = psk31.psk31_tx('   CQ CQ CQ de UA6LUQ UA6LUQ pse k\n', fc=1000, amp=0.1, pre=48)
+        yy, xx = np.mgrid[0:240, 0:320]
+        pic = np.stack([xx * 255 // 320, yy, ((xx // 40 + yy // 40) % 2) * 255], -1).astype(np.uint8)
+        pic[100:130, :, :] = 255
+        sv = sstv.sstv_synth(pic, 'Robot 36', amp=0.1)
+        gap = lambda s_: np.zeros(int(s_ * SR), np.float32)
+        self.audio_st = [(516300, np.concatenate([nx, gap(15)])),
+                         (14070000, np.concatenate([ps, gap(8)])),
+                         (14230000, np.concatenate([sv, gap(20)]))]
+        v = digi.fax_values(img, phasing=20)
+        gap = np.full(int(15 * SR), 0.5)
+        v = np.concatenate([v, gap])
+        self.fx = np.cumsum(2 * np.pi * (v * 800 - 400) / SR)
+        self.fx_w = self.fx[-1]
+
+    def block(self, f0, t, n0):
+        out = np.zeros(len(t), np.float32)
+        for fd, arr in getattr(self, 'audio_st', []):
+            if abs(f0 - fd) < 300:
+                out += arr[(n0 + np.arange(len(t))) % len(arr)]
+        for kind, fs, arr in (('rt', self.RTTY_F, self.rt), ('fx', self.FAX_F, self.fx)):
+            if arr is None:
+                continue
+            af = fs - f0
+            if not (300 < af < 3200):
+                continue
+            L = len(arr)
+            i = (n0 + np.arange(len(t))) % L
+            loops = (n0 + np.arange(len(t))) // L
+            ph = arr[i] + loops * (self.rt_w if kind == 'rt' else self.fx_w)
+            out += 0.02 * np.sin(2 * np.pi * af * t + ph)
+        return out
+
+
+class SimFt8:
+    """Участок FT8 в симуляторе (14074 и 7074 кГц): настоящие сигналы FT8 по слотам UTC
+    и станции, которые отвечают на наши передачи (наш сигнал декодируется и разбирается)."""
+    DIALS = (14074000, 7074000)
+    CQ = [('UA3ABC', 'KO85', 800, 0, 0.004), ('DL1XYZ', 'JO62', 1900, 1, 0.003),
+          ('JA1QRZ', 'PM95', 1250, 0, 0.0012), ('EW8DX', 'KO42', 2300, 1, 0.005)]
+
+    def __init__(self):
+        self.slots = {}            # k -> массив звука слота (48 кГц, от начала слота)
+        self.tx = {}               # k -> куски нашей передачи
+        self.replies = {}          # k -> [(af, amp, text)]
+        self.busy = {}             # позывной -> слот, до которого станция занята связью с нами
+        self.lock = threading.Lock()
+        self.last_k = None
+        try:
+            import _ftx, ft8
+            self._ftx, self._ft8 = _ftx, ft8
+        except Exception:
+            self._ftx = None
+
+    def _slot(self, k):
+        if k in self.slots:
+            return self.slots[k]
+        x = np.zeros(int(15 * SR), np.float32)
+        if self._ftx:
+            msgs = list(self.replies.pop(k, []))
+            for call, grid, af, par, amp in self.CQ:
+                if k % 2 == par and self.busy.get(call, -1) < k and (k // 2 + hash(call)) % 3 != 0:
+                    msgs.append((af, amp, 'CQ %s %s' % (call, grid)))
+            for af, amp, text in msgs:
+                tones = self._ftx.encode(text, False)
+                if tones is None:
+                    continue
+                y = self._ft8.gfsk(list(tones), af, 'FT8', amp=amp)
+                i = int((0.5 + 0.1 * ((af // 100) % 5)) * SR)
+                x[i:i + len(y)] += y[:len(x) - i]
+        self.slots = {kk: v for kk, v in self.slots.items() if kk >= k - 1}
+        self.slots[k] = x
+        return x
+
+    def block(self, f0, n):
+        if not any(abs(f0 - d) < 30 for d in self.DIALS):     # слышно только на стандартной частоте
+            return np.zeros(n, np.float32)
+        now = time.time()
+        k = int(now // 15)
+        self._roll(k)
+        i = int((now - k * 15) * SR)
+        x = self._slot(k)
+        out = x[i:i + n]
+        if len(out) < n:
+            out = np.concatenate([out, self._slot(k + 1)[:n - len(out)]])
+        return out
+
+    def on_tx(self, y):
+        now = time.time()
+        k = int(now // 15)
+        self._roll(k)
+        with self.lock:
+            self.tx.setdefault(k, []).append(y.copy())
+
+    def _roll(self, k):
+        if self.last_k == k:
+            return
+        prev, self.last_k = self.last_k, k
+        if prev is not None and prev in self.tx:
+            chunks = self.tx.pop(prev)
+            threading.Thread(target=self._heard, args=(prev, np.concatenate(chunks)), daemon=True).start()
+        self.tx = {kk: v for kk, v in self.tx.items() if kk >= k - 1}
+
+    def _heard(self, k, y):
+        """Декодируем свою передачу и отвечаем в следующем слоте (пока ещё не построен)."""
+        if not self._ftx or len(y) < SR * 5:
+            return
+        from audio import Decimator
+        z = Decimator(4).process(np.concatenate([np.zeros(int(0.3 * SR), np.float32), y]).astype(np.float32))
+        z = np.concatenate([z, np.zeros(max(0, 12000 * 15 - len(z)), np.float32)])
+        res = self._ftx.decode(z.astype(np.float32).tobytes(), False)
+        calls = {c[0]: c for c in self.CQ}
+        for snr, _, af, text in res:
+            w = text.split()
+            if len(w) < 2:
+                continue
+            if w[0] == 'CQ':
+                me = w[1]
+                call, grid, a, par, amp = self.CQ[3]                 # на наш CQ отвечает EW8DX
+                self._reply(k + 1, call, (a, amp, '%s %s %s' % (me, call, grid)))
+                continue
+            to, me = w[0], w[1]
+            if to not in calls:
+                continue
+            call, grid, a, par, amp = calls[to]
+            last = w[2] if len(w) > 2 else ''
+            rep = '%+03d' % int(max(-24, min(9, snr)))
+            if re.fullmatch(r'[A-R]{2}\d\d', last) and last != 'RR73':
+                txt = '%s %s %s' % (me, call, rep)
+            elif re.fullmatch(r'[+-]\d\d', last):
+                txt = '%s %s R%s' % (me, call, rep)
+            elif re.fullmatch(r'R[+-]\d\d', last):
+                txt = '%s %s RR73' % (me, call)
+            elif last == 'RR73':
+                txt = '%s %s 73' % (me, call)
+            else:
+                continue
+            log.info("SIM FT8: %s слышит «%s», ответ «%s»", call, text, txt)
+            self._reply(k + 1, call, (a, amp, txt))
+
+    def _reply(self, k, call, item):
+        self.busy[call] = k + 3
+        self.replies.setdefault(k, []).append(item)
+        self.slots.pop(k, None)
+
+
+DUMP = [] if os.environ.get('FTX_TX_DUMP') else None
+if DUMP is not None:
+    import atexit
+    atexit.register(lambda: np.save(os.environ['FTX_TX_DUMP'], np.concatenate(DUMP) if DUMP else np.zeros(1)))
+
+
+class SimAudio:
+    """«Эфир»: шум + CW + FT8-подобные тоны + SSB-подобный сигнал."""
+
+    def __init__(self, radio):
+        self.radio = radio
+        self.tx = TxBuffer()
+        self.tx_gain = 1.0
+        self.rx_level = 0.0
+        self.n = 0
+        self._stop = False
+        self.digi = SimDigi()
+        self.ft8 = SimFt8()
+
+    def start(self, on_rx):
+        def run():
+            next_t = time.monotonic()
+            while not self._stop:
+                x = self._block()
+                self.rx_level = float(np.sqrt(np.mean(x * x)))
+                on_rx(x)
+                y = self.tx.pull(BLOCK)
+                self.radio.tx_level = float(np.sqrt(np.mean(y * y)))
+                if self.radio.s['TX'] != '0':
+                    self.ft8.on_tx(y)
+                if DUMP is not None and self.radio.s['TX'] != '0':          # отладка: что «ушло в эфир»
+                    DUMP.append(y.copy())
+                    if len(DUMP) % 50 == 0:
+                        np.save(os.environ['FTX_TX_DUMP'], np.concatenate(DUMP))
+                next_t += BLOCK / SR
+                time.sleep(max(0, next_t - time.monotonic()))
+        threading.Thread(target=run, daemon=True).start()
+
+    def stop(self):
+        self._stop = True
+
+    def _lp(self, cut):
+        if getattr(self, '_cut', None) != cut:
+            n = np.arange(255) - 127
+            h = np.sinc(2 * cut / SR * n) * np.blackman(255)
+            self._h, self._cut, self._zi = (h / h.sum()).astype(np.float32), cut, np.zeros(254, np.float32)
+        return self._h
+
+    def _block(self):
+        t = (self.n + np.arange(BLOCK)) / SR
+        self.n += BLOCK
+        mode = self.radio.s.get('MD0', '2')
+        h = self._lp(8000 if mode in ('4', 'A', 'B', 'F') else 3000)
+        w = np.random.randn(BLOCK).astype(np.float32) * 0.01
+        buf = np.concatenate([self._zi, w]); self._zi = buf[-254:]
+        x = np.convolve(buf, h, mode='valid').astype(np.float32) + np.random.randn(BLOCK).astype(np.float32) * 2e-5
+        if self.radio.s['TX'] != '0':
+            return x * 0.1
+        f0 = self.radio.freq()
+        # «станции» на фиксированных частотах эфира: слышны, если попадают в полосу 0..3 кГц
+        stations = [(14077100, 0.015, 'ssb'), (SimCwOp.FREQ, 0.012, 'op')]
+        x += self.digi.block(f0, t, self.n - BLOCK)
+        x += self.ft8.block(f0, BLOCK)
+        cwop = self.radio.cwop
+        cwop.tick()
+        tm = time.monotonic() + np.arange(BLOCK) / SR
+        for fs, a, kind in stations:
+            af = fs - f0
+            if not (80 < af < 4000):
+                continue
+            if kind == 'op':
+                # в CW слышим тон = расстройка; плавные фронты 5 мс сглаживанием ключа
+                tx = np.concatenate([tm[0] - np.arange(239, 0, -1) / SR, tm])
+                k = np.convolve(cwop.keyed(tx).astype(np.float32), np.ones(240) / 240, mode='valid')
+                x += a * k * np.sin(2 * np.pi * af * t)
+            elif kind == 'ft8':
+                sym = np.floor(t / 0.16) % 8
+                on = (t % 15) < 12.6
+                x += a * on * np.sin(2 * np.pi * (af + sym * 6.25) * t)
+            else:
+                env = 0.5 + 0.5 * np.sin(2 * np.pi * 3 * t)
+                for k in range(6):
+                    x += a * env * np.sin(2 * np.pi * (af - 2400 + 300 + k * 330 + 40 * np.sin(t)) * t) / 3
+        return x.astype(np.float32)

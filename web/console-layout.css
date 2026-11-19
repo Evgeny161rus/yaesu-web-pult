@@ -1,0 +1,100 @@
+/* Radio-panel composition: central receiver, right-hand tuning, left metering. */
+:root[data-appearance="radio-night"] {
+  --bg:#141618; --panel:#212427; --panel-2:#2c3035; --line:#454b52;
+  --text:#eff3f6; --muted:#b2bac3; --accent:#f0b04f; --accent-2:#835a1e;
+  --lcd:#a6ddf2; --radius:6px; --screen:#06141d; --screen-line:#254554;
+}
+:root[data-appearance="radio-silver"] {
+  --bg:#b8bfc5; --panel:#d5dadd; --panel-2:#e5e9ec; --line:#8b979f;
+  --text:#172932; --muted:#425965; --accent:#006e62; --accent-2:#006e62;
+  --lcd:#005649; --radius:6px; --screen:#061d1b; --screen-line:#2e5c53;
+  color-scheme:light;
+}
+#consoleShelf { display:none; }
+.scope-source { display:none; }
+body.radio-console { font-family:"Segoe UI",system-ui,sans-serif; }
+body.radio-console .topbar { padding:12px 18px; border-bottom:2px solid var(--line); }
+body.radio-console .brand b { font-size:20px; letter-spacing:.06em; }
+body.radio-console #consoleShelf { display:flex; flex-direction:column; gap:16px; }
+body.radio-console #consoleShelf h2 { font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin:0; color:var(--muted); }
+body.radio-console .console-unavailable { display:none; }
+body.radio-console.hamlib .console-unavailable { display:block; }
+body.radio-console.hamlib #consoleShelf .meters,
+body.hamlib .console-native { display:none; }
+body.radio-console .console-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:auto; }
+body.radio-console .console-actions .btn { min-height:44px; font-size:12px; }
+body.radio-console .display { background:var(--screen) !important; border:2px solid var(--screen-line); padding:16px 20px; color:var(--lcd); }
+body.radio-console .display .freq { color:var(--lcd); font-size:clamp(34px,4.5vw,68px); letter-spacing:.025em; }
+body.radio-console .display .muted { color:#91adba; }
+body.radio-console .display .freq-b { color:#a3c8d6 !important; }
+body.radio-console .display .badge { border-radius:3px; }
+body.radio-console .display .badge.off { color:#7b9aaa !important; border-color:var(--screen-line) !important; }
+body.radio-console .display .badge:not(.off):not(.tx):not(.mode) { background:var(--screen-line) !important; color:var(--lcd) !important; }
+body.radio-console .btn { min-height:38px; border-radius:4px; box-shadow:inset 0 1px #ffffff12,0 2px 0 #0003; }
+body.radio-console .btn.on { box-shadow:inset 0 3px var(--accent); }
+body.radio-console .tune-row { flex-direction:column; gap:16px; background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:16px; }
+body.radio-console .tune-row::before { content:'НАСТРОЙКА ЧАСТОТЫ'; font-size:12px; font-weight:600; letter-spacing:.1em; color:var(--muted); }
+body.radio-console .dial { width:210px; height:210px; filter:drop-shadow(0 6px 5px #0005); }
+body.radio-console .tune-side { width:100%; }
+body.radio-console #bands, body.radio-console #modes { margin:0; gap:6px; }
+body.radio-console #consoleShelf .meters { display:grid; gap:12px; }
+body.radio-console #consoleShelf .meter { grid-template-columns:30px minmax(0,1fr) 48px; }
+body.radio-console #consoleShelf .meter .bar { height:16px; }
+body.radio-console #consoleShelf .meter.tx { display:grid; }
+body.radio-console #consoleShelf .scale-row { display:none; }
+body.radio-console .wfpanel { background:var(--screen); border:2px solid var(--screen-line); }
+body.radio-console .wf-tools { color:#b0cbd8; }
+body.radio-console .wf-tools .muted, body.radio-console .wf-tools .mini { color:#b0cbd8; }
+body.radio-console .scope-source { display:block; width:100%; letter-spacing:.12em; font-size:11px; }
+body.radio-console .tabs { gap:4px; }
+body.radio-console .tabs button { border-radius:3px; min-height:40px; }
+body.radio-console .ctl { border-radius:4px; padding:10px 12px; }
+body.radio-console .pttbar { background:var(--panel) !important; }
+body.radio-console .ptt { height:48px; border-radius:5px; width:min(240px,48vw); }
+body.radio-console #hamlibControls { max-width:none; grid-template-columns:repeat(3,minmax(0,1fr)); align-items:start; }
+body.radio-console #hamlibControls h3, body.radio-console #hamlibControls p { grid-column:1/-1; margin:0; }
+body.radio-console #hamlibControls > label:first-of-type { display:grid; gap:8px; padding:10px; }
+html[data-appearance="radio-silver"] .tabs button.on { color:var(--text); }
+html[data-appearance="radio-silver"] .display { --lcd:#a0f3da; }
+html[data-appearance="radio-silver"] .console-actions .btn { background:#2b3339; color:#f0f4f7; border-color:#59646e; }
+html[data-appearance="radio-silver"] .ptt:not(.active) { color:#8f1d2a; background:#f3d5d9; border-color:#b06470; }
+@media (min-width:1000px) and (min-height:650px) {
+  body.radio-console.fit .layout { display:grid; padding:14px; gap:10px; grid-template-columns:200px minmax(0,1fr) 260px; grid-template-rows:145px minmax(180px,1fr) auto auto minmax(180px,28%); grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
+  body.radio-console.fit .col-left, body.radio-console.fit .tune { display:contents; }
+  body.radio-console.fit #display { grid-area:display; }
+  body.radio-console.fit #consoleShelf { grid-area:meters; }
+  body.radio-console.fit .tune-row { grid-area:dial; align-self:stretch; justify-content:flex-start; }
+  body.radio-console.fit #bands { grid-area:bands; grid-template-columns:repeat(15,minmax(0,1fr)); }
+  body.radio-console.fit #modes { grid-area:modes; grid-template-columns:repeat(9,minmax(0,1fr)); }
+  body.radio-console.fit #sqRow { display:none !important; }
+  body.radio-console.fit .wfpanel { grid-area:wf; }
+  body.radio-console.fit .tabs-panel { grid-area:tabs; }
+  body.radio-console.fit.hamlib .layout { grid-template-rows:145px minmax(180px,1fr) minmax(240px,35%); grid-template-areas:'meters display dial' 'meters wf dial' 'tabs tabs tabs'; }
+  body.radio-console:not(.fit) .layout { display:grid; padding:14px; gap:10px; grid-template-columns:180px minmax(0,1fr) 230px; grid-template-rows:145px 360px auto auto auto; grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
+  body.radio-console:not(.fit) .col-left, body.radio-console:not(.fit) .tune { display:contents; }
+  body.radio-console:not(.fit) #display { grid-area:display; }
+  body.radio-console:not(.fit) #consoleShelf { grid-area:meters; }
+  body.radio-console:not(.fit) .tune-row { grid-area:dial; }
+  body.radio-console:not(.fit) .dial { width:190px; height:190px; }
+  body.radio-console:not(.fit) #bands { grid-area:bands; grid-template-columns:repeat(8,minmax(0,1fr)); }
+  body.radio-console:not(.fit) #modes { grid-area:modes; grid-template-columns:repeat(9,minmax(0,1fr)); }
+  body.radio-console:not(.fit) #sqRow { display:none !important; }
+  body.radio-console:not(.fit) .wfpanel { grid-area:wf; display:flex; flex-direction:column; }
+  body.radio-console:not(.fit) .wf-wrap { flex:1; height:auto; min-height:120px; }
+  body.radio-console:not(.fit) .tabs-panel { grid-area:tabs; }
+  body.radio-console:not(.fit).hamlib .layout { grid-template-rows:145px 360px auto; grid-template-areas:'meters display dial' 'meters wf dial' 'tabs tabs tabs'; }
+}
+@media (max-width:999px), (max-height:649px) {
+  body.radio-console .layout { display:flex !important; flex-direction:column; }
+  body.radio-console .col-left { display:contents !important; }
+  body.radio-console #display { order:0; }
+  body.radio-console .wfpanel { order:1; }
+  body.radio-console .tune { order:2; }
+  body.radio-console #consoleShelf { order:3; }
+  body.radio-console .tabs-panel { order:4; }
+  body.radio-console .tune-row { flex-direction:row; }
+  body.radio-console .tune-row::before { display:none; }
+  body.radio-console .dial { width:140px; height:140px; }
+  body.radio-console #hamlibControls { grid-template-columns:1fr; }
+  body.radio-console #consoleShelf .console-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}

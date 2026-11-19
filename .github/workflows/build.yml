@@ -1,0 +1,102 @@
+# Автоматическая сборка FTX1-Pult.exe на серверах GitHub.
+# Загрузите проект в свой репозиторий GitHub → вкладка Actions → «Build FTX1-Pult.exe» → Run workflow.
+# Готовый exe — в разделе Artifacts у завершённой сборки.
+name: Build FTX1-Pult.exe
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip
+      - run: pip install -r requirements.txt setuptools
+      # FT8/FT4: модуль _ftx из ft8_lib (C, MIT) — собирается компилятором MSVC
+      - name: Модуль FT8 (_ftx)
+        working-directory: server
+        run: python setup_ftx.py build_ext --inplace
+      # Справочник стран для FT8 (Country Files, AD1C). Не скачался — программа скачает сама при запуске.
+      - name: cty.dat
+        shell: pwsh
+        run: |
+          try { Invoke-WebRequest https://www.country-files.com/cty/cty.dat -OutFile server\cty.dat -TimeoutSec 60 }
+          catch { Write-Host "cty.dat не скачан: $_"; Set-Content server\cty.dat '' }
+          (Get-Item server\cty.dat).Length
+      # Загрузчик PyInstaller собираем из исходников: готовый загрузчик из pip
+      # антивирусы (Microsoft Defender) часто ложно считают «Wacatac».
+      - name: PyInstaller с собственным загрузчиком
+        shell: pwsh
+        run: |
+          $env:PYINSTALLER_COMPILE_BOOTLOADER = '1'
+          pip install --no-binary pyinstaller --no-cache-dir pyinstaller
+      - run: >
+          pyinstaller --noconfirm --clean --onefile --windowed --noupx --name FTX1-Pult
+          --version-file version_info.txt
+          --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;."
+          --hidden-import pystray._win32 --hidden-import _ftx --paths server server\main.py
+      - name: Вариант-папка (ZIP) — реже вызывает подозрения антивируса
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --onedir --windowed --noupx --name FTX1-Pult --distpath distdir `
+            --version-file version_info.txt `
+            --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." `
+            --hidden-import pystray._win32 --hidden-import _ftx --paths server server\main.py
+          Compress-Archive -Path distdir\FTX1-Pult -DestinationPath dist\FTX1-Pult-folder.zip
+          (Get-FileHash dist\FTX1-Pult.exe -Algorithm SHA256).Hash + '  FTX1-Pult.exe' | Out-File dist\SHA256.txt
+          (Get-FileHash dist\FTX1-Pult-folder.zip -Algorithm SHA256).Hash + '  FTX1-Pult-folder.zip' | Out-File dist\SHA256.txt -Append
+      - name: Самопроверка exe (библиотеки и файлы)
+        shell: pwsh
+        run: |
+          $p = Start-Process dist\FTX1-Pult.exe -ArgumentList '--selftest','selftest.txt' -Wait -PassThru
+          Get-Content selftest.txt
+          if ($p.ExitCode -ne 0) { exit 1 }
+      - name: Проверка запуска сервера (симулятор)
+        shell: pwsh
+        run: |
+          '{"open_panel": false, "auto_connect": true}' | Set-Content dist\config.json
+          $p = Start-Process dist\FTX1-Pult.exe -ArgumentList '--sim','--background' -PassThru
+          Start-Sleep -Seconds 12
+          $ping = (Invoke-WebRequest http://127.0.0.1:8080/api/ping -UseBasicParsing).Content
+          $panel = (Invoke-WebRequest http://127.0.0.1:8080/panel.html -UseBasicParsing).StatusCode
+          $pult = (Invoke-WebRequest http://127.0.0.1:8080/ -UseBasicParsing).StatusCode
+          "ping: $ping  panel: $panel  pult: $pult"
+          Get-Content dist\ftx1-pult.log
+          Stop-Process -Id $p.Id -Force
+          Remove-Item dist\config.json, dist\cert.pem, dist\key.pem, dist\ftx1-pult.log -ErrorAction SilentlyContinue
+          if (-not $ping.StartsWith('FTX1') -or $panel -ne 200 -or $pult -ne 200) { exit 1 }
+          if (Select-String -Path selftest.txt -Pattern 'FAIL' -Quiet) { exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FTX1-Pult
+          path: |
+            dist/FTX1-Pult.exe
+            dist/FTX1-Pult-folder.zip
+            dist/SHA256.txt
+      - name: Релиз «последняя сборка»
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: FTX-1 Пульт — последняя сборка
+          body: |
+            Скачайте **FTX1-Pult.exe**, положите в любую папку и запустите двойным кликом.
+            Python не нужен. Настройки (config.json) и журнал появятся рядом с exe.
+
+            Если Microsoft Defender ругается на exe — это ложное срабатывание на упаковщик PyInstaller.
+            Возьмите **FTX1-Pult-folder.zip**: распакуйте папку целиком и запустите FTX1-Pult.exe внутри.
+            Исходный код открыт в этом репозитории, контрольные суммы — в SHA256.txt.
+            Сборка: ${{ github.sha }}
+          make_latest: true
+          overwrite_files: true
+          files: |
+            dist/FTX1-Pult.exe
+            dist/FTX1-Pult-folder.zip
+            dist/SHA256.txt

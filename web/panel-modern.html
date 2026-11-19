@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yaesu Web Pult — Панель управления</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+/* ==================== Современная цветовая палитра ==================== */
+:root {
+  --bg-primary: #0a0e14;
+  --bg-secondary: #12161f;
+  --bg-tertiary: #1a1f2b;
+  --surface-1: #1e2430;
+  --surface-2: #252b3a;
+  --surface-3: #2d3444;
+  
+  --border-subtle: #2d3444;
+  --border-default: #3d4555;
+  --border-strong: #4d5565;
+  
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-tertiary: #6e7681;
+  
+  --accent-primary: #2ea44f;
+  --accent-hover: #3fb950;
+  --accent-active: #238636;
+  
+  --status-success: #3fb950;
+  --status-warning: #d29922;
+  --status-error: #f85149;
+  --status-info: #58a6ff;
+  
+  --tx-color: #ff6b6b;
+  --tx-glow: rgba(255, 107, 107, 0.3);
+  
+  --lcd-color: #4af0c8;
+  --lcd-glow: rgba(74, 240, 200, 0.15);
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(46, 164, 79, 0.3);
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  
+  --font-mono: 'SF Mono', 'Monaco', 'Cascadia Mono', 'Roboto Mono', 'Consolas', monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+  
+  color-scheme: dark;
+}
+
+/* ==================== Базовые стили ==================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.hidden { display: none !important; }
+
+/* ==================== Контейнер ==================== */
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px;
+  padding-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+  .container { padding: 12px; }
+}
+
+/* ==================== Шапка ==================== */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  padding: 8px;
+  background: linear-gradient(135deg, #2ea44f 0%, #238636 100%);
+  box-shadow: var(--shadow-glow);
+}
+
+.header-title h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+.header-version {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.scale-selector {
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scale-selector:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+
+.saved-indicator {
+  color: var(--status-success);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.saved-indicator.show { opacity: 1; }
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ==================== Wizard (первый запуск) ==================== */
+.wizard {
+  background: linear-gradient(135deg, #1a3a52 0%, #0f2838 100%);
+  border: 1px solid #2a5a7a;
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.wizard h3 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wizard ol {
+  padding-left: 24px;
+  display: grid;
+  gap: 10px;
+}
+
+.wizard li {
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.wizard b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ==================== Hero панель (статус) ==================== */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.status-section {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Индикатор статуса */
+.status-lamp {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #3a4655;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.status-lamp::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.status-lamp.ok {
+  background: var(--status-success);
+  box-shadow: 0 0 16px var(--status-success);
+}
+
+.status-lamp.ok::before {
+  color: var(--status-success);
+  opacity: 0.3;
+}
+
+.status-lamp.warning {
+  background: var(--status-warning);
+  box-shadow: 0 0 16px var(--status-warning);
+}
+
+.status-lamp.error {
+  background: var(--status-error);
+  box-shadow: 0 0 16px var(--status-error);
+}
+
+.status-lamp.tx {
+  background: var(--tx-color);
+  box-shadow: 0 0 20px var(--tx-glow);
+  animation: tx-pulse 1s ease-in-out infinite;
+}
+
+@keyframes tx-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.status-content h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.status-subtitle {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.status-freq {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--lcd-color);
+  margin-top: 6px;
+  text-shadow: 0 0 10px var(--lcd-glow);
+  letter-spacing: 0.05em;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Информационные чипы */
+.status-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  grid-column: 1 / -1;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  background: var(--surface-3);
+  border-color: var(--border-default);
+}
+
+.chip-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3a4655;
+  transition: all 0.3s;
+}
+
+.chip-indicator.ok { background: var(--status-success); box-shadow: 0 0 8px var(--status-success); }
+.chip-indicator.warning { background: var(--status-warning); box-shadow: 0 0 8px var(--status-warning); }
+.chip-indicator.error { background: var(--status-error); box-shadow: 0 0 8px var(--status-error); }
+
+/* Сообщение об ошибке */
+.error-message {
+  grid-column: 1 / -1;
+  background: rgba(248, 81, 73, 0.1);
+  border: 1px solid rgba(248, 81, 73, 0.3);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  color: #ffb4b4;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ==================== Кнопки ==================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-height: 42px;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Варианты кнопок */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-active) 100%);
+  border-color: var(--accent-hover);
+  color: #fff;
+  min-width: 160px;
+  box-shadow: 0 2px 8px rgba(46, 164, 79, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--accent-hover) 0%, var(--accent-primary) 100%);
+  box-shadow: 0 4px 12px rgba(46, 164, 79, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #8b2e2e 0%, #6b2525 100%);
+  border-color: #a33;
+  color: #ffb4b4;
+  min-width: 160px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: linear-gradient(135deg, #9b3e3e 0%, #7b3535 100%);
+  border-color: #b44;
+}
+
+.btn-quit {
+  border-color: #6b2525;
+  color: #ff9b9b;
+  background: rgba(139, 46, 46, 0.2);
+}
+
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  font-size: 18px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 32px;
+}
+
+/* ==================== Сетка карточек ==================== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== Карточка ==================== */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s;
+}
+
+.card:hover {
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title-icon {
+  font-size: 18px;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.card-action {
+  display: flex;
+  gap: 6px;
+}
+
+/* ==================== Поля формы ==================== */
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  transition: all 0.2s;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(46, 164, 79, 0.1);
+  background: var(--surface-3);
+}
+
+.form-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.form-row {
+  display: flex;
+  gap: 8px;
+}
+
+.form-row > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.form-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent-primary);
+}
+
+.form-checkbox label {
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* ==================== URL списки ==================== */
+.url-list {
+  display: grid;
+  gap: 10px;
+}
+
+.url-item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.url-code {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--lcd-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* QR код */
+.qr-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  margin-top: 14px;
+}
+
+.qr-code {
+  background: #fff;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  line-height: 0;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.qr-code svg {
+  width: 140px;
+  height: 140px;
+  display: block;
+}
+
+.qr-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 500px) {
+  .qr-section {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ==================== Лог ==================== */
+.log-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  height: 200px;
+  overflow: auto;
+  padding: 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  scrollbar-width: thin;
+}
+
+.log-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+
+.log-container::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 4px;
+}
+
+.log-line {
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log-line.WARNING { color: var(--status-warning); }
+.log-line.ERROR { color: var(--status-error); }
+.log-line.INFO { color: var(--status-info); }
+
+/* ==================== Список клиентов ==================== */
+.clients-list {
+  display: grid;
+  gap: 8px;
+}
+
+.client-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.client-icon {
+  font-size: 16px;
+}
+
+.client-name {
+  flex: 1;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.client-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: var(--surface-3);
+  color: var(--text-tertiary);
+}
+
+.client-badge.tx {
+  background: rgba(255, 107, 107, 0.2);
+  color: var(--tx-color);
+}
+
+/* ==================== Футер ==================== */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.footer-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-link:hover {
+  color: var(--accent-primary);
+}
+
+@media (max-width: 600px) {
+  .footer {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+/* ==================== Advanced секция ==================== */
+.advanced {
+  margin-top: 16px;
+}
+
+.advanced summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 0;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.advanced summary:hover {
+  color: var(--text-primary);
+}
+
+.advanced-content {
+  padding-top: 12px;
+}
+
+/* ==================== Утилиты ==================== */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.mt-1 { margin-top: 8px; }
+.mt-2 { margin-top: 16px; }
+.mb-1 { margin-bottom: 8px; }
+.mb-2 { margin-bottom: 16px; }
+.gap-1 { gap: 8px; }
+.gap-2 { margin: 16px; }
+
+/* ==================== Анимации ==================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ==================== Респонсивность ==================== */
+@media (max-width: 1200px) {
+  .cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 12px 12px 32px;
+  }
+  
+  .header {
+    padding: 16px;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+  
+  .form-row {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Шапка -->
+  <header class="header">
+    <div class="header-brand">
+      <img src="icon.svg" alt="" class="header-icon">
+      <div class="header-title">
+        <h1>Yaesu Web Pult</h1>
+        <div class="header-version" id="ver">Панель управления</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="saved-indicator" id="saved">✓ Сохранено</span>
+      <select id="scale" class="scale-selector" title="Масштаб окна">
+        <option value="auto">Масштаб: Авто</option>
+        <option value="0.8">80%</option>
+        <option value="0.9">90%</option>
+        <option value="1">100%</option>
+        <option value="1.1">110%</option>
+        <option value="1.25">125%</option>
+        <option value="1.5">150%</option>
+        <option value="1.75">175%</option>
+        <option value="2">200%</option>
+      </select>
+    </div>
+  </header>
+
+  <!-- Wizard первого запуска -->
+  <section class="wizard hidden" id="wizard">
+    <h3>👋 Добро пожаловать!</h3>
+    <ol>
+      <li>Подключите трансивер Yaesu к этому компьютеру USB-кабелем</li>
+      <li>Установите драйвер Virtual COM Port с сайта Yaesu (если ещё не установлен)</li>
+      <li>Выберите модель и порты ниже (кнопка «Найти» для автоопределения)</li>
+      <li>Нажмите <b>«Запустить»</b>, затем <b>«Открыть пульт»</b></li>
+    </ol>
+  </section>
+
+  <!-- Hero панель статуса -->
+  <section class="hero">
+    <div>
+      <div class="status-section">
+        <div class="status-lamp" id="lamp"></div>
+        <div class="status-content">
+          <h2 id="stTitle">Подключение к серверу...</h2>
+          <div class="status-subtitle" id="stSub"></div>
+          <div class="status-freq" id="stFreq"></div>
+        </div>
+      </div>
+      <div class="status-chips" id="chips"></div>
+      <div class="error-message hidden" id="errorMsg"></div>
+    </div>
+    <div class="hero-actions">
+      <button class="btn btn-primary" id="btnRun">▶ Запустить</button>
+      <button class="btn btn-danger hidden" id="btnStop">■ Остановить</button>
+      <button class="btn" id="btnOpenPult">🎛 Открыть пульт</button>
+      <button class="btn" id="btnRefresh" title="Обновить список устройств">↻</button>
+    </div>
+  </section>
+
+  <!-- Сетка карточек -->
+  <div class="cards-grid">
+    
+    <!-- Карточка: Трансивер -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">📻</span>
+          Трансивер
+        </h3>
+        <div class="card-action">
+          <button class="btn btn-small" id="btnDetect" title="Автоопределить FTX-1">Найти</button>
+        </div>
+      </div>
+      
+      <div class="form-field">
+        <label class="form-label">Модель / Драйвер</label>
+        <select id="radioBackend" class="form-select">
+          <option value="native">FTX-1 — расширенное управление</option>
+          <option value="hamlib">Yaesu / Hamlib</option>
+        </select>
+      </div>
+
+      <div class="form-field hidden" id="hamlibModelRow">
+        <label class="form-label">Модель Hamlib</label>
+        <div class="form-row">
+          <select id="hamlibModel" class="form-select"></select>
+          <button class="btn btn-icon" id="btnHamlibRefresh" title="Обновить список моделей">↻</button>
+        </div>
+        <div class="form-hint">FT-710, FTDX10, FT-991 и другие Yaesu</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">COM-порт (CAT)</label>
+        <select id="catPort" class="form-select"></select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Скорость (baud)</label>
+        <select id="catBaud" class="form-select">
+          <option value="4800">4800</option>
+          <option value="9600">9600</option>
+          <option value="19200">19200</option>
+          <option value="38400" selected>38400</option>
+          <option value="57600">57600</option>
+          <option value="115200">115200</option>
+        </select>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">PTT (управление передачей)</label>
+        <select id="pttMethod" class="form-select">
+          <option value="TX1">CAT команда TX1</option>
+          <option value="TX2">CAT команда TX2 (DATA)</option>
+          <option value="RTS">Линия RTS/DTR</option>
+        </select>
+      </div>
+
+      <details class="advanced">
+        <summary>▸ Дополнительно</summary>
+        <div class="advanced-content">
+          <div class="form-field">
+            <label class="form-label">COM-порт для PTT (RTS/DTR)</label>
+            <select id="pttPort" class="form-select"></select>
+          </div>
+          <div class="form-field">
+            <label class="form-label">Путь к rigctld (Hamlib)</label>
+            <input type="text" id="hamlibPath" class="form-input" placeholder="rigctld">
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Карточка: Звук -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">🔊</span>
+          Аудио
+        </h3>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Вход (приём с трансивера)</label>
+        <select id="audioIn" class="form-select"></select>
+        <div class="form-hint">Микрофон USB Audio CODEC / USB Audio Device</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Выход (передача в трансивер)</label>
+        <select id="audioOut" class="form-select"></select>
+        <div class="form-hint">Динамики USB Audio CODEC / USB Audio Device</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">API (необязательно)</label>
+        <select id="audioApi" class="form-select">
+          <option value="">Авто</option>
+          <option value="MME">MME</option>
+          <option value="WASAPI">WASAPI</option>
+          <option value="ASIO">ASIO</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Карточка: Сеть и доступ -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">🌐</span>
+          Доступ
+        </h3>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Пароль для удалённого доступа</label>
+        <input type="password" id="password" class="form-input" placeholder="Оставьте пустым для отключения">
+        <div class="form-hint">Нужен для доступа с других устройств (телефон, планшет)</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">HTTP порт</label>
+        <input type="number" id="httpPort" class="form-input" value="8080" min="1024" max="65535">
+        <div class="form-hint">Локальный доступ (этот ПК)</div>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">HTTPS порт</label>
+        <input type="number" id="httpsPort" class="form-input" value="8443" min="1024" max="65535">
+        <div class="form-hint">Для доступа с телефона/планшета (нужен HTTPS для микрофона)</div>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="httpLan">
+        <label for="httpLan">Разрешить HTTP доступ из локальной сети</label>
+      </div>
+
+      <div class="url-list mt-2" id="urls"></div>
+
+      <div class="qr-section hidden" id="qrSection">
+        <div class="qr-code" id="qr"></div>
+        <div class="qr-text">
+          Отсканируйте QR-код камерой телефона для быстрого доступа к пульту
+        </div>
+      </div>
+    </div>
+
+    <!-- Карточка: Параметры -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">⚙️</span>
+          Параметры
+        </h3>
+      </div>
+
+      <div class="form-field">
+        <label class="form-label">Максимальное время передачи (секунд)</label>
+        <input type="number" id="maxTxSeconds" class="form-input" value="180" min="30" max="600">
+        <div class="form-hint">Автоматическое снятие PTT для защиты</div>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="autoConnect">
+        <label for="autoConnect">Автоматически подключаться при запуске</label>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="openPanel">
+        <label for="openPanel">Открывать панель управления при запуске</label>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="openPult">
+        <label for="openPult">Открывать пульт при запуске</label>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="autostart">
+        <label for="autostart">Автозапуск вместе с Windows</label>
+      </div>
+
+      <div class="form-checkbox">
+        <input type="checkbox" id="simulate">
+        <label for="simulate">Режим симулятора (без трансивера)</label>
+      </div>
+    </div>
+
+    <!-- Карточка: Подключённые клиенты -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">👥</span>
+          Подключённые
+          <span class="card-subtitle" id="clientsCount">0</span>
+        </h3>
+      </div>
+      <div class="clients-list" id="clientsList">
+        <div style="color: var(--text-tertiary); text-align: center; padding: 20px;">
+          Нет подключённых клиентов
+        </div>
+      </div>
+    </div>
+
+    <!-- Карточка: Журнал -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">
+          <span class="card-title-icon">📝</span>
+          Журнал
+        </h3>
+      </div>
+      <div class="log-container" id="log"></div>
+    </div>
+
+  </div>
+
+  <!-- Футер -->
+  <footer class="footer">
+    <div>
+      © 2026 Yaesu Web Pult · R6AAF
+    </div>
+    <div class="footer-links">
+      <button class="btn btn-quit" id="btnQuit">Выйти из программы</button>
+      <button class="btn" id="btnFolder" title="Открыть папку с конфигурацией">📁 Папка</button>
+    </div>
+  </footer>
+</div>
+
+<script src="panel.js"></script>
+<script src="qrcode.js"></script>
+</body>
+</html>

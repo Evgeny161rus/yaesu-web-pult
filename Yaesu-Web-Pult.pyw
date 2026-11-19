@@ -20,7 +20,8 @@ def box(text, flags=0x40):
     return 1
 
 
-missing = [pkg for mod, pkg in NEEDED.items() if importlib.util.find_spec(mod) is None]
+# В собранном EXE все библиотеки уже внутри — pip и проверка зависимостей не нужны.
+missing = [] if getattr(sys, 'frozen', False) else [pkg for mod, pkg in NEEDED.items() if importlib.util.find_spec(mod) is None]
 if missing:
     if box("Первый запуск: нужно установить библиотеки Python (%s).\n\n"
            "Нужен интернет, займёт 1–2 минуты. Окно программы откроется само.\n\nУстановить?"

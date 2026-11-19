@@ -1,0 +1,33 @@
+---
+name: Feature request
+about: Suggest an idea for this project
+title: '[FEATURE] '
+labels: enhancement
+assignees: ''
+
+---
+
+**Is your feature request related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+
+**Describe the solution you'd like**
+A clear and concise description of what you want to happen.
+
+**Describe alternatives you've considered**
+A clear and concise description of any alternative solutions or features you've considered.
+
+**Which transceiver(s) would this benefit?**
+- [ ] FTX-1
+- [ ] FT-710
+- [ ] FTDX10/101
+- [ ] FT-991/A
+- [ ] FT-891
+- [ ] Other (please specify): ___________
+
+**Would you be willing to help implement this feature?**
+- [ ] Yes, I can contribute code
+- [ ] Yes, I can help test
+- [ ] No, but I'd like to see it implemented
+
+**Additional context**
+Add any other context or screenshots about the feature request here.

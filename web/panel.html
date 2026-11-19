@@ -167,20 +167,17 @@
     </section>
 
     <section class="panel card">
-      <h3>🤖 ИИ и телеграф</h3>
-      <label class="chk"><input type="checkbox" id="ai_enabled"> ИИ-помощник CW (LM Studio)</label>
-      <label class="chk"><input type="checkbox" id="ai_auto_analyze"> Разбирать каждую принятую передачу автоматически</label>
-      <label class="field"><span>Адрес сервера LM Studio</span>
-        <div class="row"><input type="text" id="ai_url" placeholder="http://localhost:1234/v1"><button class="btn" id="aiTest">Проверить</button></div></label>
-      <label class="field"><span>Модель</span><select id="ai_model"><option value="">Любая загруженная</option></select></label>
-      <div class="hint" id="aiHint">В LM Studio загрузите модель и включите сервер: Developer → Start Server.</div>
-      <label class="field"><span>Как передавать CW-текст</span>
+      <h3>⚙️ CW и цифровые режимы</h3>
+      <label class="field"><span>Метод CW (манипуляция)</span>
         <select id="cw_method">
-          <option value="cat">Памятью ключа трансивера по CAT (рекомендуется)</option>
-          <option value="dtr">Манипуляция линией DTR второго порта</option>
-          <option value="rts">Манипуляция линией RTS второго порта</option>
-        </select></label>
+          <option value="cat">Команда CAT</option>
+          <option value="dtr">Линия DTR</option>
+          <option value="rts">Линия RTS</option>
+        </select>
+      </label>
       <label class="field hidden" id="cwPortField"><span>Порт манипуляции (Standard COM Port); в меню ТРХ: CW_PC_KEYING = DTR/RTS</span><select id="cw_port"></select></label>
+      <label class="field"><span>Задержка автоответа CW, с</span><input type="number" id="cw_auto_delay" min="1" max="30" value="6"></label>
+      <label class="field"><span>Макс. автоответов подряд</span><input type="number" id="cw_auto_max" min="1" max="10" value="4"></label>
     </section>
 
     <section class="panel card">

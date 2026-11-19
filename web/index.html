@@ -256,26 +256,26 @@
         <span class="cw-meter mono" id="cwInfo">—</span>
         <span class="spacer"></span>
         <button class="btn small" id="cwClear" title="Очистить экран">Очистить</button>
-        <button class="btn small" id="cwNew" title="Начать новую связь: ИИ забудет ход прошлой">Новая связь</button>
+        <button class="btn small" id="cwNew" title="Начать новую связь">Новая связь</button>
       </div>
       <div class="cw-screen mono" id="cwScreen" aria-live="polite"><span class="muted" id="cwHint">Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW).</span></div>
 
-      <!-- ===== ИИ ===== -->
+      <!-- ===== Разбор принятого ===== -->
       <div class="cw-ai" id="cwAi">
         <div class="cw-ai-head">
-          <b>ИИ-помощник</b>
-          <span class="muted small" id="cwAiStatus">LM Studio: не проверено</span>
+          <b>Разбор принятого</b>
+          <span class="muted small">По правилам CW-связи</span>
           <span class="spacer"></span>
           <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)">Разобрать</button>
-          <button class="btn small" id="cwReply" title="Составить ответ корреспонденту: ИИ или шаблон, если LM Studio нет (клавиша Y)">✨ Ответ</button>
+          <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)">📝 Ответ</button>
         </div>
-        <div id="cwAiBody" class="cw-ai-body muted small">Принятое после паузы разбирается: позывной, RST, имя, QTH, перевод сокращений. С LM Studio — точнее (модель исправляет ошибки декодера); без неё — по правилам CW-связи.</div>
+        <div id="cwAiBody" class="cw-ai-body muted small">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
       </div>
 
       <!-- ===== Передача ===== -->
       <div class="cw-tx">
         <div class="cw-proposal hidden" id="cwProposal">
-          <div><b id="cwPropTitle">Ответ ИИ</b> <span class="muted small" id="cwPropRu"></span></div>
+          <div><b id="cwPropTitle">Предложенный ответ</b> <span class="muted small" id="cwPropRu"></span></div>
           <div class="mono cw-prop-text" id="cwPropText"></div>
           <div class="btn-row"><button class="btn primary" id="cwPropSend">▶ Передать</button><button class="btn" id="cwPropEdit">Изменить</button><button class="btn" id="cwPropCancel">Отменить</button><span class="cw-count mono" id="cwPropCount"></span></div>
         </div>
@@ -289,8 +289,8 @@
         </div>
         <div class="cw-txline mono hidden" id="cwTxLine"></div>
         <div class="cw-auto">
-          <label class="chk"><input type="checkbox" id="cwAuto"> <b>Автоответ ИИ</b></label>
-          <span class="muted small">Когда корреспондент зовёт ваш позывной и закончил передачу, ИИ составит ответ и передаст его через
+          <label class="chk"><input type="checkbox" id="cwAuto"> <b>Автоответ по шаблону</b></label>
+          <span class="muted small">Когда корреспондент зовёт ваш позывной и закончил передачу, пульт составит ответ по шаблону и передаст его через
             <input type="number" id="cwAutoDelay" min="3" max="30" class="num tiny"> с (можно отменить). Не больше
             <input type="number" id="cwAutoMax" min="1" max="20" class="num tiny"> передач подряд.</span>
         </div>
@@ -393,13 +393,11 @@
           <span class="spacer"></span>
           <label class="mini">Станция<select id="nxPreset"></select></label>
           <button class="btn small" id="nxClear">Очистить</button>
-          <button class="btn small" id="nxAiBtn" title="Перевести принятое (нужна LM Studio)">Перевести (ИИ)</button>
         </div>
         <div class="nx-msgs small" id="nxMsgs"></div>
         <div class="cw-screen dg-screen mono" id="nxScreen"><span class="muted" id="nxHint">NAVTEX — морские предупреждения и прогнозы на 518 кГц. Выберите станцию: трансивер встанет в USB на 516,3 кГц,
           сигнал окажется около 1700 Гц. Станции передают по расписанию (время — в списке); между сеансами эфир пустой.
           Ближайшая — Новороссийск (A), на 518 кГц её хорошо слышно на десятки и сотни километров.</span></div>
-        <div class="cw-ai hidden" id="nxAi"><div class="cw-ai-head"><b>Перевод</b><span class="muted small" id="nxAiModel"></span><span class="spacer"></span><button class="btn small" id="nxAiClose">✕</button></div><div class="cw-ai-body small" id="nxAiBody"></div></div>
       </div>
 
       <!-- ===== SSTV ===== -->

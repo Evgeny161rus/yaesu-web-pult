@@ -109,7 +109,7 @@ const memEd = (() => {
         let mhz = parseFloat(t); if (!(mhz > 0)) { toast('Частота: например 145.500'); renderRow(ch); return; }
         if (mhz > 1000) mhz /= 1000;                       // ввели в кГц
         const hz = Math.round(mhz * 1e6);
-        if (hz < 30e3 || hz > 470e6) { toast('Частота вне диапазона FTX-1 (0,03–470 МГц)'); renderRow(ch); return; }
+        if (hz < 30e3 || hz > 470e6) { toast((window.tr?tr('mem.toast.range','Частота вне диапазона FTX-1 (0,03–470 МГц)'):'Частота вне диапазона FTX-1 (0,03–470 МГц)')); renderRow(ch); return; }
         const wasEmpty = c.empty; c.freq = hz; c.empty = false;
         if (wasEmpty) c.mode = hz >= 144e6 || (hz >= 29.5e6 && hz < 29.7e6) ? 'FM' : hz < 10e6 ? 'LSB' : 'USB';
       }
@@ -120,7 +120,7 @@ const memEd = (() => {
     } else if (f === 'tx_freq') {
       let mhz = parseFloat(String(v).replace(',', '.')); if (mhz > 1000) mhz /= 1000;
       const hz = Math.round(mhz * 1e6);
-      if (!(hz >= 30e3 && hz <= 470e6)) { toast('Частота передачи вне диапазона'); renderRow(ch); return; }
+      if (!(hz >= 30e3 && hz <= 470e6)) { toast((window.tr?tr('mem.toast.txrange','Частота передачи вне диапазона'):'Частота передачи вне диапазона')); renderRow(ch); return; }
       c.tx_freq = hz;
     } else if (f === 'offset_khz') {
       const khz = parseFloat(String(v).replace(',', '.')) || 0;
@@ -133,7 +133,7 @@ const memEd = (() => {
     else if (f === 'name') c[f] = String(v).replace(/[^\x20-\x7e]|;/g, '').slice(0, 12);
     else c[f] = v;
     if (f === 'mode' && !FM.includes(c.mode)) { c.shift = 0; c.tone_mode = 0; }
-    if (c.empty && f !== 'group' && f !== 'comment' && f !== 'freq') { toast('Сначала укажите частоту'); }
+    if (c.empty && f !== 'group' && f !== 'comment' && f !== 'freq') { toast((window.tr?tr('mem.toast.enter_freq','Сначала укажите частоту'):'Сначала укажите частоту')); }
     delete st.status[ch];
     renderRow(ch); renderInfo();
     if (f === 'group') renderSide();
@@ -156,7 +156,7 @@ const memEd = (() => {
     if (bad.length) { toast('У каналов ' + bad.map(c => c.ch).join(', ') + ' нет частоты'); return; }
     if (!confirm(`Записать в трансивер каналов: ${toWrite.length}?\nVFO-B на время записи будет занят, потом вернётся.` +
       (emptyOnRig.length ? `\n\nКаналы ${emptyOnRig.map(c => c.ch).join(', ')} очищены только в таблице — в трансивере их очистите вручную.` : ''))) return;
-    st.busy = true; renderInfo(); prog(0, toWrite.length, 'Запись…');
+    st.busy = true; renderInfo(); prog(0, toWrite.length, (window.tr?tr('mem.status.write','Запись: '):'Запись: '));
     send({ t: 'mem_write', chans: toWrite });
   }
   function prog(i, n, text) {
@@ -166,7 +166,7 @@ const memEd = (() => {
     $('span', p).textContent = text;
   }
   function moveSel() {
-    const list = selList().filter(ch => ch <= CH_MAX); if (!list.length) return toast('Отметьте каналы');
+    const list = selList().filter(ch => ch <= CH_MAX); if (!list.length) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
     const to = parseInt(prompt(`Перенести ${list.length} отмеченных каналов начиная с номера:`, list[0]), 10);
     if (!(to >= 1 && to + list.length - 1 <= CH_MAX)) return;
     const data = list.map(ch => ({ ...st.chans[ch] }));
@@ -181,7 +181,7 @@ const memEd = (() => {
     const list = (st.sel.size ? selList() : allCh().filter(ch => ch <= CH_MAX)).filter(ch => ch <= CH_MAX);
     const used = list.map(ch => st.chans[ch]).filter(c => !c.empty).sort((a, b) => a.freq - b.freq).map(c => ({ ...c }));
     list.forEach((ch, i) => { st.chans[ch] = i < used.length ? { ...used[i], ch } : { ...blank(ch), group: '' }; });
-    render(); toast('Отсортировано по частоте');
+    render(); toast((window.tr?tr('mem.toast.sorted','Отсортировано по частоте'):'Отсортировано по частоте'));
   }
 
   // ------------------------------------------------------------------ сообщения сервера
@@ -191,7 +191,7 @@ const memEd = (() => {
         st.info = { ...(st.info || {}), ...m, files: m.files };
         const cur = $('#meFiles').value;
         $('#meFiles').innerHTML = '<option value="">Файлы…</option>' + (m.files || []).map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
-        if (m.saved) { st.file = m.saved; $('#meFiles').value = m.saved; toast(`Сохранено: «${m.saved}»`); }
+        if (m.saved) { st.file = m.saved; $('#meFiles').value = m.saved; toast((window.tr?tr('mem.msg.saved','Сохранено: '):'Сохранено: ') + '«' + m.saved + '»'); }
         else if (cur) $('#meFiles').value = cur;
         if (m.busy !== undefined && !m.busy) st.busy = false;
         render(); break;
@@ -208,7 +208,7 @@ const memEd = (() => {
         }
         if (m.file) { st.file = m.file; if (m.groups) st.groups = m.groups; }
         if (m.imported) for (const c of m.chans) if (c.group && !st.groups.includes(c.group)) st.groups.push(c.group);
-        setStatus(m.msg || ''); toast(m.msg || 'Готово', 3000); render(); break;
+        setStatus(m.msg || ''); toast(m.msg || (window.tr?tr('mem.msg.ready','Готово'):'Готово'), 3000); render(); break;
       case 'mem_written':
         st.busy = false; prog(null);
         for (const r of m.results) {
@@ -225,10 +225,10 @@ const memEd = (() => {
       }
       case 'mem_vfo': {
         let ch = m.ch || selList()[0] || allCh().find(x => x <= CH_MAX && st.chans[x].empty);
-        if (!ch) return toast('Нет свободного канала');
+        if (!ch) return toast((window.tr?tr('mem.toast.nothing','Нет свободного канала'):'Нет свободного канала'));
         const c = st.chans[ch];
         Object.assign(c, { empty: false, freq: m.freq, mode: m.mode || c.mode });
-        render(); toast(`Канал ${ch}: ${fmtMHz(m.freq)} ${m.mode}`); break;
+        render(); toast((window.tr?tr('mem.toast.recall','Канал '):'Канал ') + ch + ': ' + fmtMHz(m.freq) + ' ' + m.mode); break;
       }
     }
   }
@@ -247,7 +247,7 @@ const memEd = (() => {
   $('#meRows').addEventListener('click', e => {
     const b = e.target.closest('button[data-a]'); if (!b) return;
     const ch = +b.closest('tr').dataset.ch;
-    if (b.dataset.a === 'go') { send({ t: 'mem_recall', ch }); toast(`Трансивер: канал ${label(ch)}`); }
+    if (b.dataset.a === 'go') { send({ t: 'mem_recall', ch }); toast((window.tr?tr('mem.toast.recall','Трансивер: канал '):'Трансивер: канал ') + label(ch)); }
   });
   $('#meAll').onchange = e => { $$('#meRows tr[data-ch]').forEach(tr => { const ch = +tr.dataset.ch; e.target.checked ? st.sel.add(ch) : st.sel.delete(ch); }); render(); };
   $('#meGroups').addEventListener('click', e => {
@@ -259,7 +259,7 @@ const memEd = (() => {
       if (st.filterGrp === g) st.filterGrp = '*';
     } else if (a === 'ren') {
       const n = (prompt('Новое название группы:', g) || '').trim(); if (!n || n === g) return;
-      if (st.groups.includes(n)) return toast('Такая группа уже есть');
+      if (st.groups.includes(n)) return toast((window.tr?tr('mem.toast.group_exists','Такая группа уже есть'):'Такая группа уже есть'));
       st.groups = st.groups.map(x => x === g ? n : x); Object.values(st.chans).forEach(c => { if (c.group === g) c.group = n; });
       if (st.filterGrp === g) st.filterGrp = n;
     } else st.filterGrp = g;
@@ -269,7 +269,7 @@ const memEd = (() => {
     const n = $('#meNewGrp').value.trim(); if (!n) return;
     if (!st.groups.includes(n)) st.groups.push(n);
     $('#meNewGrp').value = '';
-    if (st.sel.size && confirm(`Добавить в группу «${n}» отмеченные каналы (${st.sel.size})?`)) st.sel.forEach(ch => { st.chans[ch].group = n; });
+    if (st.sel.size && confirm((window.tr?tr('mem.prompt.add','Добавить в группу «'):'Добавить в группу «') + n + (window.tr?tr('mem.prompt.add2','» отмеченные каналы ('):'» отмеченные каналы (') + st.sel.size + (window.tr?tr('mem.prompt.add3',')?'):')?'))) st.sel.forEach(ch => { st.chans[ch].group = n; });
     render();
   };
   $('#meAddGrp').onclick = addGrp;
@@ -278,15 +278,15 @@ const memEd = (() => {
   $('#meSearch').oninput = render;
   $('#meSetGrp').onchange = e => {
     const v = e.target.value; e.target.value = ''; if (!v) return;
-    if (!st.sel.size) return toast('Отметьте каналы');
+    if (!st.sel.size) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
     st.sel.forEach(ch => { st.chans[ch].group = v === '__none' ? '' : v; }); render();
   };
   $('#meRead').onclick = doRead;
   $('#meWrite').onclick = () => doWrite(allCh().filter(isDirty));
-  $('#meWriteSel').onclick = () => { if (!st.sel.size) return toast('Отметьте каналы'); doWrite(selList()); };
+  $('#meWriteSel').onclick = () => { if (!st.sel.size) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы')); doWrite(selList()); };
   $('#meStop').onclick = () => send({ t: 'mem_stop' });
   $('#meAdd').onclick = () => {
-    const n = parseInt(prompt('Номер нового канала (1–999):', allCh().find(x => st.chans[x].empty) || ''), 10);
+    const n = parseInt(prompt((window.tr?tr('mem.prompt.ch','Номер нового канала (1–999):'):'Номер нового канала (1–999):'), allCh().find(x => st.chans[x].empty) || ''), 10);
     if (!(n >= CH_MIN && n <= CH_MAX)) return;
     if (!st.chans[n].empty && !confirm(`Канал ${n} занят — заменить частотой и видом с VFO?`)) return;
     send({ t: 'mem_from_vfo', ch: n });
@@ -295,27 +295,27 @@ const memEd = (() => {
   $('#meMove').onclick = moveSel;
   $('#meSort').onclick = sortSel;
   $('#meClear').onclick = () => {
-    if (!st.sel.size) return toast('Отметьте каналы');
+    if (!st.sel.size) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
     if (!confirm(`Очистить в таблице каналы: ${selList().join(', ')}?`)) return;
     st.sel.forEach(ch => { st.chans[ch] = blank(ch); }); render();
   };
   $('#meUndo').onclick = () => {
-    if (!st.sel.size) return toast('Отметьте каналы');
+    if (!st.sel.size) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
     st.sel.forEach(ch => { const r = st.rig[ch]; if (r) st.chans[ch] = { ...r, group: st.chans[ch].group, comment: st.chans[ch].comment }; });
     render();
   };
   const data = () => ({ chans: allCh().map(ch => st.chans[ch]), groups: st.groups });
   $('#meSave').onclick = () => {
-    const name = st.file || (prompt('Название набора каналов:', 'Мои каналы') || '').trim();
+    const name = st.file || (prompt((window.tr?tr('mem.prompt.save','Название набора каналов:'):'Название набора каналов:'), (window.tr?tr('vfo.my_freqs','Мои каналы'):'Мои каналы')) || '').trim();
     if (name) send({ t: 'mem_save', name, ...data() });
   };
-  $('#meSaveAs').onclick = () => { const name = (prompt('Сохранить как:', st.file || 'Мои каналы') || '').trim(); if (name) send({ t: 'mem_save', name, ...data() }); };
+  $('#meSaveAs').onclick = () => { const name = (prompt((window.tr?tr('mem.prompt.saveas','Сохранить как:'):'Сохранить как:'), st.file || (window.tr?tr('vfo.my_freqs','Мои каналы'):'Мои каналы')) || '').trim(); if (name) send({ t: 'mem_save', name, ...data() }); };
   $('#meFiles').onchange = e => {
     const n = e.target.value; if (!n) return;
     if (allCh().some(isDirty) && !confirm(`Открыть «${n}»? Таблица заменится содержимым файла (в трансивер ничего не пишется).`)) { e.target.value = ''; return; }
     send({ t: 'mem_load', name: n });
   };
-  $('#meDelFile').onclick = () => { const n = $('#meFiles').value; if (!n) return toast('Выберите файл в списке'); if (confirm(`Удалить файл «${n}»?`)) send({ t: 'mem_delete', name: n }); };
+  $('#meDelFile').onclick = () => { const n = $('#meFiles').value; if (!n) return toast((window.tr?tr('mem.toast.pick_file','Выберите файл в списке'):'Выберите файл в списке')); if (confirm((window.tr?tr('mem.confirm.del_file','Удалить файл «'):'Удалить файл «') + n + '»?')) send({ t: 'mem_delete', name: n }); };
   $('#meCsvOut').onclick = () => send({ t: 'mem_csv_out', chans: allCh().map(ch => st.chans[ch]).filter(c => !c.empty) });
   $('#meCsvIn').onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;

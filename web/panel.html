@@ -94,7 +94,7 @@
     <div>
       <div class="state">
         <div class="lamp" id="lamp"></div>
-        <div><b id="stTitle">Подключение к серверу…</b><span id="stSub"></span><div class="freqline" id="stFreq"></div></div>
+        <div><b id="stTitle" data-i18n="panel.status.init">Подключение к серверу…</b><span id="stSub"></span><div class="freqline" id="stFreq"></div></div>
       </div>
     </div>
     <div class="acts">
@@ -102,8 +102,8 @@
       <button class="btn primary" id="btnPult" data-i18n="panel.open">Открыть пульт</button>
     </div>
     <div class="chips">
-      <span class="chip"><i id="cCat"></i>CAT</span>
-      <span class="chip"><i id="cAudio"></i>Звук</span>
+      <span class="chip"><i id="cCat"></i><span data-i18n="panel.cat">CAT</span></span>
+      <span class="chip"><i id="cAudio"></i><span data-i18n="panel.audio">Звук</span></span>
       <span class="chip"><i id="cTx"></i><span id="cTxT">Приём</span></span>
       <span class="chip"><i id="cCl"></i><span id="cClT">Пультов: 0</span></span>
     </div>
@@ -113,43 +113,43 @@
   <div class="cols">
     <section class="panel card">
       <h3 data-i18n="panel.radio">📻 Трансивер</h3>
-      <button class="btn" id="probeModel">Определить современный Yaesu по ID</button>
-      <p class="hint" id="probeHint">На выбранном порту и скорости, при остановленном соединении. Для старых моделей — ручной выбор.</p>
-      <label class="field"><span>Драйвер</span><select id="radio_backend">
+      <button class="btn" id="probeModel" data-i18n="panel.probe">Определить современный Yaesu по ID</button>
+      <p class="hint" id="probeHint" data-i18n="panel.probe.hint">На выбранном порту и скорости, при остановленном соединении. Для старых моделей — ручной выбор.</p>
+      <label class="field"><span data-i18n="panel.backend">Драйвер</span><select id="radio_backend">
         <option value="native">FTX-1 — расширенное управление</option>
-        <option value="hamlib">Yaesu / Hamlib — базовое управление</option>
+        <option value="hamlib" data-i18n="panel.backend.hamlib">Yaesu / Hamlib — базовое управление</option>
       </select></label>
       <div id="hamlibFields" class="hidden">
-        <label class="field"><span>Путь к rigctld (Hamlib)</span><input id="hamlib_path" type="text" placeholder="rigctld"></label>
+        <label class="field"><span data-i18n="panel.hamlib.path">Путь к rigctld (Hamlib)</span><input id="hamlib_path" type="text" placeholder="rigctld"></label>
         <label class="field"><span>Модель из установленного Hamlib</span><select id="hamlib_model"></select></label>
-        <button class="btn" id="hamlibReload">Обновить модели</button>
+        <button class="btn" id="hamlibReload" data-i18n="panel.hamlib.reload">Обновить модели</button>
         <p class="hint" id="hamlibHint">В режиме Hamlib PTT управляется через CAT. Некоторые расширенные функции могут быть недоступны.</p>
       </div>
-      <label class="field"><span>COM-порт CAT (Enhanced COM Port)</span>
-        <div class="row"><select id="cat_port"></select><button class="btn" id="btnRefresh" title="Обновить список">↻</button><button class="btn" id="btnDetect" title="Подобрать автоматически">Найти</button></div></label>
-      <label class="field"><span>Скорость CAT (как в меню трансивера CAT RATE)</span>
+      <label class="field"><span data-i18n="panel.cat_port">COM-порт CAT (Enhanced COM Port)</span>
+        <div class="row"><select id="cat_port"></select><button class="btn" id="btnRefresh" title="" data-i18n-title="panel.refresh">↻</button><button class="btn" id="btnDetect" title="" data-i18n-title="panel.detect">Найти</button></div></label>
+      <label class="field"><span data-i18n="panel.cat_baud">Скорость CAT (как в меню трансивера CAT RATE)</span>
         <select id="cat_baud"><option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>115200</option></select></label>
-      <label class="field"><span>Звуковая карта трансивера (USB Audio)</span><select id="audio_dev"></select></label>
-      <details class="advanced"><summary>Драйвер звука</summary>
+      <label class="field"><span data-i18n="panel.audio_dev">Звуковая карта трансивера (USB Audio)</span><select id="audio_dev"></select></label>
+      <details class="advanced"><summary data-i18n="panel.audio_api">Драйвер звука</summary>
         <label class="field"><span>Драйвер Windows</span>
           <select id="audio_api">
             <option value="">Авто (рекомендуется: WDM-KS напрямую, иначе WASAPI…)</option>
-            <option value="Windows WDM-KS">WDM-KS — напрямую, мимо микшера Windows</option>
+            <option value="Windows WDM-KS" data-i18n="panel.audio_api.ks">WDM-KS — напрямую, мимо микшера Windows</option>
             <option value="Windows WASAPI">WASAPI</option>
             <option value="Windows DirectSound">DirectSound</option>
             <option value="MME">MME</option>
           </select></label>
       </details>
       <div class="hint" id="audioHint"></div>
-      <label class="field"><span>Как включать передачу (PTT)</span>
+      <label class="field"><span data-i18n="panel.ptt">Как включать передачу (PTT)</span>
         <select id="ptt_method">
-          <option value="TX1">Командой CAT TX1 (рекомендуется)</option>
-          <option value="TX2">Командой CAT TX2</option>
-          <option value="RTS">Линией RTS второго порта</option>
-          <option value="DTR">Линией DTR второго порта</option>
+          <option value="TX1" data-i18n="panel.ptt.tx1">Командой CAT TX1 (рекомендуется)</option>
+          <option value="TX2" data-i18n="panel.ptt.tx2">Командой CAT TX2</option>
+          <option value="RTS" data-i18n="panel.ptt.rts">Линией RTS второго порта</option>
+          <option value="DTR" data-i18n="panel.ptt.dtr">Линией DTR второго порта</option>
         </select></label>
       <label class="field hidden" id="pttPortField"><span>Порт для PTT (Standard COM Port, если отдельный)</span><select id="ptt_port"></select></label>
-      <label class="chk"><input type="checkbox" id="simulate"> Режим симулятора — проверка без трансивера</label>
+      <label class="chk"><input type="checkbox" id="simulate"> <span data-i18n="panel.sim">Режим симулятора — проверка без трансивера</span></label>
       <details class="advanced"><summary>Широкий водопад USB-scope (FT-710 / FTDX10 / FTDX101, экспериментально)</summary>
         <p class="hint">Для трансиверов с аппаратным панорамным приёмником. Читает интерфейс FTDI <b>FT4222 A</b> (не CAT-порт). Библиотеки FTDI не входят в поставку: скачайте LibFT4222/D2XX с сайта FTDI и положите их в папку <code>ftdi</code> рядом с программой (или укажите пути ниже). Без библиотек/поддерживаемого трансивера пульт автоматически использует обычный звуковой водопад. На реальном оборудовании пока не проверялось.</p>
         <label class="field"><span>Источник водопада</span>
@@ -184,7 +184,7 @@
 
     <section class="panel card">
       <h3>⚙️ CW и цифровые режимы</h3>
-      <label class="field"><span>Метод CW (манипуляция)</span>
+      <label class="field"><span data-i18n="panel.cw.method">Метод CW (манипуляция)</span>
         <select id="cw_method">
           <option value="cat">Команда CAT</option>
           <option value="dtr">Линия DTR</option>
@@ -192,20 +192,20 @@
         </select>
       </label>
       <label class="field hidden" id="cwPortField"><span>Порт манипуляции (Standard COM Port); в меню ТРХ: CW_PC_KEYING = DTR/RTS</span><select id="cw_port"></select></label>
-      <label class="field"><span>Задержка автоответа CW, с</span><input type="number" id="cw_auto_delay" min="1" max="30" value="6"></label>
-      <label class="field"><span>Макс. автоответов подряд</span><input type="number" id="cw_auto_max" min="1" max="10" value="4"></label>
+      <label class="field"><span data-i18n="panel.cw.delay">Задержка автоответа CW, с</span><input type="number" id="cw_auto_delay" min="1" max="30" value="6"></label>
+      <label class="field"><span data-i18n="panel.cw.max">Макс. автоответов подряд</span><input type="number" id="cw_auto_max" min="1" max="10" value="4"></label>
     </section>
 
     <section class="panel card">
-      <h3>⚙ Запуск</h3>
+      <h3 data-i18n="panel.start.title">⚙ Запуск</h3>
       <div class="checks">
-        <label class="chk" id="autostartRow"><input type="checkbox" id="autostart"> Запускать вместе с Windows (в трее, без окна)</label>
-        <label class="chk"><input type="checkbox" id="auto_connect"> Сразу подключаться к трансиверу</label>
+        <label class="chk" id="autostartRow"><input type="checkbox" id="autostart"> <span data-i18n="panel.autostart">Запускать вместе с Windows (в трее, без окна)</span></label>
+        <label class="chk"><input type="checkbox" id="auto_connect"> <span data-i18n="panel.auto_connect">Сразу подключаться к трансиверу</span></label>
         <label class="chk"><input type="checkbox" id="open_panel"> Показывать это окно при запуске</label>
         <label class="chk"><input type="checkbox" id="open_pult"> Открывать пульт при запуске</label>
       </div>
-      <label class="field"><span>Максимальная длительность передачи, секунд</span><input type="number" id="max_tx_seconds" min="10" max="1800"></label>
-      <details class="advanced"><summary>Сетевые порты</summary>
+      <label class="field"><span data-i18n="panel.tx_limit">Максимальная длительность передачи, секунд</span><input type="number" id="max_tx_seconds" min="10" max="1800"></label>
+      <details class="advanced"><summary data-i18n="panel.ports.adv">Сетевые порты</summary>
         <label class="field"><span>Порт пульта на этом ПК (http)</span><input type="number" id="http_port" min="1024" max="65535"></label>
         <label class="field"><span>Порт для телефона и других ПК (https)</span><input type="number" id="https_port" min="1024" max="65535"></label>
         <div class="hint">Изменение портов вступит в силу после перезапуска программы.</div>
@@ -217,17 +217,17 @@
       <div class="clients" id="clients"><span class="muted small">Никого</span></div>
       <h3 style="margin-top:14px">📝 Журнал</h3>
       <pre class="log" id="log"></pre>
-      <div class="btn-row"><button class="btn small" id="btnFolder">Папка программы</button></div>
+      <div class="btn-row"><button class="btn small" id="btnFolder" data-i18n="panel.folder">Папка программы</button></div>
     </section>
   </div>
 
   <div class="foot">
     <span id="footHint">Окно можно закрыть — сервер продолжит работать в трее. Снова открыть: значок в трее или ярлык программы.</span>
-    <button class="btn quit" id="btnQuit">⏻ Выйти из программы</button>
+    <button class="btn quit" id="btnQuit" data-i18n="panel.quit">⏻ Выйти из программы</button>
   </div>
 </div>
 
-<div id="gone" class="overlay hidden"><div class="dialog"><h2>Сервер остановлен</h2><p class="muted">Это окно можно закрыть.</p></div></div>
+<div id="gone" class="overlay hidden"><div class="dialog"><h2 data-i18n="panel.gone.title">Сервер остановлен</h2><p class="muted" data-i18n="panel.gone.msg">Это окно можно закрыть.</p></div></div>
 <div id="toast" class="toast"></div>
 <script src="qrcode.js"></script>
 <script src="panel.js"></script>

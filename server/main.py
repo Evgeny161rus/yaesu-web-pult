@@ -83,6 +83,7 @@ DEFAULT_CFG = {
     "scope_libft4222": "",
     "scope_d2xx": "",
     "scope_serial": "",
+    "scope_auto_download": False,
     "simulate": False,
     "my_call": "",
     "my_name": "",
@@ -322,6 +323,8 @@ class Station:
         self.scope_last_sent = 0.0
         self.scope_bad = 0
         self.scope_good = 0
+        self.scope_dl = None              # background download thread (ftdi libs)
+        self.scope_dl_msg = ''
         self.ptt_owner = None
         self.ptt_since = 0.0
         self.ptt_alive = 0.0
@@ -469,12 +472,61 @@ class Station:
         age = None
         if self.scope_last_good:
             age = int(max(0.0, time.monotonic() - self.scope_last_good) * 1000)
+        dl = bool(self.scope_dl and self.scope_dl.is_alive())
         return {'state': self.scope_state, 'reason': self.scope_reason,
                 'span': self.scope_span, 'age_ms': age,
-                'good': self.scope_good, 'bad': self.scope_bad}
+                'good': self.scope_good, 'bad': self.scope_bad,
+                'downloading': dl, 'dl_msg': self.scope_dl_msg}
 
     def scope_live(self):
         return self.scope_state == 'live' and self.scope is not None
+
+    _SCOPE_RADIO_IDS = {'0800', '0761', '0681', '0682'}  # FT-710, FTDX10, FTDX101D/MP
+
+    def _scope_capable_radio(self):
+        rid = ''
+        if self.rig and getattr(self.rig, 'state', None):
+            rid = str(self.rig.state.get('radio_id') or '').zfill(4)
+        return rid in self._SCOPE_RADIO_IDS
+
+    def _maybe_scope_autodownload(self, force=False):
+        """Best-effort background download of FTDI libs (opt-in, non-blocking)."""
+        if not self.cfg.get('scope_auto_download'):
+            return
+        mode = str(self.cfg.get('waterfall_source') or 'auto').lower()
+        if mode not in ('auto', 'scope'):
+            return
+        if self.sim or (self.rig is not None and is_hamlib(self.rig)):
+            return
+        if self.scope_dl and self.scope_dl.is_alive():
+            return
+        lib, _ = self._resolve_scope_libs()
+        if lib:
+            return
+        # Trigger when a scope-capable radio is detected, when explicitly forced,
+        # or when user requires scope mode (they clearly want it).
+        if not (force or mode == 'scope' or self._scope_capable_radio()):
+            return
+        def run():
+            try:
+                from scope_download import download_scope_libs
+                ok, msg, _ = download_scope_libs(BASE, log=log.info)
+                self.scope_dl_msg = msg
+                if ok:
+                    log.info("FTDI библиотеки: %s", msg)
+                    try:
+                        self.loop.call_soon_threadsafe(self._start_scope)
+                    except RuntimeError:
+                        pass
+                else:
+                    log.warning("Автозагрузка FTDI библиотек: %s", msg)
+            except Exception as e:
+                msg = str(e).split('\n')[0]
+                self.scope_dl_msg = msg
+                log.warning("Автозагрузка FTDI библиотек не удалась: %s", msg)
+        self.scope_dl = threading.Thread(target=run, name='ftdi-dl', daemon=True)
+        self.scope_dl.start()
+        log.info("Запущена автозагрузка библиотек FTDI для USB-scope (opt-in)")
 
     def _resolve_scope_libs(self):
         """Configured paths, or auto-detect from <BASE>/ftdi and <BASE>."""
@@ -512,6 +564,15 @@ class Station:
             alt = os.path.join(BASE, d2xx)
             if os.path.isfile(alt):
                 d2xx = os.path.abspath(alt)
+        # Windows: load_api requires an explicit D2XX path; try system locations.
+        if IS_WIN and lib and not d2xx:
+            windir = os.environ.get('WINDIR', r'C:\Windows')
+            for p in (os.path.join(windir, 'System32', 'ftd2xx64.dll'),
+                      os.path.join(windir, 'System32', 'ftd2xx.dll'),
+                      os.path.join(windir, 'SysWOW64', 'ftd2xx.dll')):
+                if os.path.isfile(p):
+                    d2xx = p
+                    break
         return lib, d2xx
 
     def _start_scope(self):
@@ -534,7 +595,10 @@ class Station:
         if not lib:
             self.scope_state = 'unavailable'
             self.scope_reason = 'библиотека LibFT4222 не найдена (положите в папку ftdi рядом с программой или укажите путь в настройках)'
-            if mode == 'scope' or explicit:
+            self._maybe_scope_autodownload()
+            if self.scope_dl and self.scope_dl.is_alive():
+                self.scope_reason = 'скачиваю библиотеки FTDI для USB-scope…'
+            elif mode == 'scope' or explicit:
                 log.warning("Широкий водопад недоступен: %s", self.scope_reason)
             return
         try:
@@ -782,6 +846,14 @@ class Station:
         return u
 
     def status(self):
+        # When a scope-capable radio is detected, trigger opt-in FTDI lib download if needed.
+        try:
+            if self.running and self.cfg.get('scope_auto_download') and not self.scope_live():
+                lib, _ = self._resolve_scope_libs()
+                if not lib and self._scope_capable_radio():
+                    self._maybe_scope_autodownload()
+        except Exception:
+            pass
         st = self.rig.state if self.rig else {}
         return {
             'running': self.running, 'busy': self.busy, 'sim': self.sim,
@@ -857,7 +929,8 @@ class Station:
         elif t == 'admin_save':
             new = {k: v for k, v in (m.get('cfg') or {}).items() if k in DEFAULT_CFG}
             radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'cat_port', 'cat_baud', 'ptt_method', 'ptt_port', 'audio_in_name', 'audio_out_name', 'audio_api',
-                          'audio_in_index', 'audio_out_index', 'simulate')
+                          'audio_in_index', 'audio_out_index', 'simulate',
+                          'waterfall_source', 'scope_libft4222', 'scope_d2xx', 'scope_serial', 'scope_auto_download')
             need_restart = self.running and any(new.get(k, self.cfg.get(k)) != self.cfg.get(k) for k in radio_keys)
             port_change = any(new.get(k, self.cfg.get(k)) != self.cfg.get(k) for k in ('http_port', 'https_port'))
             self.cfg.update(new)
@@ -884,6 +957,30 @@ class Station:
             c.ws.send_json({'t': 'admin_autostart', 'on': v})
         elif t == 'admin_open_pult':
             webbrowser.open('http://localhost:%d/' % self.cfg['http_port'])
+        elif t == 'admin_scope_download':
+            if self.scope_dl and self.scope_dl.is_alive():
+                c.ws.send_json({'t': 'admin_scope_download', 'ok': False, 'msg': 'Загрузка уже выполняется…'})
+                return
+            def run():
+                try:
+                    from scope_download import download_scope_libs
+                    ok, msg, _ = download_scope_libs(BASE, log=log.info)
+                    self.scope_dl_msg = msg
+                    def done():
+                        c.ws.send_json({'t': 'admin_scope_download', 'ok': ok, 'msg': msg})
+                        if ok and self.running:
+                            self._start_scope()
+                    self.loop.call_soon_threadsafe(done)
+                except Exception as e:
+                    msg = str(e).split('\n')[0]
+                    self.scope_dl_msg = msg
+                    try:
+                        self.loop.call_soon_threadsafe(lambda: c.ws.send_json({'t': 'admin_scope_download', 'ok': False, 'msg': msg}))
+                    except RuntimeError:
+                        pass
+            self.scope_dl = threading.Thread(target=run, name='ftdi-dl', daemon=True)
+            self.scope_dl.start()
+            c.ws.send_json({'t': 'admin_scope_download', 'ok': None, 'msg': 'Загрузка библиотек FTDI начата…'})
         elif t == 'admin_open_folder':
             if IS_WIN:
                 os.startfile(BASE)

@@ -49,6 +49,12 @@ function connect() {
         if (m.port_change) toast('Новые порты заработают после перезапуска программы', 5000);
         break;
       case 'admin_autostart': $('#autostart').checked = !!m.on; break;
+      case 'admin_scope_download':
+        $('#scopeDownload').disabled = m.ok === null;
+        $('#scopeDlMsg').textContent = m.msg || '';
+        if (m.ok === true) toast('Библиотеки FTDI загружены', 4000);
+        else if (m.ok === false) toast(m.msg || 'Не удалось скачать библиотеки', 6000);
+        break;
     }
   };
 }
@@ -65,7 +71,7 @@ function init(m) {
   fillDevices();
   for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port', 'waterfall_source']) $('#' + k).value = cfg[k] ?? '';
   for (const k of ['scope_libft4222', 'scope_d2xx', 'scope_serial']) $('#' + k).value = cfg[k] || '';
-  for (const k of ['simulate', 'auto_connect', 'open_panel', 'open_pult']) $('#' + k).checked = !!cfg[k];
+  for (const k of ['simulate', 'auto_connect', 'open_panel', 'open_pult', 'scope_auto_download']) $('#' + k).checked = !!cfg[k];
   $('#cw_method').value = cfg.cw_method || 'cat';
   $('#cw_port').value = cfg.cw_port || '';
   $('#password').value = cfg.password || '';
@@ -168,6 +174,7 @@ function collect() {
     scope_libft4222: $('#scope_libft4222').value.trim(),
     scope_d2xx: $('#scope_d2xx').value.trim(),
     scope_serial: $('#scope_serial').value.trim(),
+    scope_auto_download: $('#scope_auto_download').checked,
   };
 }
 function save() { clearTimeout(saveT); saveT = setTimeout(() => send({ t: 'admin_save', cfg: collect() }), 350); }
@@ -219,6 +226,11 @@ $('#btnDetect').onclick = () => {
   send({ t: 'admin_refresh' });
   const h = e => { const m = JSON.parse(e.data); if (m.t === 'admin_devices') { ws.removeEventListener('message', h); applyDetect(m.detect, false); } };
   ws.addEventListener('message', h);
+};
+$('#scopeDownload').onclick = () => {
+  $('#scopeDlMsg').textContent = 'Загрузка…';
+  $('#scopeDownload').disabled = true;
+  send({ t: 'admin_scope_download' });
 };
 $('#btnRun').onclick = () => {
   if (lastStatus.running) send({ t: 'admin_stop' });

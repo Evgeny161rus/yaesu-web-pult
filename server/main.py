@@ -1253,8 +1253,17 @@ Station._admin_msg_quit = lambda self: _quit(self)
 
 
 def web_dir():
-    d = os.path.join(RES, 'web')
-    return d if os.path.isdir(d) else os.path.join(RES, '..', 'web')
+    candidates = [
+        os.path.join(RES, 'web'),
+        os.path.join(RES, '..', 'web'),
+        os.path.join(BASE, 'web'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web'),
+    ]
+    for d in candidates:
+        d = os.path.abspath(d)
+        if os.path.isdir(d) and os.path.isfile(os.path.join(d, 'index.html')):
+            return d
+    return os.path.abspath(os.path.join(RES, '..', 'web'))
 
 
 def already_running(port):

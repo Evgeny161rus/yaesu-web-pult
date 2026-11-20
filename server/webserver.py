@@ -192,8 +192,14 @@ class WebServer:
                     return await self._send(writer, 200, r[0], r[1])
             if path == '/':
                 path = '/index.html'
-            full = os.path.abspath(os.path.join(self.static_dir, path.lstrip('/')))
-            if os.path.commonpath([full, self.static_dir]) != self.static_dir or not os.path.isfile(full):
+            sd = os.path.abspath(self.static_dir)
+            rel = path.lstrip('/').replace('/', os.sep)
+            full = os.path.normpath(os.path.join(sd, rel))
+            try:
+                inside = os.path.commonpath([os.path.normcase(full), os.path.normcase(sd)]) == os.path.normcase(sd)
+            except ValueError:
+                inside = False
+            if not inside or not os.path.isfile(full):
                 return await self._send(writer, 404, 'text/plain', b'Not found')
             ctype = mimetypes.guess_type(full)[0] or 'application/octet-stream'
             with open(full, 'rb') as f:

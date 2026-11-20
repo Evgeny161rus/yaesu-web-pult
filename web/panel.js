@@ -15,7 +15,7 @@ function connect() {
   ws.onopen = () => send({ t: 'admin_hello' });
   ws.onclose = () => {
     if (quitting) { $('#gone').classList.remove('hidden'); setTimeout(() => window.close(), 800); return; }
-    setLamp('bad', 'Нет связи с сервером', 'Программа закрыта? Запустите FTX-1 Пульт снова.');
+    setLamp('bad', (window.tr?tr('panel.status.noconn','Нет связи с сервером'):'Нет связи с сервером'), (window.tr?tr('panel.status.closed','Программа закрыта? Запустите FTX-1 Пульт снова.'):'Программа закрыта? Запустите FTX-1 Пульт снова.'));
     setTimeout(connect, 2000);
   };
   ws.onmessage = e => {
@@ -24,7 +24,7 @@ function connect() {
       case 'probe_result':
         $('#probeModel').disabled = false;
         if (m.error) { $('#probeHint').textContent = m.error; break; }
-        $('#probeHint').textContent = `Найден ${m.found.name}, ID ${m.found.cat_id}`;
+        $('#probeHint').textContent = (window.tr?tr('panel.probe.found','Найден '):'Найден ') + m.found.name + ', ID ' + m.found.cat_id;
         $('#radio_backend').value = m.found.id === 1051 ? 'native' : 'hamlib';
         if (![...$('#hamlib_model').options].some(x => +x.value === m.found.id))
           $('#hamlib_model').add(new Option(m.found.name, String(m.found.id)));
@@ -33,20 +33,20 @@ function connect() {
       case 'hamlib_models': {
         const sel = $('#hamlib_model'), cur = sel.value || String(cfg.hamlib_model || 1049);
         sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
-        if (![...sel.options].some(x => x.value === cur)) sel.add(new Option(`Модель ${cur} (не найдена)`, cur));
+        if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
         sel.value = cur;
-        $('#hamlibHint').textContent = m.error || `Моделей: ${m.models.length}. Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.`;
+        $('#hamlibHint').textContent = m.error || ((window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'));
         break;
       }
       case 'admin_denied':
-        setLamp('bad', 'Панель доступна только на ПК с трансивером', ''); break;
+        setLamp('bad', (window.tr?tr('panel.denied','Панель доступна только на ПК с трансивером'):'Панель доступна только на ПК с трансивером'), ''); break;
       case 'admin_init': init(m); break;
       case 'admin_devices': ports = m.ports; audio = m.audio; fillDevices(); renderUrls(m.urls); applyDetectIfEmpty(m.detect); break;
       case 'admin_status': renderStatus(m.s); break;
       case 'admin_log': addLog(m.line); break;
       case 'admin_saved':
         cfg = m.cfg; flashSaved();
-        if (m.port_change) toast('Новые порты заработают после перезапуска программы', 5000);
+        if (m.port_change) toast((window.tr?tr('panel.toast.port_change','Новые порты заработают после перезапуска программы'):'Новые порты заработают после перезапуска программы'), 5000);
         break;
       case 'admin_autostart': $('#autostart').checked = !!m.on; break;
       case 'admin_scope_download':
@@ -64,10 +64,10 @@ function init(m) {
   cfg = m.cfg; ports = m.ports; audio = m.audio;
   $('#radio_backend').value = cfg.radio_backend || 'native';
   $('#hamlib_path').value = cfg.hamlib_path || 'rigctld';
-  $('#hamlib_model').replaceChildren(new Option(`Модель ${cfg.hamlib_model || 1049}`, String(cfg.hamlib_model || 1049)));
+  $('#hamlib_model').replaceChildren(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ').replace(/ $/,': ') + (cfg.hamlib_model || 1049), String(cfg.hamlib_model || 1049)));
   backendVisibility();
   if (cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
-  $('#ver').textContent = `версия ${m.version}`;
+  $('#ver').textContent = (window.tr?tr('panel.version','версия '):'версия ') + m.version;
   fillDevices();
   for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port', 'waterfall_source']) $('#' + k).value = cfg[k] ?? '';
   for (const k of ['scope_libft4222', 'scope_d2xx', 'scope_serial']) $('#' + k).value = cfg[k] || '';
@@ -103,13 +103,13 @@ function opt(v, t, sel) { return `<option value="${esc(v)}"${sel ? ' selected' :
 function fillDevices() {
   const portOpts = (cur, prefer) => {
     let h = '';
-    if (!ports.length) h += opt('', '— COM-порты не найдены —', !cur);
-    else if (!cur) h += opt('', '— выберите —', true);
+    if (!ports.length) h += opt('', (window.tr?tr('panel.port.none','— COM-порты не найдены —'):'— COM-порты не найдены —'), !cur);
+    else if (!cur) h += opt('', (window.tr?tr('panel.port.select','— выберите —'):'— выберите —'), true);
     for (const p of ports) {
       const star = p.kind === prefer ? '★ ' : '';
       h += opt(p.device, `${star}${p.device} — ${p.desc}`, p.device === cur);
     }
-    if (cur && !ports.some(p => p.device === cur)) h += opt(cur, `${cur} (сейчас не подключён)`, true);
+    if (cur && !ports.some(p => p.device === cur)) h += opt(cur, cur + (window.tr?tr('panel.port.disconnected',' (сейчас не подключён)'):' (сейчас не подключён)'), true);
     return h;
   };
   $('#cat_port').innerHTML = portOpts(cfg.cat_port, 'enhanced');
@@ -134,13 +134,13 @@ function fillAudio() {
   const both = [...cores.values()].filter(e => e.in && e.out);
   both.sort((a, b) => isCodec(b.name) - isCodec(a.name));
   const cur = cfg.audio_in_name ? coreName(cfg.audio_in_name) : '';
-  let h = opt('', 'Автоматически (USB Audio CODEC/Device)', !cur), found = !cur;
+  let h = opt('', (window.tr?tr('panel.audio.auto','Автоматически (USB Audio CODEC/Device)'):'Автоматически (USB Audio CODEC/Device)'), !cur), found = !cur;
   for (const e of both) {
     const sel = !!cur && e.name.toLowerCase() === cur.toLowerCase();
     if (sel) found = true;
-    h += opt(e.name, (isCodec(e.name) ? '★ ' : '') + e.name + (isCodec(e.name) ? ' — трансивер' : ''), sel);
+    h += opt(e.name, (isCodec(e.name) ? '★ ' : '') + e.name + (isCodec(e.name) ? (window.tr?tr('panel.audio.transceiver',' — трансивер'):' — трансивер') : ''), sel);
   }
-  if (!found) h += opt(cur, cur + ' (не найдено)', true);
+  if (!found) h += opt(cur, cur + (window.tr?tr('panel.audio.notfound',' (не найдено)'):' (не найдено)'), true);
   $('#audio_dev').innerHTML = h;
   $('#audio_api').value = cfg.audio_api || '';
   if ($('#audio_api').value !== (cfg.audio_api || '')) $('#audio_api').value = '';
@@ -149,9 +149,9 @@ function fillAudio() {
 function audioHint(st) {
   const d = $('#audio_dev').value;
   let t = '';
-  if (d && !isCodec(d)) t = '⚠ Выбрано не USB-устройство трансивера.';
-  else if (!audio.some(x => isCodec(x.name))) t = '⚠ USB-звук трансивера не виден: проверьте кабель и нажмите ↻.';
-  else if (st && st.audio_api_used) t = 'Сейчас звук идёт через ' + st.audio_api_used.replace('Windows ', '') + '.';
+  if (d && !isCodec(d)) t = (window.tr?tr('panel.audio.hint.notusb','⚠ Выбрано не USB-устройство трансивера.'):'⚠ Выбрано не USB-устройство трансивера.');
+  else if (!audio.some(x => isCodec(x.name))) t = (window.tr?tr('panel.audio.hint.nousb','⚠ USB-звук трансивера не виден: проверьте кабель и нажмите ↻.'):'⚠ USB-звук трансивера не виден: проверьте кабель и нажмите ↻.');
+  else if (st && st.audio_api_used) t = (window.tr?tr('panel.audio.hint.used','Сейчас звук идёт через '):'Сейчас звук идёт через ') + st.audio_api_used.replace('Windows ', '') + '.';
   $('#audioHint').textContent = t;
 }
 $('#audio_dev').addEventListener('change', () => audioHint());
@@ -206,13 +206,13 @@ $('#probeModel').onclick = () => {
   clearTimeout(saveT);
   if (lastStatus.running) { toast((window.tr?tr('panel.toast.stop_first','Сначала остановите соединение'):'Сначала остановите соединение')); return; }
   $('#probeModel').disabled = true;
-  $('#probeHint').textContent = 'Запрашиваю ID…';
+  $('#probeHint').textContent = (window.tr?tr('panel.probe.checking','Запрашиваю ID…'):'Запрашиваю ID…');
   send({t:'admin_save',cfg:collect()}); send({t:'admin_probe'});
 };
 function pwHint() {
   const pw = $('#password').value;
-  $('#pwHint').textContent = !pw ? '⚠ Пароль не задан — с телефона войти нельзя (это безопасно, но неудобно).'
-    : pw.length < 6 ? '⚠ Короткий пароль — лучше 6+ символов.' : '';
+  $('#pwHint').textContent = !pw ? (window.tr?tr('panel.pw.empty','⚠ Пароль не задан — с телефона войти нельзя (это безопасно, но неудобно).'):'⚠ Пароль не задан — с телефона войти нельзя (это безопасно, но неудобно).')
+    : pw.length < 6 ? (window.tr?tr('panel.pw.short','⚠ Короткий пароль — лучше 6+ символов.'):'⚠ Короткий пароль — лучше 6+ символов.') : '';
 }
 $('#pwShow').onclick = () => { const p = $('#password'); p.type = p.type === 'password' ? 'text' : 'password'; };
 $('#pwGen').onclick = () => {
@@ -239,7 +239,7 @@ $('#btnRun').onclick = () => {
 $('#btnPult').onclick = () => send({ t: 'admin_open_pult' });
 $('#btnFolder').onclick = () => send({ t: 'admin_open_folder' });
 $('#btnQuit').onclick = () => {
-  if (!confirm('Выйти из программы? Связь с трансивером будет остановлена, пульты отключатся.')) return;
+  if (!confirm((window.tr?tr('panel.confirm.quit','Выйти из программы? Связь с трансивером будет остановлена, пульты отключатся.'):'Выйти из программы? Связь с трансивером будет остановлена, пульты отключатся.'))) return;
   quitting = true; send({ t: 'admin_quit' });
 };
 
@@ -253,13 +253,13 @@ function renderStatus(s) {
   const b = $('#btnRun');
   b.disabled = s.busy;
   b.className = 'btn ' + (s.running ? 'stop' : 'go');
-  b.textContent = s.busy ? '… Подождите' : s.running ? '■ Остановить' : '▶ Запустить';
-  if (s.busy) setLamp('warn', 'Подключаюсь…', '');
-  else if (!s.running) setLamp(s.error ? 'bad' : '', s.error ? 'Связь не установлена' : 'Связь с трансивером остановлена',
+  b.textContent = s.busy ? (window.tr?tr('panel.busy','… Подождите'):'… Подождите') : s.running ? (window.tr?tr('panel.stop','■ Остановить'):'■ Остановить') : (window.tr?tr('panel.run','▶ Запустить'):'▶ Запустить');
+  if (s.busy) setLamp('warn', (window.tr?tr('panel.status.connecting','Подключаюсь…'):'Подключаюсь…'), '');
+  else if (!s.running) setLamp(s.error ? 'bad' : '', s.error ? (window.tr?tr('panel.status.err','Связь не установлена'):'Связь не установлена') : (window.tr?tr('panel.status.stopped','Связь с трансивером остановлена'):'Связь с трансивером остановлена'),
     s.error ? '' : (window.tr?tr('panel.status.press_start','Нажмите «Запустить»'):'Нажмите «Запустить»'));
-  else if (s.tx) setLamp('tx', 'ПЕРЕДАЧА', s.ptt_owner ? 'с ' + s.ptt_owner : '');
+  else if (s.tx) setLamp('tx', (window.tr?tr('panel.status.tx','ПЕРЕДАЧА'):'ПЕРЕДАЧА'), s.ptt_owner ? (window.tr?tr('panel.status.by','с '):'с ') + s.ptt_owner : '');
   else if (s.connected) setLamp('ok', s.sim ? (window.tr?tr('panel.status.sim','Работает (симулятор)'):'Работает (симулятор)') : (window.tr?tr('panel.status.conn','Трансивер на связи'):'Трансивер на связи'),
-    [s.radio_name || (s.radio_id === '0840' ? 'FTX-1' : ''), s.backend === 'hamlib' ? 'Hamlib' : '', s.head === 2 ? 'Optima/SPA-1' : s.head === 1 ? 'Field' : '', s.fw ? 'прошивка ' + s.fw : ''].filter(Boolean).join(' · '));
+    [s.radio_name || (s.radio_id === '0840' ? 'FTX-1' : ''), s.backend === 'hamlib' ? 'Hamlib' : '', s.head === 2 ? 'Optima/SPA-1' : s.head === 1 ? 'Field' : '', s.s.fw ? (window.tr?tr('panel.status.fw','прошивка '):'прошивка ') + s.fw : ''].filter(Boolean).join(' · '));
   else setLamp('warn', (window.tr?tr('panel.status.noresp','Трансивер не отвечает'):'Трансивер не отвечает'), (window.tr?tr('panel.status.noresp.hint','Включён? Тот ли COM-порт и скорость CAT?'):'Включён? Тот ли COM-порт и скорость CAT?'));
   $('#stFreq').textContent = s.running && s.connected && s.freq ? `${fmtF(s.freq)}  ${s.mode || ''}` : '';
   const err = $('#stErr');
@@ -275,13 +275,13 @@ function renderStatus(s) {
   $('#clCount').textContent = s.clients.length ? `(${s.clients.length})` : '';
   $('#clients').innerHTML = s.clients.length ? s.clients.map(c =>
     `<div class="cl">${c.tx ? '🔴' : c.local ? '🖥' : '📱'} <span>${esc(c.name.split(':')[0])}</span>
-     <span class="muted small">${c.local ? 'этот ПК' : 'по сети'}${c.audio ? ' · звук' : ''}${c.tx ? ' · ПЕРЕДАЁТ' : ''}</span></div>`).join('')
-    : '<span class="muted small">Никого</span>';
-  document.title = (s.tx ? '🔴 ' : '') + 'FTX-1 Пульт — сервер';
+     <span class="muted small">${c.local ? (window.tr?tr('panel.clients.thispc','этот ПК'):'этот ПК') : (window.tr?tr('panel.clients.net','по сети'):'по сети')}${c.audio ? (window.tr?tr('panel.clients.audio',' · звук'):' · звук') : ''}${c.tx ? (window.tr?tr('panel.clients.tx',' · ПЕРЕДАЁТ'):' · ПЕРЕДАЁТ') : ''}</span></div>`).join('')
+    : '<span class="muted small" data-i18n="panel.clients.empty">' + (window.tr?tr('panel.clients.empty','Никого'):'Никого') + '</span>';
+  document.title = (s.tx ? '🔴 ' : '') + (window.tr?tr('panel.title.app','FTX-1 Пульт — сервер'):'FTX-1 Пульт — сервер');
 }
 function renderUrls(urls) {
-  $('#urls').innerHTML = urls.map(u => `<div class="url"><span title="${u.kind === 'local' ? 'на этом ПК' : 'для телефона и других ПК'}">${u.kind === 'local' ? '🖥' : '📱'}</span>
-    <code>${esc(u.url)}</code><button class="btn small" data-copy="${esc(u.url)}" data-i18n="panel.copy">Копировать</button></div>`).join('');
+  $('#urls').innerHTML = urls.map(u => `<div class="url"><span title="${u.kind === 'local' ? (window.tr?tr('panel.url.thispc','на этом ПК'):'на этом ПК') : (window.tr?tr('panel.url.others','для телефона и других ПК'):'для телефона и других ПК')}">${u.kind === 'local' ? '🖥' : '📱'}</span>
+    <code>${esc(u.url)}</code><button class="btn small" data-copy="${esc(u.url)}">${(window.tr?tr('panel.copy','Копировать'):'Копировать')}</button></div>`).join('');
   document.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => {
     navigator.clipboard.writeText(b.dataset.copy).then(() => toast((window.tr?tr('panel.copied','Скопировано'):'Скопировано')), () => toast(b.dataset.copy));
   });

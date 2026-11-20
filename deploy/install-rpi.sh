@@ -74,14 +74,16 @@ systemctl daemon-reload
 systemctl enable yaesu-web-pult.service
 
 echo
-echo "Готово. Следующие шаги:"
-echo "  1. Отредактируйте настройки: sudo nano ${DEST}/config.json"
-echo "     (COM-порт: обычно /dev/ttyUSB0 или /dev/ttyUSB1; cat_baud как в меню трансивера;"
-echo "      пароль для доступа по сети; audio_in_name/audio_out_name — имя USB Audio CODEC.)"
+echo "Готово. Дальнейшие шаги:"
+echo "  1. Настройте параметры (рекомендуется интерактивно по SSH, с автоопределением порта/звука и опросом трансивера):"
+echo "       sudo -u yaesu ${DEST}/.venv/bin/python ${DEST}/server/configure.py"
+echo "     или вручную: sudo nano ${DEST}/config.json"
+echo "     (CAT-порт: обычно /dev/ttyUSB0 или путь из /dev/serial/by-id/...; cat_baud как в меню трансивера;"
+echo "      задайте password для доступа по сети; audio_in_name/audio_out_name — имя USB Audio CODEC при необходимости.)"
 echo "  2. Запуск:   sudo systemctl start yaesu-web-pult"
 echo "  3. Журнал:   sudo journalctl -u yaesu-web-pult -f"
 echo "  4. Статус:   sudo systemctl status yaesu-web-pult"
-echo "  5. Пульт:    https://<IP-Raspberry-Pi>:8443/  (панель: http://127.0.0.1:8080/panel с самого Pi)"
+echo "  5. Пульт:    https://<IP-Raspberry-Pi>:8443/  (панель: http://127.0.0.1:8080/panel локально на Pi или через SSH-туннель)"
 echo
 echo "Важно: USB-COM и USB Audio должны быть подключены до старта (или перезапустите сервис после подключения)."
 echo "Подробная инструкция: ${DEST}/deploy/RASPBERRY-PI-HEADLESS.md"

@@ -569,9 +569,9 @@ function renderControls(d) {
 $$('[data-act]').forEach(b => b.addEventListener('click', () => act(b.dataset.act)));
 $$('[data-set]').forEach(b => b.addEventListener('click', () => { const [k, v] = b.dataset.set.split(':'); setParam(k, +v); }));
 // SPLIT как на FTX-1: частота SUB переносится в основной приёмник, частоты меняются местами (команда SV)
-$('#btnSplit').onclick = () => { act('swap'); toast('SPLIT: A ⇄ B', 1300); };
+$('#btnSplit').onclick = () => { act('swap'); toast(tr('toast.split', 'SPLIT: A ⇄ B'), 1300); };
 // кнопки-индикаторы в верхней строке
-$('#bSplit').onclick = () => { act('swap'); toast('SPLIT: A ⇄ B', 1300); };
+$('#bSplit').onclick = () => { act('swap'); toast(tr('toast.split', 'SPLIT: A ⇄ B'), 1300); };
 $('#bLock').onclick = () => setParam('lock', S.lock ? 0 : 1);
 $('#bClar').onclick = () => setParam('clar_rx', S.clar_rx ? 0 : 1);
 $('#bVfo').onclick = () => setParam('vfo', S.vfo ? 0 : 1);
@@ -773,7 +773,7 @@ function audioToRf(a) {
 }
 function tuneToAudio(a) {
   const m = S.mode, f = S.freq_a || 0;
-  if (isAMFM(m)) { toast('В AM/FM подстройка по водопаду недоступна'); return; }
+  if (isAMFM(m)) { toast(tr('toast.nofinetune_amfm', 'В AM/FM подстройка по водопаду недоступна')); return; }
   const target = isCW(m) ? pitchHz() : 1500;
   setFreq(Math.round((isLower(m) ? f - (a - target) : f + (a - target)) / 10) * 10);
 }
@@ -963,7 +963,7 @@ async function ensureAudioContext() {
 $('#btnAudio').onclick = async () => {
   try {
     await ensureAudioContext();
-  } catch (e) { toast('Звук недоступен: ' + e.message); return; }
+  } catch (e) { toast(tr('toast.audio_unavail', 'Звук недоступен: ') + e.message); return; }
   C.audioOn = !C.audioOn;
   C.player.port.postMessage({ reset: true });
   send({ t: 'audio', on: C.audioOn, rate: C.rate });
@@ -1000,7 +1000,7 @@ function micErrorText(e) {
 async function startMic() {
   if (C.micStream) return true;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('Микрофон недоступен: откройте пульт по https:// (или http://localhost на самом ПК)', 6000);
+    toast(tr('toast.mic_https', 'Микрофон недоступен: откройте пульт по https:// (или http://localhost на самом ПК)'), 6000);
     return false;
   }
   const ac = await ensureAudioContext();
@@ -1013,7 +1013,7 @@ async function startMic() {
     });
   } catch (e) {
     const why = micErrorText(e);
-    toast('Нет доступа к микрофону: ' + why, 9000);
+    toast(tr('toast.mic_denied', 'Нет доступа к микрофону: ') + why, 9000);
     const r = $('#micTestRes'); if (r) r.textContent = '✗ ' + why;
     return false;
   }
@@ -1041,7 +1041,7 @@ async function startMic() {
 }
 async function pttDown() {
   if (C.pttPressed) return;
-  if (C.pttBusy) { toast('Передача занята другим подключением'); return; }
+  if (C.pttBusy) { toast(tr('toast.tx_busy', 'Передача занята другим подключением')); return; }
   C.pttPressed = true; updatePtt();
   if (!(await startMic())) { C.pttPressed = false; updatePtt(); return; }
   if (!C.pttPressed) return;                // отпустили, пока включался микрофон
@@ -1423,7 +1423,7 @@ const cwDesk = (() => {
   }
   // ---- автоответ и оператор
   $('#cwAuto').onchange = e => {
-    if (e.target.checked && !(st.op.my_call)) { e.target.checked = false; toast('Сначала укажите свой позывной в разделе «Оператор»', 3000); return; }
+    if (e.target.checked && !(st.op.my_call)) { e.target.checked = false; toast(tr('toast.need_mycall_op', 'Сначала укажите свой позывной в разделе «Оператор»'), 3000); return; }
     send({ t: 'cw_auto', on: e.target.checked });
     if (e.target.checked && !st.dec) toggle(true);
   };
@@ -1465,7 +1465,7 @@ const cwDesk = (() => {
       }
       case 'cw_over': closeOver(m.item); break;
       case 'cw_clear': if (cur) { cur.remove(); cur = null; } break;
-      case 'cw_new': scr.innerHTML = ''; cur = null; renderAnalysis(null); st.lastCall = ''; toast('Новая связь'); break;
+      case 'cw_new': scr.innerHTML = ''; cur = null; renderAnalysis(null); st.lastCall = ''; toast(tr('toast.new_qso', 'Новая связь')); break;
       case 'cw_dec': break;
       case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? 'LM Studio: готов' : 'LM Studio'), false); $('#cwAiStatus')?.classList.toggle('cw-busy', m.on); break;
       case 'cw_ai': renderAnalysis(m.a); aiStatus(m.a.note ? m.a.note : (m.a.model === 'правила (без ИИ)' ? 'Разбор по правилам (ИИ выключен)' : 'LM Studio: готов · ' + (m.a.model || '')), !!m.a.note); break;
@@ -1481,7 +1481,7 @@ const cwDesk = (() => {
       case 'cw_tx_done':
         txProgress(st.txText.length);
         setTimeout(() => $('#cwTxLine').classList.add('hidden'), 1200);
-        if (m.msg) toast(m.msg, 5000); else if (!m.ok) toast('Передача CW остановлена');
+        if (m.msg) toast(m.msg, 5000); else if (!m.ok) toast(tr('toast.cw_stopped', 'Передача CW остановлена'));
         break;
       case 'cw_auto': if (!m.on) $('#cwAuto').checked = false; break;
       case 'cw_op': renderOp(m.op, m.auto_delay, m.auto_max); break;
@@ -1562,7 +1562,7 @@ const digiDesk = (() => {
   const saved = store.get('rtCfg', null);
   if (saved) { $('#rtBaud').value = saved.baud; $('#rtShift').value = saved.shift; $('#rtFc').value = saved.fc; $('#rtPol').value = saved.pol; }
   st.fc = +$('#rtFc').value; st.shift = +$('#rtShift').value;
-  $('#rtTune').onclick = () => { if (!st.rt) { st.rt = true; renderRt(); sendRt(); setTimeout(() => send({ t: 'rt_autotune' }), 2500); toast('Слушаю 2 с…'); } else send({ t: 'rt_autotune' }); };
+  $('#rtTune').onclick = () => { if (!st.rt) { st.rt = true; renderRt(); sendRt(); setTimeout(() => send({ t: 'rt_autotune' }), 2500); toast(tr('toast.listen_2s', 'Слушаю 2 с…')); } else send({ t: 'rt_autotune' }); };
   $('#rtClear').onclick = () => { scr.textContent = ''; };
   $('#rtPreset').onchange = e => {
     const p = RT_PRESETS.find(x => x[0] === e.target.value); if (!p || !p[2]) return;
@@ -1587,7 +1587,7 @@ const digiDesk = (() => {
     if (end) scr.scrollTop = scr.scrollHeight;
   }
   if ($('#rtAiBtn')) $('#rtAiBtn').onclick = () => {
-    const t = scr.textContent.trim(); if (!t) return toast('Пока нечего переводить');
+    const t = scr.textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
     $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = 'Перевожу…'; $('#rtAiModel').textContent = '';
     send({ t: 'rt_ai', text: t.slice(-3000) });
   };
@@ -1599,7 +1599,7 @@ const digiDesk = (() => {
   $('#rtMacros').innerHTML = RT_MACROS.map((m, i) => `<button class="btn" data-i="${i}">${m[0]}</button>`).join('');
   $$('#rtMacros button').forEach(b => b.onclick = () => {
     const t = RT_MACROS[+b.dataset.i][1];
-    if (t.includes('{MY}') && !myCall()) { toast('Укажите свой позывной на вкладке CW · Морзе'); return; }
+    if (t.includes('{MY}') && !myCall()) { toast(tr('toast.need_mycall_cw', 'Укажите свой позывной на вкладке CW · Морзе')); return; }
     rtSend(t);
   });
   function rtSend(t) {
@@ -1682,10 +1682,10 @@ const digiDesk = (() => {
     if (!st.rows.length) return;
     send({ t: 'fax_shift', px });
     st.rows = st.rows.map(row => { const o = new Uint8Array(row.length); o.set(row.subarray(px)); o.set(row.subarray(0, px), row.length - px); return o; });
-    redraw(); toast('Край карты сдвинут');
+    redraw(); toast(tr('toast.map_edge', 'Край карты сдвинут'));
   });
   $('#fxPng').onclick = () => {
-    if (!st.rows.length) return toast('Картинки пока нет');
+    if (!st.rows.length) return toast(tr('toast.no_image', 'Картинки пока нет'));
     const a = document.createElement('a');
     const d = new Date(), z = n => String(n).padStart(2, '0');
     a.download = `fax_${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}.png`;
@@ -1741,8 +1741,8 @@ const digiDesk = (() => {
         }
         break;
       }
-      case 'fax_note': toast('Факс: ' + m.msg, 4500); break;
-      case 'fax_saved': toast('Факс сохранён: ' + m.path, 6000); break;
+      case 'fax_note': toast(tr('toast.fax', 'Факс: ') + m.msg, 4500); break;
+      case 'fax_saved': toast(tr('toast.fax_saved', 'Факс сохранён: ') + m.path, 6000); break;
     }
   }
   function onBin(b) {
@@ -1955,7 +1955,7 @@ const HOTKEYS = (() => {
     };
   });
   function save() { store.set('keys', custom); rebuild(); renderEditor(); }
-  $('#hkReset').onclick = () => { custom = {}; save(); toast('Клавиши по умолчанию'); };
+  $('#hkReset').onclick = () => { custom = {}; save(); toast(tr('toast.keys_default', 'Клавиши по умолчанию')); };
   $('#optHotkeys').checked = opts.hotkeys;
   $('#optHotkeys').onchange = e => { opts.hotkeys = e.target.checked; saveOpts(); };
   renderEditor();
@@ -2062,12 +2062,12 @@ const voiceCq = (() => {
   // ---- запись с микрофона этого устройства
   async function startRec(slot, row) {
     if (st.rec) return;
-    if (!navigator.mediaDevices?.getUserMedia) return toast('Запись недоступна: откройте пульт по https:// или localhost');
+    if (!navigator.mediaDevices?.getUserMedia) return toast(tr('toast.rec_unavail', 'Запись недоступна: откройте пульт по https:// или localhost'));
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: opts.micId ? { exact: opts.micId } : undefined,
         channelCount: 1, echoCancellation: opts.echo, noiseSuppression: opts.ns, autoGainControl: opts.agc } });
-    } catch (e) { return toast('Нет доступа к микрофону: ' + micErrorText(e), 8000); }
+    } catch (e) { return toast(tr('toast.mic_denied', 'Нет доступа к микрофону: ') + micErrorText(e), 8000); }
     const chunks = [], mr = new MediaRecorder(stream);
     mr.ondataavailable = e => e.data.size && chunks.push(e.data);
     mr.onstop = async () => {
@@ -2076,22 +2076,22 @@ const voiceCq = (() => {
       await upload(slot, st.recName, await new Blob(chunks).arrayBuffer());
     };
     st.rec = mr; st.recSlot = slot; st.recName = nameOf(slot, row);
-    mr.start(); render(); toast('Говорите… «■ Стоп записи», когда закончите');
+    mr.start(); render(); toast(tr('toast.vk_speak', 'Говорите… «■ Стоп записи», когда закончите'));
     st.recTimer = setTimeout(() => st.rec && stopRec(), 120000);
   }
   function stopRec() { clearTimeout(st.recTimer); if (st.rec && st.rec.state !== 'inactive') st.rec.stop(); }
   $('#vkFile').onchange = async e => {
     const f = e.target.files[0]; if (!f) return;
-    if (f.size > 30e6) return toast('Файл слишком большой');
+    if (f.size > 30e6) return toast(tr('toast.file_too_big', 'Файл слишком большой'));
     await upload(st.fileSlot, st.fileName || f.name.replace(/\.[^.]+$/, ''), await f.arrayBuffer());
   };
   // ---- перекодирование в 48 кГц моно, обрезка тишины, нормализация -> сервер
   async function upload(slot, name, buf) {
     let dec;
     try { dec = await new AudioContext().decodeAudioData(buf); }
-    catch (e) { return toast('Не удалось прочитать звук: ' + e.message); }
+    catch (e) { return toast(tr('toast.audio_read_err', 'Не удалось прочитать звук: ') + e.message); }
     const len = Math.ceil(dec.duration * 48000);
-    if (dec.duration > 120) return toast('Сообщение длиннее 2 минут');
+    if (dec.duration > 120) return toast(tr('toast.msg_too_long', 'Сообщение длиннее 2 минут'));
     const oc = new OfflineAudioContext(1, Math.max(len, 1), 48000);
     const src = oc.createBufferSource(); src.buffer = dec;
     const hp = new BiquadFilterNode(oc, { type: 'highpass', frequency: 120 });
@@ -2100,7 +2100,7 @@ const voiceCq = (() => {
     let x = (await oc.startRendering()).getChannelData(0);
     // обрезаем тишину по краям (порог −40 дБ от пика)
     let peak = 0; for (const v of x) peak = Math.max(peak, Math.abs(v));
-    if (peak < 1e-3) return toast('В записи тишина — проверьте микрофон');
+    if (peak < 1e-3) return toast(tr('toast.rec_silent', 'В записи тишина — проверьте микрофон'));
     const thr = peak * 0.01; let a = 0, b = x.length - 1;
     while (a < b && Math.abs(x[a]) < thr) a++;
     while (b > a && Math.abs(x[b]) < thr) b--;
@@ -2148,7 +2148,7 @@ const qsoRec = (() => {
     $('#recList').innerHTML = (m.files || []).map(f =>
       `<div class="row"><a href="rec/${encodeURIComponent(f.name)}?k=${encodeURIComponent(m.k)}" download="${f.name}">💾 ${f.name}</a>
        <span class="muted">${mmss(f.dur)} · ${kb(f.size)}</span></div>`).join('') || '<span class="muted">Записей пока нет</span>';
-    if (was && !m.on && m.name) toast('Запись сохранена: ' + m.name + ' (папка records)', 6000);
+    if (was && !m.on && m.name) toast(tr('toast.rec_saved', 'Запись сохранена: ') + m.name + ' (папка records)', 6000);
   }
   return { on, hello: () => send({ t: 'rec_hello' }), toggle: () => btn.click() };
 })();
@@ -2178,7 +2178,7 @@ const digi2 = (() => {
     hz = Math.round(hz);
     if (sub === 'nx') { st.nxFc = hz; $('#nxFc').value = hz; if (!st.nx) { st.nx = true; renderBtns(); } sendNx(); toast(`NAVTEX: центр ${hz} Гц`); }
     else if (sub === 'psk') { st.pkFc = hz; $('#pkFc').value = hz; if (!st.pk) { st.pk = true; renderBtns(); } sendPk(); toast(`PSK31: ${hz} Гц`); }
-    else toast('SSTV: отдельная подстройка не нужна — сигнал занимает 1200–2300 Гц');
+    else toast(tr('toast.sstv_tune', 'SSTV: отдельная подстройка не нужна — сигнал занимает 1200–2300 Гц'));
     marks();
   }
   function renderBtns() {
@@ -2208,7 +2208,7 @@ const digi2 = (() => {
   };
   $('#nxClear').onclick = () => { $('#nxScreen').textContent = ''; $('#nxMsgs').innerHTML = ''; };
   if ($('#nxAiBtn')) $('#nxAiBtn').onclick = () => {
-    const t = $('#nxScreen').textContent.trim(); if (!t) return toast('Пока нечего переводить');
+    const t = $('#nxScreen').textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
     $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = 'Перевожу…'; send({ t: 'nx_ai', text: t.slice(-3000) });
   };
   if ($('#nxAiClose')) $('#nxAiClose').onclick = () => $('#nxAi').classList.add('hidden');
@@ -2240,7 +2240,7 @@ const digi2 = (() => {
     ctx.putImageData(img, 0, i); st.svRows = i + 1;
   }
   $('#svPng').onclick = () => {
-    if (!st.svRows) return toast('Картинки пока нет');
+    if (!st.svRows) return toast(tr('toast.no_image', 'Картинки пока нет'));
     const a = document.createElement('a'); a.download = 'sstv_' + Date.now() + '.png'; a.href = cv.toDataURL('image/png'); a.click();
   };
 
@@ -2262,7 +2262,7 @@ const digi2 = (() => {
   const PKM = [['CQ', 'CQ CQ CQ de {MY} {MY} {MY} pse k\n'], ['DE', 'de {MY} k\n'], ['73', 'tnx fer QSO, 73 de {MY} sk\n']];
   $('#pkMacros').innerHTML = PKM.map((m, i) => `<button class="btn" data-i="${i}">${m[0]}</button>`).join('');
   $$('#pkMacros button').forEach(b => b.onclick = () => {
-    const t = PKM[+b.dataset.i][1]; if (!myCall()) return toast('Укажите свой позывной на вкладке CW · Морзе');
+    const t = PKM[+b.dataset.i][1]; if (!myCall()) return toast(tr('toast.need_mycall_cw', 'Укажите свой позывной на вкладке CW · Морзе'));
     pkSend(t);
   });
   function pkSend(t) { t = (t || '').replace(/\{MY\}/g, myCall()); if (t.trim()) send({ t: 'psk_send', text: '\n' + t }); }
@@ -2291,10 +2291,10 @@ const digi2 = (() => {
         break;
       case 'sstv_start':
         svSize(m.w, m.h); $('#svInfo').textContent = `приём: ${m.mode} (${m.how}${m.shift ? ', расстройка ' + m.shift + ' Гц' : ''})`;
-        toast('SSTV: началась картинка ' + m.mode); break;
+        toast(tr('toast.sstv_start', 'SSTV: началась картинка ') + m.mode); break;
       case 'sstv_done':
         $('#svInfo').textContent = `${m.mode}: ${m.why}, ${m.rows} строк` + (m.slant ? `, наклон ${m.slant} ppm` : '');
-        if (m.name) { toast('SSTV сохранена: ' + m.name, 5000); $('#svSaved').insertAdjacentHTML('afterbegin', `<div class="muted">${esc(m.name)}</div>`); }
+        if (m.name) { toast(tr('toast.sstv_saved', 'SSTV сохранена: ') + m.name, 5000); $('#svSaved').insertAdjacentHTML('afterbegin', `<div class="muted">${esc(m.name)}</div>`); }
         break;
       case 'psk_state': if (m.fc) { st.pkFc = Math.round(m.fc); $('#pkFc').value = st.pkFc; } break;
       case 'psk_rx': addText($('#pkScreen'), '#pkHint', m.text); break;
@@ -2377,7 +2377,7 @@ const ft8Desk = (() => {
     if (!files.length) return;
     let recs = [];
     for (const f of files) recs = recs.concat(parseAdif(await f.text()));
-    if (!recs.length) return toast('В файле не нашлось связей ADIF');
+    if (!recs.length) return toast(tr('toast.no_adif', 'В файле не нашлось связей ADIF'));
     toast(`Загружаю ${recs.length} связей…`);
     const N = 5000;
     for (let i = 0; i < recs.length || i === 0; i += N)
@@ -2465,7 +2465,7 @@ const ft8Desk = (() => {
   ['#ftDxCall', '#ftDxGrid', '#ftRpt'].forEach(id => $(id).addEventListener('change', () => genMsgs()));
   $$('#ftMsgs .ft-msg[data-i] .btn').forEach(b => b.onclick = () => {
     const i = +b.parentElement.dataset.i, text = msgInputs[i].value.trim();
-    if (!text) return toast('Сначала укажите DX позывной и нажмите «Сформировать»');
+    if (!text) return toast(tr('toast.need_dx', 'Сначала укажите DX позывной и нажмите «Сформировать»'));
     turnOn();
     if (i === 5) { send({ t: 'ft_cq' }); return; }
     const call = $('#ftDxCall').value.trim().toUpperCase();
@@ -2564,7 +2564,7 @@ const ft8Desk = (() => {
       (it.km != null ? `, ${it.km} км` : '') + (it.tags.includes('worked') ? '\nУже работали на этом диапазоне' : '') +
       (it.tags.includes('newgrid') ? '\nНовый квадрат' : '');
     r.onclick = () => {
-      if (!st.myCall) { toast('Укажите свой позывной в настройках FT8'); $('.ft-cfg').open = true; return; }
+      if (!st.myCall) { toast(tr('toast.need_mycall_ft8', 'Укажите свой позывной в настройках FT8')); $('.ft-cfg').open = true; return; }
       turnOn(); setRx(it.f); send({ t: 'ft_call', item: it });
     };
     return r;

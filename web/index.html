@@ -184,12 +184,12 @@
         <div class="ctl tog" data-k="txw" data-label="TXW (слушать TX)" data-label-key="ctl.txw"></div>
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="tune">⚡ Тюнер (встр.)</button>
-        <button class="btn" data-act="tune_ext">⚡ Тюнер внешн.</button>
-        <button class="btn" data-act="tune_stop">■ Стоп</button>
-        <button class="btn" data-act="atas_tune">ATAS авто</button>
-        <button class="btn" data-act="atas_up">ATAS ▲</button>
-        <button class="btn" data-act="atas_down">ATAS ▼</button>
+        <button class="btn" data-act="tune" data-i18n="tx.tune">⚡ Тюнер (встр.)</button>
+        <button class="btn" data-act="tune_ext" data-i18n="tx.tune_ext">⚡ Тюнер внешн.</button>
+        <button class="btn" data-act="tune_stop" data-i18n="tx.tune_stop">■ Стоп</button>
+        <button class="btn" data-act="atas_tune" data-i18n="tx.atas">ATAS авто</button>
+        <button class="btn" data-act="atas_up" data-i18n="tx.atas_up">ATAS ▲</button>
+        <button class="btn" data-act="atas_down" data-i18n="tx.atas_down">ATAS ▼</button>
         <span class="muted small" id="tuneState"></span>
       </div>
 
@@ -221,29 +221,29 @@
         <button class="btn" id="btnSplit" title="Как кнопка SPLIT на трансивере: частоты A и B меняются местами">SPLIT (A ⇄ B)</button>
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="band_down">Диапазон ◀</button>
-        <button class="btn" data-act="band_up">Диапазон ▶</button>
-        <button class="btn" data-act="scan_down">Скан ◀</button>
+        <button class="btn" data-act="band_down" data-i18n="vfo.band_down">Диапазон ◀</button>
+        <button class="btn" data-act="band_up" data-i18n="vfo.band_up">Диапазон ▶</button>
+        <button class="btn" data-act="scan_down" data-i18n="vfo.scan_down">Скан ◀</button>
         <button class="btn" data-act="scan_stop">Скан ■</button>
-        <button class="btn" data-act="scan_up">Скан ▶</button>
-        <button class="btn" data-act="zero_in">ZERO-IN</button>
+        <button class="btn" data-act="scan_up" data-i18n="vfo.scan_up">Скан ▶</button>
+        <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="vfo_mode">Режим VFO</button>
-        <button class="btn" data-act="mem_mode">Режим памяти</button>
+        <button class="btn" data-act="vfo_mode" data-i18n="vfo.mode_vfo">Режим VFO</button>
+        <button class="btn" data-act="mem_mode" data-i18n="vfo.mode_mem">Режим памяти</button>
         <input id="memCh" type="number" min="1" max="999" value="1" class="num">
-        <button class="btn" id="btnMemCh">Вызвать канал</button>
+        <button class="btn" id="btnMemCh" data-i18n="vfo.mem_go">Вызвать канал</button>
         <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems">Редактор каналов…</button>
-        <button class="btn" data-act="qmb_store">QMB запомнить</button>
-        <button class="btn" data-act="qmb_recall">QMB вызвать</button>
-        <button class="btn" id="btnLock">LOCK</button>
+        <button class="btn" data-act="qmb_store" data-i18n="vfo.qmb_sto">QMB запомнить</button>
+        <button class="btn" data-act="qmb_recall" data-i18n="vfo.qmb_rcl">QMB вызвать</button>
+        <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
       </div>
       <div class="ctl-grid">
         <div class="ctl sel" data-k="mode_b" data-label="Вид работы VFO-B" data-opts="modes" data-label-key="ctl.mode_b"></div>
         <div class="ctl" data-k="dimmer" data-min="0" data-max="20" data-label="Яркость дисплея" data-label-key="ctl.dimmer"></div>
       </div>
-      <h4>Мои частоты <span class="muted small">(хранятся на этом устройстве)</span></h4>
-      <div class="btn-row"><input id="favName" placeholder="Название" class="text"><button class="btn" id="favAdd">＋ Добавить текущую</button></div>
+      <h4><span data-i18n="vfo.my_freqs">Мои частоты</span> <span class="muted small" data-i18n="vfo.my_freqs.hint">(хранятся на этом устройстве)</span></h4>
+      <div class="btn-row"><input id="favName" placeholder="Название" data-i18n-placeholder="vfo.fav_name" class="text"><button class="btn" id="favAdd" data-i18n="vfo.fav_add">＋ Добавить текущую</button></div>
       <div id="favList" class="fav-list"></div>
     </div>
 
@@ -257,19 +257,19 @@
         <label class="mini" title="Чувствительность: меньше — читает слабее сигналы, но больше мусора от помех">Порог<input type="range" id="cwSq" min="11" max="28" value="15"></label>
         <span class="cw-meter mono" id="cwInfo">—</span>
         <span class="spacer"></span>
-        <button class="btn small" id="cwClear" title="Очистить экран">Очистить</button>
-        <button class="btn small" id="cwNew" title="Начать новую связь">Новая связь</button>
+        <button class="btn small" id="cwClear" title="Очистить экран" data-i18n="cw.clear" data-i18n-title="common.clear">Очистить</button>
+        <button class="btn small" id="cwNew" title="Начать новую связь" data-i18n="cw.new">Новая связь</button>
       </div>
       <div class="cw-screen mono" id="cwScreen" aria-live="polite"><span class="muted" id="cwHint">Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW).</span></div>
 
       <!-- ===== Разбор принятого ===== -->
       <div class="cw-ai" id="cwAi">
         <div class="cw-ai-head">
-          <b>Разбор принятого</b>
-          <span class="muted small">По правилам CW-связи</span>
+          <b data-i18n="cw.ai.title">Разбор принятого</b>
+          <span class="muted small" data-i18n="cw.ai.sub">По правилам CW-связи</span>
           <span class="spacer"></span>
-          <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)">Разобрать</button>
-          <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)">📝 Ответ</button>
+          <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)" data-i18n="cw.analyze">Разобрать</button>
+          <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)" data-i18n="cw.reply">📝 Ответ</button>
         </div>
         <div id="cwAiBody" class="cw-ai-body muted small">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
       </div>
@@ -277,16 +277,16 @@
       <!-- ===== Передача ===== -->
       <div class="cw-tx">
         <div class="cw-proposal hidden" id="cwProposal">
-          <div><b id="cwPropTitle">Предложенный ответ</b> <span class="muted small" id="cwPropRu"></span></div>
+          <div><b id="cwPropTitle" data-i18n="cw.prop.title">Предложенный ответ</b> <span class="muted small" id="cwPropRu"></span></div>
           <div class="mono cw-prop-text" id="cwPropText"></div>
-          <div class="btn-row"><button class="btn primary" id="cwPropSend">▶ Передать</button><button class="btn" id="cwPropEdit">Изменить</button><button class="btn" id="cwPropCancel">Отменить</button><span class="cw-count mono" id="cwPropCount"></span></div>
+          <div class="btn-row"><button class="btn primary" id="cwPropSend" data-i18n="cw.prop.send">▶ Передать</button><button class="btn" id="cwPropEdit" data-i18n="cw.prop.edit">Изменить</button><button class="btn" id="cwPropCancel" data-i18n="cw.prop.cancel">Отменить</button><span class="cw-count mono" id="cwPropCount"></span></div>
         </div>
         <div class="cw-macros" id="cwMacros"></div>
         <div class="cw-txrow">
           <textarea id="cwText" class="mono" rows="2" placeholder="Текст для передачи (Ctrl+Enter — передать). {CALL} — позывной корреспондента, {MY} — ваш"></textarea>
           <div class="cw-txbtns">
-            <button class="btn primary" id="cwSend" title="Ctrl+Enter">▶ Передать</button>
-            <button class="btn" id="cwStop" title="Esc">■ Стоп</button>
+            <button class="btn primary" id="cwSend" title="Ctrl+Enter" data-i18n="cw.send">▶ Передать</button>
+            <button class="btn" id="cwStop" title="Esc" data-i18n="cw.stop">■ Стоп</button>
           </div>
         </div>
         <div class="cw-txline mono hidden" id="cwTxLine"></div>
@@ -298,15 +298,15 @@
         </div>
       </div>
 
-      <h4>Оператор</h4>
+      <h4 data-i18n="cw.op">Оператор</h4>
       <div class="cw-op">
-        <label>Позывной<input id="opCall" class="text mono" placeholder="R6AAF"></label>
-        <label>Имя<input id="opName" class="text" placeholder="EUGENE"></label>
-        <label>QTH<input id="opQth" class="text" placeholder="GELENDZHIK"></label>
+        <label><span data-i18n="cw.op.call">Позывной</span><input id="opCall" class="text mono" placeholder="R6AAF"></label>
+        <label><span data-i18n="cw.op.name">Имя</span><input id="opName" class="text" placeholder="EUGENE"></label>
+        <label><span data-i18n="cw.op.qth">QTH</span><input id="opQth" class="text" placeholder="GELENDZHIK"></label>
         <label class="grow">Ещё о себе (для шаблонов)<input id="opExtra" class="text" placeholder="RIG YAESU 10W ANT VERTICAL"></label>
       </div>
 
-      <h4>Ключ трансивера</h4>
+      <h4 data-i18n="cw.rig">Ключ трансивера</h4>
       <div class="ctl-grid">
         <div class="ctl" data-k="key_speed" data-min="4" data-max="60" data-label="Скорость, WPM" data-label-key="ctl.key_speed"></div>
         <div class="ctl" data-k="key_pitch" data-min="0" data-max="75" data-label="Тон CW" data-fmt="pitch" data-label-key="ctl.key_pitch"></div>
@@ -316,9 +316,9 @@
       </div>
       <div class="btn-row">
         <button class="btn" data-act="spot_on">SPOT вкл</button><button class="btn" data-act="spot_off">SPOT выкл</button>
-        <button class="btn" data-act="zero_in">ZERO-IN</button>
+        <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
       </div>
-      <h4>Память ключа</h4>
+      <h4 data-i18n="cw.mems">Память ключа</h4>
       <div id="cwMems" class="cw-mems"></div>
       <p class="muted small">Текст передаёт сам трансивер из своей памяти ключа (до 50 знаков за раз) — без задержек сети. BREAK-IN включается автоматически.
         Длинный текст передаётся кусками через ячейку 5.</p>
@@ -572,10 +572,10 @@
 
     <div class="tab" id="tab-cat">
       <div class="btn-row">
-        <input id="catCmd" class="text grow mono" placeholder="Команда CAT, например FA; или MD02;">
-        <button class="btn" id="catSend">Отправить</button>
+        <input id="catCmd" class="text grow mono" placeholder="Команда CAT, например FA; или MD02;" data-i18n-placeholder="cat.placeholder">
+        <button class="btn" id="catSend" data-i18n="cat.send">Отправить</button>
         <label class="chk"><input type="checkbox" id="catLog"> журнал обмена</label>
-        <button class="btn" id="catClear">Очистить</button>
+        <button class="btn" id="catClear" data-i18n="cat.clear">Очистить</button>
       </div>
       <pre id="catOut" class="console"></pre>
     </div>

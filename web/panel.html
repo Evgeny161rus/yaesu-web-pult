@@ -149,6 +149,19 @@
         </select></label>
       <label class="field hidden" id="pttPortField"><span>Порт для PTT (Standard COM Port, если отдельный)</span><select id="ptt_port"></select></label>
       <label class="chk"><input type="checkbox" id="simulate"> Режим симулятора — проверка без трансивера</label>
+      <details class="advanced"><summary>Широкий водопад USB-scope (FT-710 / FTDX10 / FTDX101, экспериментально)</summary>
+        <p class="hint">Для трансиверов с аппаратным панорамным приёмником. Читает интерфейс FTDI <b>FT4222 A</b> (не CAT-порт). Без таких библиотек и без поддерживаемого трансивера пульт автоматически использует обычный звуковой водопад. На реальном оборудовании пока не проверялось.</p>
+        <label class="field"><span>Источник водопада</span>
+          <select id="waterfall_source">
+            <option value="auto">Авто — USB-scope, если настроен, иначе звук</option>
+            <option value="scope">Только USB-scope (иначе ошибка в журнале)</option>
+            <option value="audio">Только звук (USB-scope не использовать)</option>
+          </select></label>
+        <label class="field"><span>LibFT4222 (абсолютный путь к .dll / .so)</span><input id="scope_libft4222" type="text" placeholder="Windows: C:\FTDI\LibFT4222-64.dll · Linux: /opt/ftdi/libft4222.so"></label>
+        <label class="field"><span>D2XX (ftd2xx.dll / libftd2xx, если требуется отдельно)</span><input id="scope_d2xx" type="text" placeholder="Windows: C:\FTDI\ftd2xx.dll · Linux: обычно не нужно"></label>
+        <label class="field"><span>Серийный номер SPI-интерфейса (необязательно)</span><input id="scope_serial" type="text" placeholder="Пусто — открыть «FT4222 A» по описанию"></label>
+        <p class="hint">Изменения применяются при следующем подключении к трансиверу. На Raspberry Pi библиотеки должны быть для ARM64 (aarch64).</p>
+      </details>
     </section>
 
     <section class="panel card">

@@ -23,6 +23,7 @@ import ssl
 import struct
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 import webbrowser
@@ -42,6 +43,7 @@ from radio_backends import create_hamlib, list_hamlib_models, is_hamlib  # noqa:
 from yaesu_detect import probe, MODERN_MODELS  # noqa: E402
 from audio import SR, Decimator, Interpolator, Waterfall  # noqa: E402
 from spectrum import SpectrumFrame, LatestSpectrum  # noqa: E402
+from ft710_scope import PacketFramer, ScopeDecodeError, decode_packet  # noqa: E402
 from webserver import WebServer  # noqa: E402
 from cwdesk import CwDesk  # noqa: E402
 from digidesk import DigiDesk  # noqa: E402
@@ -77,6 +79,10 @@ DEFAULT_CFG = {
     "auto_connect": True,
     "open_panel": True,
     "open_pult": False,
+    "waterfall_source": "auto",
+    "scope_libft4222": "",
+    "scope_d2xx": "",
+    "scope_serial": "",
     "simulate": False,
     "my_call": "",
     "my_name": "",
@@ -281,6 +287,7 @@ class Client:
         self.audio = False
         self.rate = 16000
         self.wf = False
+        self.wf_source = 'audio'          # audio | rf (wide USB scope)
         self.wf_max = 4000
         self.console = None
         self.name = '%s:%s' % ws.peer[:2] if ws.peer else '?'
@@ -303,6 +310,18 @@ class Station:
         self.decims = {48000: Decimator(1), 16000: Decimator(3), 8000: Decimator(6)}
         self.wf = Waterfall()
         self.spectrum = LatestSpectrum()
+        self.scope = None                 # Ft4222Transport, only when configured
+        self.scope_thread = None
+        self.scope_stop = None
+        self.scope_framer = PacketFramer()
+        self.scope_state = 'off'          # off | starting | live | unavailable
+        self.scope_reason = ''
+        self.scope_frame = None
+        self.scope_span = 0
+        self.scope_last_good = 0.0
+        self.scope_last_sent = 0.0
+        self.scope_bad = 0
+        self.scope_good = 0
         self.ptt_owner = None
         self.ptt_since = 0.0
         self.ptt_alive = 0.0
@@ -392,6 +411,7 @@ class Station:
             except Exception as e:
                 self.audio_err = str(e).split('\n')[0]
                 log.error("Звук не запущен: %s", self.audio_err)
+            self._start_scope()
             self.running = True
             log.info("Связь с трансивером запущена")
             self._broadcast_hello_state()
@@ -404,6 +424,7 @@ class Station:
 
     async def stop_radio(self):
         self.spectrum.clear()
+        self._stop_scope('', notify=False)
         if not self.running:
             return
         self.cw.stop()
@@ -443,6 +464,154 @@ class Station:
         except RuntimeError:
             pass
 
+    # ----- широкий водопад: USB-scope FT-710/FTDX10/FTDX101 через FT4222
+    def scope_info(self):
+        age = None
+        if self.scope_last_good:
+            age = int(max(0.0, time.monotonic() - self.scope_last_good) * 1000)
+        return {'state': self.scope_state, 'reason': self.scope_reason,
+                'span': self.scope_span, 'age_ms': age,
+                'good': self.scope_good, 'bad': self.scope_bad}
+
+    def scope_live(self):
+        return self.scope_state == 'live' and self.scope is not None
+
+    def _start_scope(self):
+        """Open the optional FT4222 scope interface; never disturb CAT/audio.
+
+        ``waterfall_source`` is ``auto`` (try when configured, else audio),
+        ``scope`` (require it and log failures) or ``audio`` (never try).
+        Any failure leaves the audio waterfall untouched.
+        """
+        self._stop_scope('', notify=False)
+        mode = str(self.cfg.get('waterfall_source') or 'auto').lower()
+        if mode not in ('auto', 'scope'):
+            mode = 'audio'
+        if mode == 'audio' or self.sim or (self.rig is not None and is_hamlib(self.rig)):
+            self.scope_state, self.scope_reason = 'off', ''
+            return
+        lib = str(self.cfg.get('scope_libft4222') or '').strip()
+        d2xx = str(self.cfg.get('scope_d2xx') or '').strip()
+        serial = str(self.cfg.get('scope_serial') or '').strip()
+        if not lib:
+            self.scope_state = 'unavailable'
+            self.scope_reason = 'не задана библиотека LibFT4222'
+            if mode == 'scope':
+                log.warning("Широкий водопад включён, но не задан scope_libft4222 в config.json")
+            return
+        try:
+            from ft4222_transport import Ft4222Transport, load_api
+            spi, d2 = load_api(lib, d2xx or None)
+            transport = Ft4222Transport(spi, d2, serial) if serial else Ft4222Transport.by_description(spi, d2)
+            transport.open()
+        except Exception as e:
+            self.scope_state, self.scope_reason = 'unavailable', str(e).split('\n')[0]
+            if mode == 'scope':
+                log.warning("Широкий водопад недоступен: %s", self.scope_reason)
+            else:
+                log.info("USB-scope не используется: %s", self.scope_reason)
+            return
+        self.scope = transport
+        self.scope_stop = threading.Event()
+        self.scope_framer = PacketFramer()
+        self.scope_state, self.scope_reason = 'starting', ''
+        self.scope_good = self.scope_bad = 0
+        self.scope_last_good = time.monotonic()
+        self.scope_thread = threading.Thread(target=self._scope_reader, args=(transport,),
+                                             name='ft4222-scope', daemon=True)
+        self.scope_thread.start()
+        log.info("Широкий водопад: читаю USB-scope %s", serial or 'FT4222 A')
+
+    def _scope_reader(self, transport):
+        stop = self.scope_stop
+        try:
+            while stop is not None and not stop.is_set():
+                try:
+                    data = transport.read(4096)
+                except Exception as e:
+                    if stop is not None and not stop.is_set():
+                        try:
+                            self.loop.call_soon_threadsafe(self._scope_failed, str(e).split('\n')[0])
+                        except RuntimeError:
+                            pass
+                    return
+                if data:
+                    try:
+                        self.loop.call_soon_threadsafe(self._on_scope_bytes, data)
+                    except RuntimeError:
+                        return
+                else:
+                    time.sleep(0.02)
+        finally:
+            try:
+                transport.close()
+            except Exception:
+                pass
+
+    def _scope_failed(self, reason):
+        if self.scope_state in ('live', 'starting'):
+            log.warning("USB-scope остановлен: %s", reason)
+            self._stop_scope(reason or 'ошибка USB-scope')
+
+    def _on_scope_bytes(self, data):
+        if self.scope is None:
+            return
+        for packet in self.scope_framer.feed(data):
+            try:
+                frame = decode_packet(packet).center_frame()
+            except ScopeDecodeError:
+                self.scope_bad += 1
+                if self.scope_good == 0 and self.scope_bad >= 40:
+                    self._stop_scope('пакеты USB-scope не распознаны')
+                    return
+                continue
+            self.scope_good += 1
+            self.scope_bad = 0
+            self.scope_frame = frame
+            self.scope_span = int(round(frame.bin_hz * (len(frame.levels) - 1)))
+            self.scope_last_good = time.monotonic()
+            if self.scope_state != 'live':
+                self.scope_state, self.scope_reason = 'live', ''
+                log.info("Широкий водопад работает: %d точек, обзор %.0f Гц",
+                         len(frame.levels), self.scope_span)
+                self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
+            now = time.monotonic()
+            if now - self.scope_last_sent >= 0.04:      # <=25 кадров/с на клиента
+                self.scope_last_sent = now
+                n = len(frame.levels)
+                center = int(round(frame.first_hz + (n - 1) * frame.bin_hz / 2))
+                span = int(round((n - 1) * frame.bin_hz))
+                pkt = b'\x04' + struct.pack('<QIH', center, span, n) + frame.levels
+                for c in self.clients:
+                    if c.authed and c.wf and c.wf_source == 'rf':
+                        c.ws.send_bin(pkt)
+
+    def _stop_scope(self, reason='', notify=True):
+        transport, self.scope = self.scope, None
+        stop, self.scope_stop = self.scope_stop, None
+        thread, self.scope_thread = self.scope_thread, None
+        if stop is not None:
+            stop.set()
+        if thread is not None and thread is not threading.current_thread():
+            thread.join(0.5)            # read timeout is 100 ms; close happens in the worker
+        elif transport is not None:
+            try:
+                transport.close()
+            except Exception:
+                pass
+        self.scope_frame = None
+        self.scope_span = 0
+        was = self.scope_state
+        self.scope_state = 'unavailable' if reason else 'off'
+        self.scope_reason = reason
+        if notify and was in ('live', 'starting'):
+            for c in self.clients:
+                if c.wf_source == 'rf':
+                    c.wf_source = 'audio'
+                if c.authed and c.wf:
+                    c.ws.send_json({'t': 'wf_src', 'mode': 'audio', 'reason': reason})
+            self.broadcast({'t': 'wf_scope', 'state': self.scope_state, 'reason': reason})
+
     # ----- приём звука: раздаём клиентам и строим водопад
     def _on_rx_audio(self, x):
         self.rec.feed_rx(x)
@@ -467,7 +636,7 @@ class Station:
         if rows and any(c.wf for c in self.clients):
             for row in rows:
                 for c in self.clients:
-                    if c.wf and c.authed:
+                    if c.wf and c.authed and c.wf_source != 'rf':
                         n = min(len(row), int(c.wf_max / self.wf.bin_hz) + 1)
                         c.ws.send_bin(b'\x02' + struct.pack('<Hf', n, self.wf.bin_hz) + row[:n].tobytes())
         self.cw.feed(x)
@@ -544,6 +713,9 @@ class Station:
                         self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: превышено время (%d с)' % self.cfg['max_tx_seconds']})
                         self.set_ptt(None, False)
                 await self.cw.tick()
+                if self.scope_state == 'live' and time.monotonic() - self.scope_last_good > 6:
+                    log.warning("USB-scope не присылает данные — перехожу на звуковой водопад")
+                    self._stop_scope('нет данных USB-scope')
                 if self.audio:
                     lv = {'t': 'lv', 'rx': round(getattr(self.audio, 'rx_level', 0), 4), 'tx': round(self.audio.tx.level, 4)}
                     self.broadcast(lv)
@@ -586,6 +758,7 @@ class Station:
             'clients': [{'name': c.name, 'local': c.local, 'audio': c.audio, 'tx': c is self.ptt_owner}
                         for c in self.clients if c.authed and not c.admin],
             'ptt_owner': self.ptt_owner.name if self.ptt_owner else '',
+            'scope': self.scope_info(),
         }
 
     def rec_download(self, rest, query):
@@ -745,7 +918,8 @@ class Station:
                 c.ws.send_json({'t': 'hello_ok', 'local': c.local, 'version': VERSION,
                                 'backend': self.rig.state.get('backend') if self.rig else 'native',
                                 'audio_err': self.audio_err, 'ctcss': CTCSS, 'running': self.running,
-                                'max_tx': self.cfg['max_tx_seconds'], 'ptt_method': self.cfg['ptt_method']})
+                                'max_tx': self.cfg['max_tx_seconds'], 'ptt_method': self.cfg['ptt_method'],
+                                'wf_scope': self.scope_live(), 'wf_scope_reason': self.scope_reason})
                 c.ws.send_json({'t': 'state', 's': self.rig.state if self.rig else {'connected': False}, 'full': True})
                 if self.rig:
                     self.rig.refresh()                     # свежие значения из трансивера, а не из памяти
@@ -817,6 +991,16 @@ class Station:
         if t == 'wf':
             c.wf = bool(m.get('on'))
             c.wf_max = max(500, min(24000, int(m.get('max', 4000))))
+            src = m.get('src')
+            if src in ('rf', 'audio'):
+                c.wf_source = src
+            if c.wf and c.wf_source == 'rf':
+                if self.scope_live():
+                    c.ws.send_json({'t': 'wf_src', 'mode': 'rf', 'span': self.scope_span})
+                else:
+                    c.wf_source = 'audio'
+                    c.ws.send_json({'t': 'wf_src', 'mode': 'audio',
+                                    'reason': self.scope_reason or 'USB-scope недоступен'})
             return
         if t == 'ping':
             c.ws.send_json({'t': 'pong', 'ts': m.get('ts')})
@@ -999,13 +1183,13 @@ async def amain(args):
     first_run = not os.path.exists(cfg_path())
     if (cfg.get('auto_connect') and not first_run) or args.sim:
         asyncio.create_task(st.start_radio())
-    if not args.background:
+    if not (args.background or args.headless):
         if cfg.get('open_panel', True) or first_run:
             open_window(panel_url, (1280, 820))
         if cfg.get('open_pult') and not first_run:
             open_window(pult_url, (1400, 900))
-    icon = start_tray(st, panel_url, pult_url)
-    if icon is None and args.background is False and not find_app_browser():
+    icon = None if args.headless else start_tray(st, panel_url, pult_url)
+    if icon is None and not args.background and not args.headless and not find_app_browser():
         log.info("Совет: установите pystray и Pillow, чтобы получить значок в трее")
 
     tasks = [asyncio.create_task(s.serve_forever()) for s in servers]
@@ -1127,6 +1311,7 @@ def main():
     ap.add_argument('--sim', action='store_true', help='симулятор трансивера')
     ap.add_argument('--list', action='store_true', help='показать COM-порты и звуковые устройства')
     ap.add_argument('--background', action='store_true', help='без окна (автозапуск)')
+    ap.add_argument('--headless', action='store_true', help='без окна и значка (systemd, Raspberry Pi)')
     ap.add_argument('--console', action='store_true', help='журнал в консоль')
     ap.add_argument('-v', '--verbose', action='store_true')
     ap.add_argument('--selftest', metavar='FILE', help='проверить состав сборки и записать отчёт в FILE')

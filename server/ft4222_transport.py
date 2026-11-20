@@ -4,8 +4,11 @@ Use from one dedicated worker, never directly from the asyncio event loop.
 Native library timeouts are requested, not a guarantee against a hung driver.
 """
 import ctypes as C
+import os
 from pathlib import Path
 import sys
+
+_DLL_DIRS = []          # add_dll_directory handles must outlive the CDLL load
 
 
 class Ft4222Error(RuntimeError):
@@ -40,6 +43,13 @@ def load_api(spi_path, d2xx_path=None):
             raise Ft4222Error('Specify an existing absolute FTDI library path')
         return str(p.resolve())
     try:
+        # LibFT4222 may depend on ftd2xx in the same vendor folder; Windows
+        # does not search that folder automatically for absolute loads.
+        if sys.platform == 'win32' and hasattr(os, 'add_dll_directory'):
+            for folder in {Path(checked(spi_path)).parent,
+                           (Path(checked(d2xx_path)).parent if d2xx_path else None)}:
+                if folder is not None:
+                    _DLL_DIRS.append(os.add_dll_directory(str(folder)))
         # LibFT4222 API is cdecl; D2XX is WINAPI on Windows.
         spi = C.CDLL(checked(spi_path))
         if d2xx_path:
@@ -59,13 +69,36 @@ class Ft4222Transport:
     def __init__(self, spi, d2xx, serial_number, timeout_ms=100):
         if not isinstance(serial_number, str) or not serial_number or '\0' in serial_number:
             raise ValueError('Explicit interface serial number required')
-        self.serial = serial_number.encode('ascii')
-        if len(self.serial) > 16:
+        target = serial_number.encode('ascii')
+        if len(target) > 16:
             raise ValueError('FTDI serial number is too long')
+        self._init(spi, d2xx, target, 1, timeout_ms)
+        self.serial = target
+
+    @classmethod
+    def by_description(cls, spi, d2xx, description='FT4222 A', timeout_ms=100):
+        """Open the named FTDI interface instead of requiring its serial.
+
+        ``FT_OpenEx(..., FT_OPEN_BY_DESCRIPTION)`` matches wfview's behaviour
+        and keeps setup simple when only one radio is attached. A serial number
+        is still preferable when several FT4222 devices are present.
+        """
+        if not isinstance(description, str) or not description or '\0' in description:
+            raise ValueError('Explicit FTDI description required')
+        target = description.encode('ascii')
+        if len(target) > 64:
+            raise ValueError('FTDI description is too long')
+        self = cls.__new__(cls)
+        self._init(spi, d2xx, target, 2, timeout_ms)
+        self.serial = b''
+        return self
+
+    def _init(self, spi, d2xx, target, flag, timeout_ms):
         if type(timeout_ms) is not int or not 1 <= timeout_ms <= 1000:
             raise ValueError('Timeout must be 1..1000 ms')
         self.spi, self.d2xx = spi, d2xx
         self.timeout_ms = timeout_ms
+        self._target, self._flag = target, flag
         self.handle = None
 
     @staticmethod
@@ -77,8 +110,8 @@ class Ft4222Transport:
         if self.handle is not None:
             raise Ft4222Error('Device is already open')
         h = C.c_void_p()
-        serial = C.create_string_buffer(self.serial)
-        self._check('FT_OpenEx', self.d2xx.FT_OpenEx(serial, 1, C.byref(h)))
+        target = C.create_string_buffer(self._target)
+        self._check('FT_OpenEx', self.d2xx.FT_OpenEx(target, self._flag, C.byref(h)))
         if not h.value:
             raise Ft4222Error('FT_OpenEx returned a null handle')
         self.handle = h

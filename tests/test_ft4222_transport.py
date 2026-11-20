@@ -96,6 +96,16 @@ class TransportTests(unittest.TestCase):
         api.count = None
         with transport: self.assertEqual(transport.read(), b'')
 
+    def test_open_by_description(self):
+        api = FakeApi()
+        with Ft4222Transport.by_description(api, api) as transport:
+            self.assertEqual(transport.read(), b'abc')
+        self.assertEqual(api.calls[0][1][0].value, b'FT4222 A')
+        self.assertEqual(api.calls[0][1][1], 2)  # FT_OPEN_BY_DESCRIPTION
+        for description in ('', 'a\0b', 'x' * 65):
+            with self.assertRaises(ValueError):
+                Ft4222Transport.by_description(api, api, description)
+
     def test_validation_and_no_implicit_library_search(self):
         api = FakeApi()
         for serial in ('', 'a\0b', 'x'*17):

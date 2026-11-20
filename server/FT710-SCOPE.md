@@ -1,70 +1,68 @@
-# FT-710 USB spectrum: experimental decoder
+# FT-710 / FTDX10 / FTDX101 USB-scope (широкий водопад) — экспериментально
 
-Implemented: pure Python decoder for one aligned 4096-byte SPI packet. It uses
-only the standard library and the common SpectrumFrame contract. It performs
-no USB access, CAT commands, transmission or automatic device selection.
-It is not enabled in the live server yet.
+Широкий (аппаратный) водопад читает панорамный приёмник трансивера через интерфейс FTDI **FT4222 A** (SPI) по USB. Это **не** CAT-порт и не CAT-команды: CAT и звук продолжают работать независимо.
 
-Protocol facts were checked against wfview commit
-`a14d5e8c7688c5554d3cf6df00e2ee69caa6d900`:
+**Статус:** интеграция в основной сервер добавлена, но **не проверялась на реальном трансивере/интерфейсе** (в среде разработки такого оборудования не было). Возможны ошибки выравнивания/масштаба/геометрии, различия прошивок и проблемы с нативными библиотеками. Любая ошибка чтения/декодирования приводит к **автоматическому отказу в обычный звуковой водопад** без влияния на CAT, звук и PTT.
+
+Поддерживаемые (по протоколу, не подтверждено аппаратно) модели: FT-710, FTDX10, FTDX101. Для трансиверов без аппаратного scope (например FTX-1/FTX-1 Field/Optima) используется обычный звуковой водопад.
+
+## Как включить
+
+1. Установите библиотеки FTDI **LibFT4222** и, при необходимости, **D2XX** для вашей платформы и архитектуры:
+   - Windows x64: `LibFT4222-64.dll` и `ftd2xx.dll` (обычно в одной папке).
+   - Linux: `libft4222.so` (и `libftd2xx.so`, если LibFT4222 не экспортирует D2XX API сам). На Raspberry Pi нужны сборки **ARM64/aarch64** — x86/x64 не подойдут.
+   - Библиотеки FTDI не поставляются с проектом; указывайте **абсолютные** пути к существующим файлам (автоматический поиск по PATH/CWD не используется).
+2. В `config.json` задайте:
+   ```json
+   {
+     "waterfall_source": "auto",
+     "scope_libft4222": "C:\\FTDI\\LibFT4222-64.dll",
+     "scope_d2xx": "C:\\FTDI\\ftd2xx.dll",
+     "scope_serial": ""
+   }
+   ```
+   - `waterfall_source`: `auto` — пытаться использовать USB-scope, если настроена библиотека, иначе звук; `scope` — требовать scope (ошибки пишутся в лог); `audio` — никогда не использовать scope.
+   - `scope_serial`: серийный номер SPI-интерфейса (не CAT-порта). Пусто — открыть по описанию устройства `FT4222 A` (как в wfview; удобно при одном подключённом устройстве).
+3. На трансивере должен быть включён вывод спектра на USB/SCU (настройки зависят от модели/прошивки; см. руководство трансивера и настройки wfview, например SCU-LAN10/spectrum output).
+4. Интерфейс FT4222 не должен быть занят другой программой. Переподключите/запустите связь с трансивером после изменения настроек.
+
+## Поведение в пульте
+
+- При успешном приёме кадров сервер рассылает клиентам бинарные строки спектра типа `\x04` (абсолютная шкала: `center_hz`, `span_hz`, уровни). Клиент показывает их как **широкий RF-водопад** с абсолютной частотой и настройкой по двойному клику.
+- Переключатель источника (RF/Звук) отображается во вкладках **RX/TX/VFO**, где полезен обзор. Во вкладках **Digi/FT8/CW** всегда используется звуковой водопад, так как декодерам и меткам нужны звуковые частоты (0…несколько кГц).
+- Если scope недоступен, не настроен, присылает нераспознаваемые пакеты или перестаёт отвечать, сервер/клиент автоматически переходят на звуковой водопад. CAT, звук и PTT не затрагиваются.
+
+## Протокол (по wfview, проверено по исходникам)
+
+Реализация опирается на wfview commit `a14d5e8c7688c5554d3cf6df00e2ee69caa6d900` (логика, не копирование кода; wfview — GPL-3.0):
 
 - https://github.com/wf-group/wfview/blob/a14d5e8c7688c5554d3cf6df00e2ee69caa6d900/include/packettypes.h
 - https://github.com/wf-group/wfview/blob/a14d5e8c7688c5554d3cf6df00e2ee69caa6d900/src/radio/yaesucommander.cpp
-- https://github.com/wf-group/wfview/blob/a14d5e8c7688c5554d3cf6df00e2ee69caa6d900/rigs/FT-710.rig
+- https://github.com/wf-group/wfview/blob/a14d5e8c7688c5554d3cf6df00e2ee69caa6d900/src/ft4222handler.cpp
 
-This implementation is newly written Python, not copied C++ source. The reference
-project is GPL-3.0; no third-party code or binary is bundled by this change.
+Факты протокола:
+- USB: `FT_OpenEx("FT4222 A", FT_OPEN_BY_DESCRIPTION, ...)`, `FT_SetTimeouts(100,100)`, `FT_SetLatencyTimer(2)`, `FT4222_SPIMaster_Init(handle, SPI_IO_SINGLE=1, CLK_DIV_64=6, CLK_IDLE_HIGH=1, CLK_LEADING=0, 1)`, `FT4222_SetClock(SYS_CLK_24=1)`, чтение блоков по 4096 байт.
+- Блок 4096 байт: `wf1[850]` @ 0 (инвертированные уровни, основной приёмник), `wf2` @ 850, аудио/trace @ 1700, `data[150]` @ 2900, sync `FF 01 EE 01` @ 4092.
+- `data`: +32 индекс обзора (0..9 → 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000 кГц), +52 геометрия (0=center, 1=cursor, 2=fixed), +60 mode, +64/+89 — частоты VFO A/B в packed BCD (5 байт), +144 — стартовая частота fixed (big-endian, 4 байта).
+- Sync-маркер в конце блока — якорь выравнивания (не контрольная сумма). Транспорт может отдавать короткие чтения; `PacketFramer` (`server/ft710_scope.py`) собирает/выравнивает поток и отбрасывает мусор с ограничением буфера.
 
-Main spectrum occupies bytes 0..849, with inverted unsigned levels. Metadata
-starts at byte 2900; relative offsets 32, 52, 64 and 89 give span code,
-geometry and two five-byte packed-BCD frequencies. The final four bytes are
-FF 01 EE 01. This marker is not a checksum; a packet passing validation is not
-proof that every byte is correct. Input must already be aligned by transport.
+Ограничения декодирования:
+- Уровни относительные (не dBm), как и в аудио-водопаде.
+- Геометрия **center**: шкала центрируется на VFO A. Геометрия **fixed**: используется `data[144:148]`, если значение похоже на реальную частоту, иначе безопасный откат к center. Геометрия **cursor**: надёжная стартовая частота в документированном формате не определена, поэтому трактуется как center (экспериментально).
+- Конвенция концов шкалы (span на 849 интервалов) предварительная и должна быть сверена с реальным захватом до доверенной настройки по клику.
+- Второй приёмник (`wf2`) не используется.
 
-Only Center produces SpectrumFrame. Cursor/Fixed decode metadata but explicitly
-reject frequency conversion. Levels remain relative, not dBm. The endpoint
-frequency convention (span across 849 intervals) is provisional and must be
-checked against captured signals before enabling click-to-tune. No second
-receiver is inferred from unused packet fields.
+## Транспорт и диагностика
 
-Tests use synthetic packets, not captured hardware data. They cover inversion,
-BCD, all ten spans, bounds, truncation, alignment and unsupported geometry.
-Real captures are still required to verify firmware variants and alignment.
+- `server/ft4222_transport.py`: синхронный транспорт на ctypes, только явные абсолютные пути библиотек и явный выбор интерфейса (serial или description). Таймауты FTDI запрашиваются (100 мс), но зависший нативный драйвер Python-прерыванием не гарантируется остановить. Чтение выполняется в отдельном потоке; основной event loop не блокируется.
+- `server/capture_ft710.py`: диагностический захват сырого потока в JSONL (без CAT/PTT). Пример:
+  ```powershell
+  python server/capture_ft710.py --serial YOUR_SPI_SERIAL --libft4222 C:\FTDI\LibFT4222-64.dll --d2xx C:\FTDI\ftd2xx.dll --out capture.jsonl --reads 50
+  ```
+  На Linux укажите абсолютные пути к `.so`; `--d2xx` можно опустить, если D2XX экспортируется из libft4222. Выбирайте serial SPI-интерфейса, не CAT-порт.
 
-Transport is now implemented in `ft4222_transport.py`, with explicit interface
-serial selection, absolute library paths, requested 100 ms FTDI timeouts,
-short-read handling and cleanup on setup/read failure. It is synchronous and
-must run in one dedicated worker. A native driver hang cannot be forcibly
-interrupted by a Python timeout; process isolation remains a deployment option.
-There is no automatic reopen, SPI INIT write, CAT write or device scanning.
+## Тесты
 
-ABI declarations were checked against FTDI's AN_329 and vendor headers:
-- https://ftdichip.com/wp-content/uploads/2024/03/AN_329_User_Guide_for_LibFT4222-v1.8.pdf
-- https://github.com/Bridgetek/EveApps/blob/master/common/eve_hal/Hdr/LibFT4222.h
-- https://github.com/Bridgetek/EveApps/blob/master/common/eve_hal/Hdr/WinTypes.h
-- https://github.com/Bridgetek/EveApps/blob/master/common/eve_hal/Hdr/ftd2xx.h
+`tests/test_ft710_scope.py` и `tests/test_ft4222_transport.py` используют синтетические пакеты и поддельные библиотеки (инверсия, BCD, все span, геометрии, fixed-start, усечение/смещение/склейка/мусор, ошибки на всех стадиях setup/read, cleanup). Это **не** аппаратная сертификация.
 
-LibFT4222 uses cdecl; Windows D2XX uses WINAPI. DWORD/ULONG/BOOL are declared
-32-bit, counts 16-bit, handles pointer-sized. Native library execution on
-Windows/Linux/ARM64 has not yet been tested. No vendor DLL/SO is bundled.
-
-Diagnostic raw capture (from source checkout; paths/serial are placeholders):
-
-```powershell
-python server/capture_ft710.py --serial YOUR_SPI_SERIAL --libft4222 C:/FTDI/LibFT4222.dll --d2xx C:/FTDI/ftd2xx.dll --out capture.jsonl --reads 50
-```
-
-On Linux give an absolute path to libft4222.so; --d2xx may be omitted if that
-library exports the D2XX API. Select the SPI interface serial, not the CAT port.
-SCU-LAN10 spectrum output must be enabled in the radio menu per wfview's setup
-guide. Close any other application using this SPI interface first.
-The diagnostic tool initializes the SPI interface and reads it; it does not
-send CAT/PTT commands. JSONL records preserve every read boundary and elapsed
-time, including empty reads. Existing files are never overwritten. An aborted
-capture may remain as a partial file. Up to 10000 reads are allowed.
-
-23 tests pass, including fake-library failures at every setup stage, read
-failure, short/empty reads, cleanup, reopening, ABI widths and capture output.
-These are not hardware certification. Next: raw capture replay, alignment,
-hardware validation, then worker integration. Do not publish this experimental
-transport as a working live FT-710 source until those steps pass.
+До публикации как полностью проверенной функции необходимы: захват сырого потока с реального радио, replay, проверка выравнивания/масштаба/геометрии/клика по частоте и работа нативных библиотек на целевых платформах (Windows x64, Linux/ARM64).

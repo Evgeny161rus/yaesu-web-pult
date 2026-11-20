@@ -69,10 +69,12 @@ const C = {                         // состояние клиента
   pttPressed: false, txOwner: false, pttBusy: false, txStart: 0, keepalive: null,
   lockUntil: {},                    // ключ -> время, до которого не принимаем значение с сервера
   wfMax: store.get('wfMax', 0),          // выбранный обзор водопада, 0 = авто
+  wfSrc: 'audio',                        // источник водопада: audio | rf
+  wfScope: false,                        // сервер умеет широкий USB-scope
   span: 4000, bw: 0,                      // действующий обзор и измеренная полоса звука трансивера
 };
 const opts = Object.assign({ echo: false, ns: false, agc: false, muteTx: true, pttMode: 'hold', space: true, palette: 'classic', micGain: 100, micId: '',
-  sqMode: 'radio', sqThr: -60, tail: 500, scale: 'auto', hotkeys: true }, store.get('opts', {}));
+  sqMode: 'radio', sqThr: -60, tail: 500, scale: 'auto', hotkeys: true, rfWf: true }, store.get('opts', {}));
 if ((opts.v | 0) < 2) {           // 1.8: обработка браузера для эфира по умолчанию выключена (портила голос)
   opts.echo = false; opts.ns = false; opts.agc = false; opts.v = 2; store.set('opts', opts);
 }
@@ -116,6 +118,7 @@ function connect() {
     switch (m.t) {
       case 'hello_ok':
         C.authed = true; C.local = m.local; C.info = m;
+        C.wfScope = !!m.wf_scope;
         if (!m.local && C.pw) store.set('pw', C.pw);
         if (!C.rate) {                                   // первый вход: на этом ПК — максимальное качество
           C.rate = m.local ? 48000 : 16000; $('#optRate').value = C.rate;
@@ -128,6 +131,8 @@ function connect() {
         $('#srvInfo').textContent = `Сервер v${m.version}. PTT: ${m.ptt_method}. Ограничение передачи: ${m.max_tx} с.` + (m.audio_err ? ` ЗВУК: ${m.audio_err}` : '');
         setWfMsg(m.audio_err);
         updateSpan(true);
+        renderWfMode();
+        syncWfSource(true);
         send({ t: 'cw_hello' }); cwDesk.resend(); digiDesk.resend(); digi2.resend(); ft8Desk.resend(); voiceCq.hello(); qsoRec.hello();
         if (C.audioOn) send({ t: 'audio', on: true, rate: C.rate });
         break;
@@ -147,6 +152,19 @@ function connect() {
         if (!C.txOwner) C.txStart = 0;
         updatePtt(); pushGate(); break;
       case 'note': toast(m.msg, 4000); break;
+      case 'wf_src':
+        C.wfSrc = m.mode === 'rf' ? 'rf' : 'audio';
+        if (C.wfSrc !== 'rf') wf.rf = null;
+        if (C.wfSrc === 'rf' && m.span) wf.rfSpan = m.span;
+        if (m.reason) C.wfScope = false;      // сервер сам переключил на звук
+        renderWfMode(); drawOverlay();
+        break;
+      case 'wf_scope':
+        C.wfScope = m.state === 'live';
+        if (C.wfScope) { renderWfMode(); syncWfSource(true); }
+        else if (m.reason) note('Широкий водопад: ' + m.reason, 4000);
+        renderWfMode();
+        break;
       case 'audio_status': setWfMsg(m.err); break;
       case 'raw': catLine(m.line); break;
       case 'menu_list': buildMenu(m.items); break;
@@ -175,6 +193,11 @@ function onBinary(b) {
     const dv = new DataView(b.buffer);
     const n = dv.getUint16(1, true), binHz = dv.getFloat32(3, true);
     wfRow(b.subarray(7, 7 + n), binHz);
+  } else if (type === 4) {
+    const dv = new DataView(b.buffer);
+    const center = Number(dv.getBigUint64(1, true));
+    const span = dv.getUint32(9, true), n = dv.getUint16(13, true);
+    rfRow(b.subarray(15, 15 + n), center, span);
   } else if (type === 5 || type === 6) {
     digiDesk.onBin(b);
   } else if (type === 7 || type === 8) {
@@ -575,7 +598,10 @@ function sizeCanvases() {
 // AM/FM: на водопад приходит уже продетектированный звук, несущей в нём нет. Чтобы картинка
 // была привычной (сигнал по центру), показываем звук зеркально: 0 Гц в середине, ±частоты по краям.
 const mirrored = () => opts.fmCenter !== false && isAMFM(S.mode);
+const rfView = () => !!(wf.rf && C.wfSrc === 'rf');
+const viewSpan = () => (rfView() ? wf.rf.span : C.span);
 function wfRow(row, binHz) {
+  if (C.wfSrc === 'rf') return;        // кадры прежнего источника после переключения
   // FT8: водопад медленнее — видно 3–4 периода (как в JTDX/MSHV); соседние строки объединяются по максимуму
   const tNow = performance.now();
   if (C.wfT) C.wfRate = (C.wfRate || 30) * 0.95 + 0.05 * (1000 / Math.max(1, tNow - C.wfT));
@@ -593,9 +619,23 @@ function wfRow(row, binHz) {
     for (let i = 0; i < n0; i++) { r2[n0 - 1 - i] = row[i]; r2[n0 - 1 + i] = row[i]; }
     row = r2;
   }
+  wf.binHz = binHz;
+  paintWfRow(row);
+  window.ft8Desk && ft8Desk.onRow();
+}
+// Широкий водопад трансивера (FT-710/FTDX10/FTDX101, USB-scope).
+// Уровни относительные: та же палитра, но шкала частот абсолютная.
+function rfRow(row, center, span) {
+  if (C.wfSrc !== 'rf' || !row.length) return;
+  wf.rf = { center, span };
+  wf.rfSpan = span;
+  wf.binHz = span / Math.max(1, row.length - 1);
+  paintWfRow(row);
+  renderWfMode();
+}
+function paintWfRow(row) {
   if (!wf.lut) buildLut();
   const n = row.length;
-  wf.binHz = binHz;
   const cv = wf.canvas, ctx = cv.getContext('2d');
   if (cv.width !== n || cv.height !== wf.rows) {
     // при смене размера сохраняем накопленную картинку
@@ -608,7 +648,6 @@ function wfRow(row, binHz) {
   const px = new Uint32Array(wf.img.data.buffer);
   for (let i = 0; i < n; i++) px[i] = wf.lut[row[i]];
   ctx.putImageData(wf.img, 0, 0);
-  window.ft8Desk && ft8Desk.onRow();
   // спектр — со сглаживанием
   if (!wf.avg || wf.avg.length !== n) wf.avg = Float32Array.from(row);
   for (let i = 0; i < n; i++) wf.avg[i] = wf.avg[i] * 0.6 + row[i] * 0.4;
@@ -619,10 +658,10 @@ function drawSpectrum() {
   ctx.clearRect(0, 0, W, H);
   if (!a) return;
   const floor = -130 + +$('#wfFloor').value * 0.5, range = +$('#wfRange').value;
-  const span = C.span;
+  const span = viewSpan();
   ctx.beginPath();
   for (let x = 0; x < W; x++) {
-    const i = mirrored() ? Math.min(a.length - 1, Math.round(x / W * (a.length - 1)))
+    const i = (mirrored() && !rfView()) ? Math.min(a.length - 1, Math.round(x / W * (a.length - 1)))
       : Math.min(a.length - 1, Math.round(x / W * span / wf.binHz));
     const y = H - clamp((a[i] / 2 - 130 - floor) / range, 0, 1) * (H - 4);
     x ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
@@ -642,10 +681,11 @@ function passband() {
 function drawOverlay() {
   const c = wf.ov; if (!c.width) return;
   const mir = mirrored();
-  const ctx = c.getContext('2d'), W = c.width, H = c.height, span = C.span,
+  const ctx = c.getContext('2d'), W = c.width, H = c.height, span = viewSpan(),
     X = hz => mir ? (0.5 + hz / (2 * span)) * W : hz / span * W;
   const dpr = W / c.clientWidth;
   ctx.clearRect(0, 0, W, H);
+  if (rfView()) { drawOverlayRf(ctx, W, H, dpr); return; }
   let [lo, hi] = passband();
   if (mir) lo = -hi;
   ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fillRect(X(lo), 0, X(hi) - X(lo), H);
@@ -684,6 +724,27 @@ function drawOverlay() {
     ctx.fillStyle = 'rgba(255,211,77,.95)'; ctx.fillText(fmtFreq(S.freq_a || 0), W / 2 + 4 * dpr, 14 * dpr);
   }
 }
+function niceStep(span) {
+  const raw = span / 7, pow = 10 ** Math.floor(Math.log10(Math.max(1, raw))), m = raw / pow;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * pow;
+}
+function drawOverlayRf(ctx, W, H, dpr) {
+  const { center, span } = wf.rf;
+  const X = hz => W / 2 + (hz - center) / span * W;
+  ctx.font = `${11 * dpr}px Consolas, monospace`;
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.fillStyle = 'rgba(220,235,245,.75)';
+  const step = niceStep(span), lo = center - span / 2, hi = center + span / 2;
+  const digits = step >= 100000 ? 2 : step >= 10000 ? 3 : 4;
+  for (let hz = Math.ceil(lo / step) * step; hz <= hi; hz += step) {
+    const x = X(hz);
+    if (x < 2 * dpr || x > W - 2 * dpr) continue;
+    ctx.beginPath(); ctx.moveTo(x, H * 0.28 - 6 * dpr); ctx.lineTo(x, H * 0.28); ctx.stroke();
+    ctx.fillText((hz / 1e6).toFixed(digits), x + 3 * dpr, H * 0.28 - 4 * dpr);
+  }
+  ctx.strokeStyle = 'rgba(255,211,77,.9)'; ctx.setLineDash([5 * dpr, 4 * dpr]);
+  ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,211,77,.95)'; ctx.fillText(fmtFreq(center), W / 2 + 4 * dpr, 14 * dpr);
+}
 function audioToRf(a) {
   const f = S.freq_a || 0, m = S.mode;
   if (isCW(m)) return isLower(m) ? f - (a - pitchHz()) : f + (a - pitchHz());
@@ -698,29 +759,40 @@ function tuneToAudio(a) {
 }
 (() => {
   const w = $('#wfWrap'), cur = $('#wfCursor');
-  const aAt = e => {
+  const wfPoint = e => {
     const r = w.getBoundingClientRect(), f = clamp((e.clientX - r.left) / r.width, 0, 1);
-    return mirrored() ? Math.abs(f * 2 - 1) * C.span : f * C.span;
+    if (rfView()) return { rf: true, hz: wf.rf.center + (f - 0.5) * wf.rf.span, x: e.clientX - r.left };
+    return { rf: false, hz: mirrored() ? Math.abs(f * 2 - 1) * C.span : f * C.span, x: e.clientX - r.left };
   };
   w.addEventListener('pointermove', e => {
-    const a = aAt(e), r = w.getBoundingClientRect();
-    cur.style.display = 'block'; cur.style.left = (e.clientX - r.left) + 'px';
-    cur.dataset.f = `${Math.round(a)} Гц · ${fmtFreq(audioToRf(a))}`;
+    const p = wfPoint(e);
+    cur.style.display = 'block'; cur.style.left = p.x + 'px';
+    cur.dataset.f = p.rf ? fmtFreq(Math.round(p.hz / 10) * 10) : `${Math.round(p.hz)} Гц · ${fmtFreq(audioToRf(p.hz))}`;
   });
   w.addEventListener('pointerleave', () => { cur.style.display = 'none'; });
-  w.addEventListener('dblclick', e => { if (C.tab === 'ft8') ft8Desk.pickWf(aAt(e), 'both'); else tuneToAudio(aAt(e)); });
-  w.addEventListener('click', e => { if (C.tab === 'ft8') ft8Desk.pickWf(aAt(e), e.shiftKey ? 'tx' : 'rx'); });
+  w.addEventListener('dblclick', e => {
+    const p = wfPoint(e);
+    if (p.rf) { setFreq(Math.round(p.hz / 10) * 10); return; }
+    if (C.tab === 'ft8') ft8Desk.pickWf(p.hz, 'both'); else tuneToAudio(p.hz);
+  });
+  w.addEventListener('click', e => { if (C.tab === 'ft8') ft8Desk.pickWf(wfPoint(e).hz, e.shiftKey ? 'tx' : 'rx'); });
   w.addEventListener('contextmenu', e => {            // правый клик — декодер CW слушает эту частоту
     e.preventDefault();
-    if (C.tab === 'digi') digiDesk.setFreq(Math.round(aAt(e)));
-    else if (C.tab === 'ft8') ft8Desk.pickWf(aAt(e), 'tx');
-    else cwDesk.setFreq(Math.round(aAt(e)));
+    if (rfView()) return;                            // в режиме радио частота абсолютная
+    const a = wfPoint(e).hz;
+    if (C.tab === 'digi') digiDesk.setFreq(Math.round(a));
+    else if (C.tab === 'ft8') ft8Desk.pickWf(a, 'tx');
+    else cwDesk.setFreq(Math.round(a));
   });
   let lastTap = 0;
   w.addEventListener('pointerup', e => {           // двойной тап на телефоне
     if (e.pointerType !== 'touch') return;
-    const now = performance.now();
-    if (now - lastTap < 350) { if (C.tab === 'ft8') ft8Desk.pickWf(aAt(e), 'both'); else tuneToAudio(aAt(e)); }
+    const now = performance.now(), p = wfPoint(e);
+    if (now - lastTap < 350) {
+      if (p.rf) setFreq(Math.round(p.hz / 10) * 10);
+      else if (C.tab === 'ft8') ft8Desk.pickWf(p.hz, 'both');
+      else tuneToAudio(p.hz);
+    }
     lastTap = now;
   });
   w.addEventListener('wheel', e => { e.preventDefault(); nudge(e.deltaY < 0 ? 1 : -1); }, { passive: false });
@@ -754,14 +826,59 @@ function updateSpan(force) {
   ab.textContent = C.wfMax ? 'Авто' : `Авто ${(span / 1000).toFixed(span % 1000 ? 1 : 0)}k`;
   if (span === C.span && !force) return;
   C.span = span; wf.canvas.width = 0;
-  send({ t: 'wf', on: true, max: span }); drawOverlay();
+  send({ t: 'wf', on: true, max: span, src: C.wfSrc === 'rf' ? 'rf' : 'audio' });
+  drawOverlay();
 }
+// Широкий водопад USB-scope доступен только на «обзорных» вкладках: на digi/FT8/CW
+// нужны звуковые частоты (метки декодеров, полоса), поэтому там остаётся звук.
+const RF_TABS = ['rx', 'tx', 'vfo'];
+const wantRf = () => !!(C.wfScope && opts.rfWf !== false && RF_TABS.includes(C.tab));
+// Переключение источника на сервере. Сервер подтверждает ответом wf_src (или отказом).
+function syncWfSource(force) {
+  const want = wantRf() ? 'rf' : 'audio';
+  if (!force && C.wfSrc === want) { renderWfMode(); return; }
+  C.wfSrc = want;
+  if (want !== 'rf') wf.rf = null;
+  send({ t: 'wf', on: true, max: C.span || 4000, src: want });
+  renderWfMode(); drawOverlay();
+}
+let wfModeKey = '';
+function renderWfMode() {
+  const btn = $('#wfSrc'); if (!btn) return;
+  const rf = rfView(), scoped = !!C.wfScope;
+  const key = `${scoped}|${rf}|${C.wfSrc}|${wf.rfSpan || 0}|${C.tab}|${S.mode}`;
+  if (key === wfModeKey) return;
+  wfModeKey = key;
+  btn.classList.toggle('hidden', !scoped);
+  btn.classList.toggle('on', rf);
+  const khz = (wf.rfSpan || 0) / 1000;
+  btn.textContent = rf ? `RF ${khz >= 1000 ? (khz / 1000).toFixed(1) + 'M' : Math.round(khz) + 'k'}` : 'Звук';
+  btn.title = rf ? 'Широкий водопад USB-scope трансивера. Нажмите, чтобы вернуться к звуковому'
+    : 'Звуковой водопад. Нажмите, чтобы включить широкий USB-scope (вкладки RX/TX/VFO)';
+  $('#spanSeg').classList.toggle('hidden', rf);
+  renderCenterBtn();
+  const hint = $('#wfHint');
+  if (hint) hint.textContent = rf
+    ? 'Широкий водопад: шкала — абсолютная частота. Двойной клик — настроиться'
+    : (C.tab === 'ft8' ? 'Клик — RX, правый клик / Shift — TX, двойной — оба' : 'Двойной клик — настроиться на сигнал');
+}
+(() => {
+  const b = $('#wfSrc'); if (!b) return;
+  b.onclick = () => {
+    if (!C.wfScope) return;
+    opts.rfWf = !opts.rfWf;
+    saveOpts();
+    wfModeKey = '';
+    toast(opts.rfWf ? 'Широкий водопад включён (вкладки RX/TX/VFO)' : 'Водопад: звук с трансивера');
+    syncWfSource(true);
+  };
+})();
 $$('#spanSeg button').forEach(b => {
   b.onclick = () => { C.wfMax = +b.dataset.v; store.set('wfMax', C.wfMax); updateSpan(true); };
 });
 function renderCenterBtn() {
   const b = $('#wfCenter'); if (!b) return;
-  b.classList.toggle('hidden', !isAMFM(S.mode));
+  b.classList.toggle('hidden', rfView() || !isAMFM(S.mode));
   b.classList.toggle('on', opts.fmCenter !== false);
 }
 $('#wfCenter').onclick = () => { opts.fmCenter = opts.fmCenter === false; saveOpts(); renderCenterBtn(); updateSpan(true); };
@@ -955,10 +1072,10 @@ $$('#tabs button').forEach(b => b.onclick = () => {
   if (b.dataset.tab === 'menu' && !menu.items) send({ t: 'menu_list' });
   C.tab = b.dataset.tab;
   document.body.classList.toggle('tab-ft8', C.tab === 'ft8');
-  const hint = $('#wfHint');
-  if (hint) hint.textContent = C.tab === 'ft8' ? 'Клик — RX, правый клик / Shift — TX, двойной — оба' : 'Двойной клик — настроиться на сигнал';
   window.ft8Desk && ft8Desk.marks();
+  if (typeof syncWfSource === 'function') syncWfSource();
   if (typeof updateSpan === 'function') updateSpan();
+  if (typeof renderWfMode === 'function') renderWfMode();
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
   store.set('tab', b.dataset.tab);
 });

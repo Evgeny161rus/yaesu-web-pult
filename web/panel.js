@@ -63,7 +63,8 @@ function init(m) {
   if (cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
   $('#ver').textContent = `версия ${m.version}`;
   fillDevices();
-  for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port']) $('#' + k).value = cfg[k];
+  for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port', 'waterfall_source']) $('#' + k).value = cfg[k] ?? '';
+  for (const k of ['scope_libft4222', 'scope_d2xx', 'scope_serial']) $('#' + k).value = cfg[k] || '';
   for (const k of ['simulate', 'auto_connect', 'open_panel', 'open_pult']) $('#' + k).checked = !!cfg[k];
   $('#cw_method').value = cfg.cw_method || 'cat';
   $('#cw_port').value = cfg.cw_port || '';
@@ -163,6 +164,10 @@ function collect() {
     max_tx_seconds: Math.max(10, Math.min(1800, +$('#max_tx_seconds').value || 180)),
     http_port: +$('#http_port').value || 8080, https_port: +$('#https_port').value || 8443,
     cw_method: $('#cw_method').value, cw_port: $('#cw_port').value,
+    waterfall_source: $('#waterfall_source').value || 'auto',
+    scope_libft4222: $('#scope_libft4222').value.trim(),
+    scope_d2xx: $('#scope_d2xx').value.trim(),
+    scope_serial: $('#scope_serial').value.trim(),
   };
 }
 function save() { clearTimeout(saveT); saveT = setTimeout(() => send({ t: 'admin_save', cfg: collect() }), 350); }

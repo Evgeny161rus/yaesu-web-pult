@@ -63,6 +63,10 @@
       const k = el.getAttribute('data-i18n-value');
       if (k) el.value = t(k);
     });
+    scope.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+      const k = el.getAttribute('data-i18n-aria-label');
+      if (k) el.setAttribute('aria-label', t(k));
+    });
     // elements with data-label-key are handled by app logic, but update data-label if possible
     scope.querySelectorAll('[data-label-key]').forEach(el => {
       const k = el.getAttribute('data-label-key');

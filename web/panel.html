@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Yaesu Web Pult — Панель управления</title>
+<title data-i18n="panel.title">Yaesu Web Pult — Панель управления</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="app.css">
+<script src="i18n.js"></script>
 <style>
   body { padding: 0; }
   .wrap { max-width: 1040px; margin: 0 auto; padding: 14px; display: grid; gap: 12px; }
@@ -71,17 +72,17 @@
 <div class="wrap">
   <div class="head">
     <img src="icon.svg" alt="">
-    <div><h1>Yaesu Web Pult — Панель управления</h1><div class="ver" id="ver"></div></div>
+    <div><h1 data-i18n="panel.title">Yaesu Web Pult — Панель управления</h1><div class="ver" id="ver"></div></div>
     <span class="spacer"></span>
-    <span class="saved" id="saved">✓ Сохранено</span>
+    <span class="saved" id="saved" data-i18n="panel.saved">✓ сохранено</span>
     <select id="scale" title="Масштаб окна" class="scale-sel">
-      <option value="auto">Масштаб: авто</option><option value="0.8">80 %</option><option value="0.9">90 %</option><option value="1">100 %</option>
+      <option value="auto" data-i18n="panel.scale.auto">Масштаб: авто</option><option value="0.8">80 %</option><option value="0.9">90 %</option><option value="1">100 %</option>
       <option value="1.1">110 %</option><option value="1.25">125 %</option><option value="1.5">150 %</option><option value="1.75">175 %</option><option value="2">200 %</option>
     </select>
   </div>
 
   <section class="panel wizard hidden" id="wizard">
-    <h3>👋 Первый запуск</h3>
+    <h3 data-i18n="panel.wizard.title">👋 Первый запуск</h3>
     <ol>
       <li>Подключите трансивер Yaesu к этому ПК кабелем USB и включите его (нужен драйвер Virtual COM Port от Yaesu).</li>
       <li>Проверьте поля в карточке «Трансивер» — программа подобрала их сама. Если порт не найден, нажмите ↻.</li>
@@ -97,8 +98,8 @@
       </div>
     </div>
     <div class="acts">
-      <button class="btn go" id="btnRun">▶ Запустить</button>
-      <button class="btn primary" id="btnPult">Открыть пульт</button>
+      <button class="btn go" id="btnRun" data-i18n="panel.run">▶ Запустить</button>
+      <button class="btn primary" id="btnPult" data-i18n="panel.open">Открыть пульт</button>
     </div>
     <div class="chips">
       <span class="chip"><i id="cCat"></i>CAT</span>
@@ -111,7 +112,7 @@
 
   <div class="cols">
     <section class="panel card">
-      <h3>📻 Трансивер</h3>
+      <h3 data-i18n="panel.radio">📻 Трансивер</h3>
       <button class="btn" id="probeModel">Определить современный Yaesu по ID</button>
       <p class="hint" id="probeHint">На выбранном порту и скорости, при остановленном соединении. Для старых моделей — ручной выбор.</p>
       <label class="field"><span>Драйвер</span><select id="radio_backend">

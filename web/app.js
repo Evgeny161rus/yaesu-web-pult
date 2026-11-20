@@ -8,6 +8,7 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem('ftx1.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
   set(k, v) { try { localStorage.setItem('ftx1.' + k, JSON.stringify(v)); } catch { } },
 };
+const tr = (k, fb) => (window.I18N ? I18N.t(k, fb) : (fb != null ? fb : k));
 let toastT;
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -108,7 +109,7 @@ function connect() {
   C.ws = ws;
   ws.onopen = () => send({ t: 'hello', pw: C.pw, rate: C.rate || 16000 });
   ws.onclose = () => {
-    C.authed = false; setLink(false, 'нет связи с сервером');
+    C.authed = false; setLink(false, 'Нет связи с сервером', 'conn.lost');
     if (C.txOwner) { C.txOwner = false; updatePtt(); }
     setTimeout(connect, 2000);
   };
@@ -140,7 +141,7 @@ function connect() {
         if (C.pw) { store.set('pw', ''); }          // неверный сохранённый пароль больше не подставляем
         C.pw = '';
         $('#login').classList.remove('hidden');
-        $('#loginMsg').textContent = m.first ? 'Введите пароль сервера' : m.msg;
+        $('#loginMsg').textContent = m.first ? tr('auth.msg', 'Введите пароль сервера') : m.msg;
         $('#loginPw').value = ''; setTimeout(() => $('#loginPw').focus(), 50);
         break;
       case 'state': applyState(m.s, m.full); if (Object.keys(m.s).some(k => /^fw\d$|^radio_id$/.test(k))) renderFw(); break;
@@ -211,9 +212,16 @@ function setWfMsg(err) {
   if (err) el.innerHTML = `<div><b>Нет звука с трансивера</b>${err.replace(/[&<]/g, c => c === '&' ? '&amp;' : '&lt;')}` +
     (C.local ? '<br><br>Выберите устройства в панели управления сервером (кнопка ⚙ вверху).' : '') + '</div>';
 }
-function setLink(ok, text) {
+function setLink(ok, text, key) {
   $('#linkDot').className = 'dot ' + (ok ? 'ok' : 'bad');
-  if (text) $('#rigInfo').textContent = text;
+  C.linkState = { ok: !!ok, text: text || '', key: key || null };
+  const t = key ? tr(key, text) : text;
+  if (t != null) $('#rigInfo').textContent = t;
+}
+function refreshLink() {
+  const st = C.linkState; if (!st) return;
+  if (!st.ok && st.key) $('#rigInfo').textContent = tr(st.key, st.text);
+  else if (st.text != null) $('#rigInfo').textContent = st.text;
 }
 
 // ------------------------------------------------------------------ отрисовка состояния
@@ -235,7 +243,7 @@ function applyState(d, full) {
   }
   if ('connected' in d || 'radio_id' in d || 'fw0' in d || 'pwr_head' in d) {
     const head = S.pwr_head === 2 ? 'Optima/SPA-1' : (S.pwr_head === 1 ? 'Field' : '');
-    setLink(S.connected, S.connected ? `${S.radio_id === '0840' ? 'FTX-1' : 'ID ' + (S.radio_id || '?')} ${head} ${S.fw0 ? 'FW ' + S.fw0 : ''}` : 'трансивер не отвечает');
+    setLink(S.connected, S.connected ? `${S.radio_id === '0840' ? 'FTX-1' : 'ID ' + (S.radio_id || '?')} ${head} ${S.fw0 ? 'FW ' + S.fw0 : ''}` : tr('conn.not_responding', 'трансивер не отвечает'), S.connected ? null : 'conn.not_responding');
   }
   renderFreq();
   renderMeters();
@@ -497,7 +505,7 @@ const bandType = () => (S.freq_a >= 420e6 ? 2 : S.freq_a >= 144e6 ? 1 : 0);
 
 function initControls() {
   for (const el of $$('.ctl')) {
-    const k = el.dataset.k, label = el.dataset.label;
+    const k = el.dataset.k, label = (el.dataset.labelKey && window.I18N) ? I18N.t(el.dataset.labelKey, el.dataset.label) : el.dataset.label;
     if (el.classList.contains('tog')) {
       el.innerHTML = `<span>${label}</span><span class="sw"></span>`;
       el.onclick = () => { const v = ctlValue(k) ? 0 : 1; setParam(k, v); renderControls({ [k]: v }); };
@@ -524,6 +532,14 @@ function initControls() {
     }
   }
 }
+
+
+function rebuildControlsForLang() {
+  if (typeof initControls === 'function') initControls();
+  if (typeof renderControls === 'function') renderControls({});
+}
+window.addEventListener('langchange', rebuildControlsForLang);
+
 function renderControls(d) {
   for (const el of $$('.ctl')) {
     const k = el.dataset.k;
@@ -1248,6 +1264,11 @@ function initOpts() {
   $('#optPttMode').onchange = e => { opts.pttMode = e.target.value; saveOpts(); pttUp(); };
   $('#optPalette').value = opts.palette;
   $('#optPalette').onchange = e => { opts.palette = e.target.value; saveOpts(); buildLut(); };
+  const ol = $('#optLang');
+  if (ol && window.I18N) {
+    ol.value = I18N.getLang();
+    ol.onchange = e => I18N.setLang(e.target.value);
+  }
 }
 
 // ------------------------------------------------------------------ вход, полноэкранный режим, PWA

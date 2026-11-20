@@ -458,7 +458,7 @@ class Station:
         log.info("Связь с трансивером остановлена")
         self.spectrum.clear()
         self.broadcast({'t': 'state', 's': {'connected': False}})
-        self.broadcast({'t': 'audio_status', 'err': 'Связь с трансивером остановлена'})
+        self.broadcast({'t': 'audio_status', 'err': 'Связь с трансивером остановлена', 'err_key': 'note.radio_stopped'})
         self.push_status()
 
     def _rx_from_thread(self, x):
@@ -769,20 +769,20 @@ class Station:
     def set_ptt(self, client, on):
         if not self.rig:
             if on and client:
-                client.ws.send_json({'t': 'note', 'msg': 'Сервер не подключён к трансиверу'})
+                client.ws.send_json({'t': 'note', 'msg': 'Сервер не подключён к трансиверу', 'msg_key': 'note.no_radio'})
             return
         if on:
             if is_hamlib(self.rig) and (not self.rig.state.get('connected') or not self.rig.caps.get('ptt')):
-                client.ws.send_json({'t': 'note', 'msg': 'PTT недоступен: проверьте соединение и возможности модели'})
+                client.ws.send_json({'t': 'note', 'msg': 'PTT недоступен: проверьте соединение и возможности модели', 'msg_key': 'note.ptt_unavail'})
                 return
             if self.vk.task:                             # PTT вручную — автовызов прекращаем, работаем сами
-                self.vk.stop('нажата PTT')
+                self.vk.stop('нажата PTT', key='vk.note.stopped_ptt')
                 self.vk.busy = False
             if self.digi.tx_busy or self.cw.sender.busy or self.ft.busy:
-                client.ws.send_json({'t': 'note', 'msg': 'Идёт передача RTTY/CW/FT8 — дождитесь окончания'})
+                client.ws.send_json({'t': 'note', 'msg': 'Идёт передача RTTY/CW/FT8 — дождитесь окончания', 'msg_key': 'note.tx_busy_digital'})
                 return
             if self.ptt_owner not in (None, client):
-                client.ws.send_json({'t': 'note', 'msg': 'Передача занята другим клиентом (%s)' % self.ptt_owner.name})
+                client.ws.send_json({'t': 'note', 'msg': 'Передача занята другим клиентом (%s)' % self.ptt_owner.name, 'msg_key': 'note.tx_busy_other', 'msg_params': {'who': self.ptt_owner.name}})
                 return
             if self.ptt_owner is None:
                 self.audio.tx.clear()
@@ -808,11 +808,11 @@ class Station:
                     now = time.monotonic()
                     if now - self.ptt_alive > 1.5:
                         log.warning("PTT снят: нет подтверждений от клиента %s", self.ptt_owner.name)
-                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: потеря связи'})
+                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: потеря связи', 'msg_key': 'note.ptt_lost'})
                         self.set_ptt(None, False)
                     elif now - self.ptt_since > self.cfg['max_tx_seconds']:
                         log.warning("PTT снят: превышено время передачи")
-                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: превышено время (%d с)' % self.cfg['max_tx_seconds']})
+                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: превышено время (%d с)' % self.cfg['max_tx_seconds'], 'msg_key': 'note.ptt_timeout', 'msg_params': {'sec': int(self.cfg['max_tx_seconds'])}})
                         self.set_ptt(None, False)
                 await self.cw.tick()
                 if self.scope_state == 'live' and time.monotonic() - self.scope_last_good > 6:

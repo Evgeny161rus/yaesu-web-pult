@@ -136,6 +136,3 @@ DIR_SSTV = 'sstv'
 DIR_MEMORY = 'memory'
 DIR_WEB = 'web'
 
-# AI/LM Studio - DEPRECATED (удалено для совместимости с Raspberry Pi)
-# DEFAULT_AI_URL = 'http://localhost:1234/v1'
-# AI_REQUEST_TIMEOUT = 30.0

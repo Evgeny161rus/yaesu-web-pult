@@ -141,47 +141,47 @@
     <div class="tab on" id="tab-rx">
       <div id="hamlibControls"></div>
       <div class="ctl-grid">
-        <div class="ctl" data-k="af" data-min="0" data-max="255" data-label="AF трансивера" data-label-key="ctl.af"></div>
-        <div class="ctl" data-k="rf" data-min="0" data-max="255" data-label="RF усиление" data-label-key="ctl.rf"></div>
-        <div class="ctl" data-k="sql" data-min="0" data-max="255" data-label="Шумодав (SQL)" data-label-key="ctl.sql"></div>
-        <div class="ctl sel" data-k="agc" data-label="АРУ (AGC)" data-opts="0:OFF,1:FAST,2:MID,3:SLOW,4:AUTO (FAST),5:AUTO (MID),6:AUTO (SLOW)" data-label-key="ctl.agc"></div>
-        <div class="ctl sel" data-k="preamp" data-label="Предусилитель" data-label-key="ctl.preamp" data-opts="0:IPO,1:AMP1,2:AMP2"></div>
-        <div class="ctl tog" data-k="att" data-label="Аттенюатор" data-label-key="ctl.att"></div>
-        <div class="ctl" data-k="nb" data-min="0" data-max="10" data-label="NB (0 = выкл)" data-label-key="ctl.nb"></div>
-        <div class="ctl" data-k="nr" data-min="0" data-max="10" data-label="DNR (0 = выкл)" data-label-key="ctl.nr"></div>
-        <div class="ctl tog" data-k="dnf" data-label="DNF авто-режектор" data-label-key="ctl.dnf"></div>
-        <div class="ctl" data-k="width" data-min="0" data-max="23" data-label="Полоса (WIDTH)" data-label-key="ctl.width" data-fmt="width"></div>
-        <div class="ctl" data-k="ifshift" data-min="-1200" data-max="1200" data-step="20" data-label="IF SHIFT, Гц" data-label-key="ctl.ifshift" data-reset="0"></div>
-        <div class="ctl tog" data-k="narrow" data-label="NAR (узкий)" data-label-key="ctl.narrow"></div>
-        <div class="ctl tog" data-k="notch" data-label="Ручной режектор" data-label-key="ctl.notch"></div>
-        <div class="ctl" data-k="notch_freq" data-min="10" data-max="3200" data-step="10" data-label="Режектор, Гц" data-label-key="ctl.notch_freq"></div>
+        <div class="ctl" data-k="af" data-min="0" data-max="255" data-label="AF volume (radio)" data-label-key="ctl.af"></div>
+        <div class="ctl" data-k="rf" data-min="0" data-max="255" data-label="RF gain" data-label-key="ctl.rf"></div>
+        <div class="ctl" data-k="sql" data-min="0" data-max="255" data-label="Squelch (SQL)" data-label-key="ctl.sql"></div>
+        <div class="ctl sel" data-k="agc" data-label="AGC" data-opts="0:OFF,1:FAST,2:MID,3:SLOW,4:AUTO (FAST),5:AUTO (MID),6:AUTO (SLOW)" data-label-key="ctl.agc"></div>
+        <div class="ctl sel" data-k="preamp" data-label="Preamp" data-label-key="ctl.preamp" data-opts="0:IPO,1:AMP1,2:AMP2"></div>
+        <div class="ctl tog" data-k="att" data-label="Attenuator" data-label-key="ctl.att"></div>
+        <div class="ctl" data-k="nb" data-min="0" data-max="10" data-label="NB (0 = off)" data-label-key="ctl.nb"></div>
+        <div class="ctl" data-k="nr" data-min="0" data-max="10" data-label="DNR (0 = off)" data-label-key="ctl.nr"></div>
+        <div class="ctl tog" data-k="dnf" data-label="DNF auto-notch" data-label-key="ctl.dnf"></div>
+        <div class="ctl" data-k="width" data-min="0" data-max="23" data-label="Width" data-label-key="ctl.width" data-fmt="width"></div>
+        <div class="ctl" data-k="ifshift" data-min="-1200" data-max="1200" data-step="20" data-label="IF SHIFT, Hz" data-label-key="ctl.ifshift" data-reset="0"></div>
+        <div class="ctl tog" data-k="narrow" data-label="NAR (narrow)" data-label-key="ctl.narrow"></div>
+        <div class="ctl tog" data-k="notch" data-label="Manual notch" data-label-key="ctl.notch"></div>
+        <div class="ctl" data-k="notch_freq" data-min="10" data-max="3200" data-step="10" data-label="Notch, Hz" data-label-key="ctl.notch_freq"></div>
         <div class="ctl tog" data-k="contour" data-label="CONTOUR" data-label-key="ctl.contour"></div>
-        <div class="ctl" data-k="contour_freq" data-min="10" data-max="3200" data-step="10" data-label="CONTOUR, Гц" data-label-key="ctl.contour_freq"></div>
+        <div class="ctl" data-k="contour_freq" data-min="10" data-max="3200" data-step="10" data-label="CONTOUR, Hz" data-label-key="ctl.contour_freq"></div>
         <div class="ctl tog" data-k="apf" data-label="APF (CW)" data-label-key="ctl.apf"></div>
-        <div class="ctl" data-k="apf_freq" data-min="0" data-max="50" data-label="APF сдвиг" data-label-key="ctl.apf_freq" data-fmt="apf"></div>
+        <div class="ctl" data-k="apf_freq" data-min="0" data-max="50" data-label="APF shift" data-label-key="ctl.apf_freq" data-fmt="apf"></div>
         <div class="ctl tog" data-k="clar_rx" data-label="CLAR RX (RIT)" data-label-key="ctl.clar_rx"></div>
         <div class="ctl tog" data-k="clar_tx" data-label="CLAR TX (XIT)" data-label-key="ctl.clar_tx"></div>
-        <div class="ctl" data-k="clar" data-min="-9999" data-max="9999" data-step="10" data-label="CLAR, Гц" data-label-key="ctl.clar" data-reset="0"></div>
-        <div class="ctl tog" data-k="dual" data-label="Двойной приём" data-label-key="ctl.dual"></div>
+        <div class="ctl" data-k="clar" data-min="-9999" data-max="9999" data-step="10" data-label="CLAR, Hz" data-label-key="ctl.clar" data-reset="0"></div>
+        <div class="ctl tog" data-k="dual" data-label="Dual receive" data-label-key="ctl.dual"></div>
       </div>
     </div>
 
     <div class="tab" id="tab-tx">
       <div class="ctl-grid">
-        <div class="ctl" data-k="power" data-min="0.5" data-max="100" data-step="1" data-label="Мощность, Вт" data-label-key="ctl.power"></div>
+        <div class="ctl" data-k="power" data-min="0.5" data-max="100" data-step="1" data-label="Power, W" data-label-key="ctl.power"></div>
         <div class="ctl" data-k="mic" data-min="0" data-max="100" data-label="MIC GAIN" data-label-key="ctl.mic"></div>
-        <div class="ctl tog" data-k="proc" data-label="Компрессор (PROC)" data-label-key="ctl.proc"></div>
-        <div class="ctl" data-k="proc_level" data-min="0" data-max="100" data-label="Уровень PROC" data-label-key="ctl.proc_level"></div>
+        <div class="ctl tog" data-k="proc" data-label="Compressor (PROC)" data-label-key="ctl.proc"></div>
+        <div class="ctl" data-k="proc_level" data-min="0" data-max="100" data-label="PROC level" data-label-key="ctl.proc_level"></div>
         <div class="ctl" data-k="amc" data-min="0" data-max="100" data-label="AMC" data-label-key="ctl.amc"></div>
         <div class="ctl tog" data-k="vox" data-label="VOX" data-label-key="ctl.vox"></div>
-        <div class="ctl" data-k="vox_gain" data-min="0" data-max="100" data-label="VOX усиление" data-label-key="ctl.vox_gain"></div>
-        <div class="ctl" data-k="vox_delay" data-min="0" data-max="33" data-label="VOX задержка" data-label-key="ctl.vox_delay" data-fmt="delay"></div>
-        <div class="ctl tog" data-k="mon" data-label="Монитор" data-label-key="ctl.mon"></div>
-        <div class="ctl" data-k="mon_level" data-min="0" data-max="100" data-label="Уровень монитора" data-label-key="ctl.mon_level"></div>
-        <div class="ctl sel" data-k="tone_mode" data-label="Тон" data-label-key="ctl.tone_mode" data-opts="0:Выкл,1:CTCSS ENC,2:TSQ,3:DCS"></div>
-        <div class="ctl sel" data-k="ctcss" data-label="CTCSS, Гц" data-label-key="ctl.ctcss" data-opts="ctcss"></div>
-        <div class="ctl sel" data-k="rpt_shift" data-label="Сдвиг репитера" data-label-key="ctl.rpt_shift" data-opts="0:Симплекс,1:+,2:−"></div>
-        <div class="ctl tog" data-k="txw" data-label="TXW (слушать TX)" data-label-key="ctl.txw"></div>
+        <div class="ctl" data-k="vox_gain" data-min="0" data-max="100" data-label="VOX gain" data-label-key="ctl.vox_gain"></div>
+        <div class="ctl" data-k="vox_delay" data-min="0" data-max="33" data-label="VOX delay" data-label-key="ctl.vox_delay" data-fmt="delay"></div>
+        <div class="ctl tog" data-k="mon" data-label="Monitor" data-label-key="ctl.mon"></div>
+        <div class="ctl" data-k="mon_level" data-min="0" data-max="100" data-label="Monitor level" data-label-key="ctl.mon_level"></div>
+        <div class="ctl sel" data-k="tone_mode" data-label="Tone (CTCSS/DCS)" data-label-key="ctl.tone_mode" data-opts="0:Выкл,1:CTCSS ENC,2:TSQ,3:DCS"></div>
+        <div class="ctl sel" data-k="ctcss" data-label="CTCSS, Hz" data-label-key="ctl.ctcss" data-opts="ctcss"></div>
+        <div class="ctl sel" data-k="rpt_shift" data-label="Repeater shift" data-label-key="ctl.rpt_shift" data-opts="0:Симплекс,1:+,2:−"></div>
+        <div class="ctl tog" data-k="txw" data-label="TXW (monitor TX)" data-label-key="ctl.txw"></div>
       </div>
       <div class="btn-row">
         <button class="btn" data-act="tune" data-i18n="tx.tune">⚡ Тюнер (встр.)</button>
@@ -239,8 +239,8 @@
         <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
       </div>
       <div class="ctl-grid">
-        <div class="ctl sel" data-k="mode_b" data-label="Вид работы VFO-B" data-opts="modes" data-label-key="ctl.mode_b"></div>
-        <div class="ctl" data-k="dimmer" data-min="0" data-max="20" data-label="Яркость дисплея" data-label-key="ctl.dimmer"></div>
+        <div class="ctl sel" data-k="mode_b" data-label="VFO-B mode" data-opts="modes" data-label-key="ctl.mode_b"></div>
+        <div class="ctl" data-k="dimmer" data-min="0" data-max="20" data-label="Display brightness" data-label-key="ctl.dimmer"></div>
       </div>
       <h4><span data-i18n="vfo.my_freqs">Мои частоты</span> <span class="muted small" data-i18n="vfo.my_freqs.hint">(хранятся на этом устройстве)</span></h4>
       <div class="btn-row"><input id="favName" placeholder="Название" data-i18n-placeholder="vfo.fav_name" class="text"><button class="btn" id="favAdd" data-i18n="vfo.fav_add">＋ Добавить текущую</button></div>
@@ -308,11 +308,11 @@
 
       <h4 data-i18n="cw.rig">Ключ трансивера</h4>
       <div class="ctl-grid">
-        <div class="ctl" data-k="key_speed" data-min="4" data-max="60" data-label="Скорость, WPM" data-label-key="ctl.key_speed"></div>
-        <div class="ctl" data-k="key_pitch" data-min="0" data-max="75" data-label="Тон CW" data-fmt="pitch" data-label-key="ctl.key_pitch"></div>
-        <div class="ctl tog" data-k="keyer" data-label="Электронный ключ" data-label-key="ctl.keyer"></div>
+        <div class="ctl" data-k="key_speed" data-min="4" data-max="60" data-label="Speed, WPM" data-label-key="ctl.key_speed"></div>
+        <div class="ctl" data-k="key_pitch" data-min="0" data-max="75" data-label="CW pitch" data-fmt="pitch" data-label-key="ctl.key_pitch"></div>
+        <div class="ctl tog" data-k="keyer" data-label="Electronic keyer" data-label-key="ctl.keyer"></div>
         <div class="ctl tog" data-k="bk" data-label="BREAK-IN" data-label-key="ctl.bk"></div>
-        <div class="ctl" data-k="bk_delay" data-min="0" data-max="33" data-label="Задержка BK" data-fmt="delay" data-label-key="ctl.bk_delay"></div>
+        <div class="ctl" data-k="bk_delay" data-min="0" data-max="33" data-label="BK delay" data-fmt="delay" data-label-key="ctl.bk_delay"></div>
       </div>
       <div class="btn-row">
         <button class="btn" data-act="spot_on" data-i18n="cw.spot_on">SPOT вкл</button><button class="btn" data-act="spot_off" data-i18n="cw.spot_off">SPOT выкл</button>
@@ -345,7 +345,6 @@
           <button class="btn small" id="rtClear" data-i18n="rt.clear">Очистить</button>
         </div>
         <div class="cw-screen dg-screen mono" id="rtScreen"><span class="muted" id="rtHintS" data-i18n="rt.hint">Включите декодер и настройтесь на телетайп. Метеосводки DWD (Германия): 50 Бод, сдвиг 450 Гц — выберите станцию в списке справа. Любительский RTTY: 45,45 Бод / 170 Гц, около 14080–14090 кГц.</span></div>
-        <div class="cw-ai hidden" id="rtAi"><div class="cw-ai-head"><b data-i18n="rt.translate">Перевод</b><span class="muted small" id="rtAiModel"></span><span class="spacer"></span><button class="btn small" id="rtAiClose">✕</button></div><div class="cw-ai-body small" id="rtAiBody"></div></div>
         <div class="cw-tx">
           <div class="cw-macros" id="rtMacros"></div>
           <div class="cw-txrow">

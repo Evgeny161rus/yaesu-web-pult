@@ -1,18 +1,18 @@
 """
-CW-стол: декодер + ИИ + передача + автоответ. Живёт внутри Station (main.py).
+CW desk: decoder + rule-based analysis/reply + TX + auto-reply. Lives inside Station (main.py).
 
-Ход работы:
-  звук приёма -> CwDecoder -> символы (в реальном времени всем пультам)
-  пауза после передачи корреспондента -> «переход» (over) закрыт -> разбор ИИ (если включён)
-  -> если включён автоответ, ИИ уверен, что зовут нас, И наш позывной реально есть в принятом,
-     -> ИИ составляет ответ -> отсчёт N секунд (можно отменить) -> передача.
+Flow:
+  RX audio -> CwDecoder -> symbols (realtime to all clients)
+  pause after correspondent's transmission -> "over" closed -> rule-based analysis
+  -> if auto-reply enabled, analysis is confident they call us, AND our callsign is actually present
+     -> compose template reply -> countdown N seconds (can cancel) -> transmit.
 """
 import asyncio
 import logging
 import re
 import time
 
-import ai
+import cw_rules
 from cw import CwDecoder, CwSender, clean_tx_text
 
 log = logging.getLogger("cwdesk")
@@ -25,12 +25,11 @@ class CwDesk:
         self.st = station
         self.dec = CwDecoder(self._dec_event)
         self.sender = CwSender(self._rig_send_threadsafe, self._rig_state, self._tx_event_thread)
-        self.over = ''                    # текущая передача корреспондента
-        self.last_rx = 0.0                # время последнего принятого знака
-        self.history = []                 # [{dir: rx/tx, text, clean?, t}]
+        self.over = ''                    # current correspondent transmission
+        self.last_rx = 0.0
+        self.history = []                 # [{dir: rx/tx, text, clean?, t, ...}]
         self.analysis = None
-        self.ai_busy = False
-        self.proposal = None              # {'text', 'ru', 'deadline', 'task'}
+        self.proposal = None              # {'text', 'ru', 'deadline', 'auto', 'model'}
         self.auto_count = 0
         self.tx_text = ''
         self.cfg_dec = {'enabled': False, 'cyr': False, 'freq': 0, 'sq': 15}
@@ -43,13 +42,24 @@ class CwDesk:
     def op(self):
         return {k: self.cfg.get(k, '') for k in OP_KEYS}
 
-    def lm(self):
-        return ai.LmStudio(self.cfg.get('ai_url'), self.cfg.get('ai_model'))
-
     def bc(self, obj):
         for c in self.st.clients:
             if c.authed and not c.admin:
                 c.ws.send_json(obj)
+
+    @staticmethod
+    def _note(key, msg, **params):
+        d = {'t': 'cw_note', 'msg': msg, 'msg_key': key}
+        if params:
+            d['msg_params'] = params
+        return d
+
+    def _note_to(self, client, key, msg, **params):
+        d = self._note(key, msg, **params)
+        if client:
+            client.ws.send_json(d)
+        else:
+            self.bc(d)
 
     def _rig_send_threadsafe(self, cmd):
         rig = self.st.rig
@@ -71,9 +81,8 @@ class CwDesk:
     def state_msg(self):
         return {'t': 'cw_state', 'dec': self.cfg_dec, 'op': self.op(), 'history': self.history[-30:],
                 'analysis': self.analysis, 'over': self.over, 'busy_tx': self.sender.busy,
-                'tx_text': self.tx_text if self.sender.busy else '', 'ai_busy': self.ai_busy,
+                'tx_text': self.tx_text if self.sender.busy else '',
                 'auto': self.auto_on(), 'method': self.cfg.get('cw_method', 'cat'),
-                'ai_url': self.cfg.get('ai_url'), 'ai_model': self.cfg.get('ai_model'),
                 'auto_delay': self.cfg.get('cw_auto_delay', 6), 'auto_max': self.cfg.get('cw_auto_max', 4),
                 'proposal': self._proposal_public()}
 
@@ -83,14 +92,14 @@ class CwDesk:
             return None
         return {'text': p['text'], 'ru': p['ru'], 'model': p.get('model', ''), 'left': max(0, round(p['deadline'] - time.monotonic(), 1)), 'auto': p['auto']}
 
-    # ------------------------------------------------------------------ декодер
+    # ------------------------------------------------------------------ decoder
     def update_decoder(self):
         en = any(getattr(c, 'cw_dec', False) for c in self.st.clients if c.authed)
         self.cfg_dec['enabled'] = en
         self.dec.configure(enabled=en, cyr=self.cfg_dec['cyr'])
 
     def feed(self, x):
-        """Звук приёма 48 кГц (вызывается в цикле событий)."""
+        """RX audio 48 kHz (called from event loop)."""
         if not self.dec.enabled:
             return
         st = self._rig_state()
@@ -107,7 +116,7 @@ class CwDesk:
         self.bc(ev)
 
     async def tick(self):
-        """Каждые 0,25 с: конец передачи корреспондента, отсчёт автоответа."""
+        """Every ~0.25 s: detect end of correspondent transmission, auto-reply countdown."""
         now = time.monotonic()
         txt = self.over.strip()
         if txt and not self.sender.busy:
@@ -121,13 +130,15 @@ class CwDesk:
         if p and p['auto'] and now >= p['deadline']:
             self.proposal = None
             if not self.auto_on():
-                self.bc({'t': 'cw_note', 'msg': 'Автоответ выключен — передача отменена'})
+                self.bc(self._note('cw.note.auto_off_cancel', 'Автоответ выключен — передача отменена'))
             else:
                 self.auto_count += 1
                 await self.send(p['text'], who='автоответ')
                 if self.auto_count >= int(self.cfg.get('cw_auto_max', 4)):
-                    self._auto_off_all('Автоответ выключен: достигнут лимит %d передач подряд — продолжите вручную'
-                                       % self.auto_count)
+                    n = int(self.cfg.get('cw_auto_max', 4))
+                    self._auto_off_all('cw.note.auto_off_limit',
+                                       'Автоответ выключен: достигнут лимит %d передач подряд — продолжите вручную' % n,
+                                       n=n)
             self.bc({'t': 'cw_proposal', 'p': None})
 
     async def _close_over(self, txt):
@@ -135,89 +146,43 @@ class CwDesk:
         self.history.append(item)
         self.history = self.history[-40:]
         self.bc({'t': 'cw_over', 'item': item})
-        if self.cfg.get('ai_auto_analyze', True) or self.auto_on():
-            await self.analyze(item)
+        await self.analyze(item)
 
-    # ------------------------------------------------------------------ ИИ (с запасным вариантом без него)
-    def _ai_failed(self, e):
-        """LM Studio недоступна — работаем по правилам; тост не чаще раза в 2 минуты."""
-        now = time.monotonic()
-        msg = str(e) if isinstance(e, ai.AiError) else 'Ошибка ИИ: %s' % e
-        self.ai_note = 'ИИ недоступен — разбор по правилам'
-        if now - getattr(self, 'ai_err_t', -1e9) > 120:
-            self.ai_err_t = now
-            self.bc({'t': 'cw_ai_err', 'msg': msg + ' Пока работаю без ИИ — по правилам CW-связи.'})
-
-    def _use_lm(self):
-        return bool(self.cfg.get('ai_enabled', True))
-
+    # ------------------------------------------------------------------ analysis (rules)
     async def analyze(self, item=None, client=None):
-        if self.ai_busy:
-            return
         item = item or next((h for h in reversed(self.history) if h['dir'] == 'rx'), None)
         if not item:
             if client:
-                client.ws.send_json({'t': 'cw_note', 'msg': 'Пока нечего разбирать — нет принятого текста'})
+                client.ws.send_json(self._note('cw.note.nothing_to_analyze', 'Пока нечего разбирать — нет принятого текста'))
             return
         hist = [h for h in self.history if h is not item]
-        res = None
-        if self._use_lm():
-            self.ai_busy = True
-            self.bc({'t': 'cw_ai_busy', 'on': True, 'what': 'Разбираю принятое…'})
-            try:
-                res = await asyncio.to_thread(ai.analyze, self.lm(), item['text'], hist, self.op())
-            except Exception as e:
-                if not isinstance(e, ai.AiError):
-                    log.exception("ИИ: ошибка разбора")
-                self._ai_failed(e)
-            finally:
-                self.ai_busy = False
-                self.bc({'t': 'cw_ai_busy', 'on': False})
-        if res is None:
-            res = ai.analyze_rules(item['text'], hist, self.op())
-            if self._use_lm():
-                res['note'] = 'LM Studio недоступна — разобрано по правилам'
+        res = cw_rules.analyze_rules(item['text'], hist, self.op())
         item['clean'] = res.get('clean') or item['text']
         for k in ('call', 'name', 'qth'):
             if res.get(k):
                 item[k] = res[k]
         res['raw'] = item['text']
         my = (self.cfg.get('my_call') or '').upper()
-        res['calls_me_strict'] = bool(my) and (ai.calls_me_strict(item['text'], my) or
+        res['calls_me_strict'] = bool(my) and (cw_rules.calls_me_strict(item['text'], my) or
                                                 my in item['text'].upper().replace(' ', ''))
         self.analysis = res
         self.bc({'t': 'cw_ai', 'a': res})
-        # автоответ — только при двойной проверке: разбор И наличие позывного в сырых данных
+        # auto-reply: only with double check (analysis + callsign actually present in raw text)
         if self.auto_on():
             if not self.cfg.get('my_call'):
-                self.bc({'t': 'cw_note', 'msg': 'Автоответ: укажите свой позывной'})
-            elif res['calls_me'] and res['calls_me_strict'] and res.get('over', True):
+                self.bc(self._note('cw.note.auto_need_call', 'Автоответ: укажите свой позывной'))
+            elif res.get('calls_me') and res.get('calls_me_strict') and res.get('over', True):
                 await self.make_reply(auto=True)
-            elif res['calls_me'] and not res['calls_me_strict']:
-                self.bc({'t': 'cw_note', 'msg': 'Автоответ: ИИ считает, что зовут вас, но вашего позывного '
-                                               'в принятом нет — не отвечаю'})
+            elif res.get('calls_me') and not res.get('calls_me_strict'):
+                self.bc(self._note('cw.note.auto_not_me',
+                                   'Автоответ: похоже, что зовут вас, но вашего позывного в принятом нет — не отвечаю'))
 
     async def make_reply(self, task='', auto=False, client=None):
-        if self.ai_busy:
-            return
-        res = None
-        if self._use_lm():
-            self.ai_busy = True
-            self.bc({'t': 'cw_ai_busy', 'on': True, 'what': 'Составляю ответ…'})
-            try:
-                res = await asyncio.to_thread(ai.reply, self.lm(), self.history, self.analysis, self.op(), task)
-            except Exception as e:
-                if not isinstance(e, ai.AiError):
-                    log.exception("ИИ: ошибка ответа")
-                self._ai_failed(e)
-            finally:
-                self.ai_busy = False
-                self.bc({'t': 'cw_ai_busy', 'on': False})
-        if res is None or not clean_tx_text(res.get('text', '')):
-            res = ai.reply_rules(self.history, self.analysis, self.op())
-        text = clean_tx_text(res['text'])[:250]
+        # task is accepted for compatibility but ignored by rule-based templates
+        res = cw_rules.reply_rules(self.history, self.analysis, self.op())
+        text = clean_tx_text(res.get('text', ''))[:250]
         if not text:
-            self.bc({'t': 'cw_note', 'msg': res.get('ru') or 'Отвечать нечего'})
+            self.bc(self._note('cw.note.nothing_to_reply', res.get('ru') or 'Отвечать нечего'))
             return
         delay = max(3, int(self.cfg.get('cw_auto_delay', 6)))
         self.proposal = {'text': text, 'ru': res.get('ru', ''), 'auto': auto, 'model': res.get('model', ''),
@@ -229,40 +194,45 @@ class CwDesk:
             self.proposal = None
             self.bc({'t': 'cw_proposal', 'p': None})
             if who:
-                self.bc({'t': 'cw_note', 'msg': 'Автоответ отменён (%s)' % who})
+                self.bc(self._note('cw.note.auto_cancelled', 'Автоответ отменён (%s)' % who, who=who))
 
-    def _auto_off_all(self, msg):
+    def _auto_off_all(self, key, msg, **params):
         for c in self.st.clients:
             c.cw_auto = False
         self.auto_count = 0
         self.bc({'t': 'cw_auto', 'on': False})
-        self.bc({'t': 'cw_note', 'msg': msg})
+        self.bc(self._note(key, msg, **params))
 
-    # ------------------------------------------------------------------ передача
+    # ------------------------------------------------------------------ TX
     async def send(self, text, who='', client=None):
-        def fail(msg):
-            (client.ws.send_json if client else (lambda o: self.bc(o)))({'t': 'cw_note', 'msg': msg})
+        def fail(key, msg, **params):
+            d = self._note(key, msg, **params)
+            if client:
+                client.ws.send_json(d)
+            else:
+                self.bc(d)
             return False
         rig = self.st.rig
         if not rig or not self.st.running:
-            return fail('Нет связи с трансивером')
+            return fail('cw.err.no_rig', 'Нет связи с трансивером')
         text = clean_tx_text(text)[:400]
         if not text:
-            return fail('Нечего передавать')
+            return fail('cw.err.nothing', 'Нечего передавать')
         st = rig.state
-        if not str(st.get('mode', '')).startswith('CW'):
-            return fail('Передача телеграфом возможна только в режиме CW (сейчас %s)' % (st.get('mode') or '?'))
+        mode = st.get('mode') or '?'
+        if not str(mode).startswith('CW'):
+            return fail('cw.err.need_cw', 'Передача телеграфом возможна только в режиме CW (сейчас %s)' % mode, mode=mode)
         if self.st.ptt_owner is not None or self.st.ft.busy or self.st.vk.task:
-            return fail('Сейчас идёт передача голосом')
+            return fail('cw.err.voice_busy', 'Сейчас идёт передача голосом')
         if self.sender.busy:
-            return fail('Предыдущий текст ещё передаётся')
+            return fail('cw.err.busy', 'Предыдущий текст ещё передаётся')
         method = self.cfg.get('cw_method', 'cat')
         wpm = int(st.get('key_speed') or 20)
         self.cancel_proposal()
         ok = self.sender.send(text, method=method, wpm=wpm, port=self.cfg.get('cw_port') or self.cfg.get('ptt_port'),
                               max_s=int(self.cfg.get('max_tx_seconds', 180)))
         if not ok:
-            return fail('Передатчик занят')
+            return fail('cw.err.tx_busy', 'Передатчик занят')
         self.tx_text = text
         item = {'dir': 'tx', 'text': text, 't': time.time()}
         self.history.append(item)
@@ -278,13 +248,15 @@ class CwDesk:
             self.last_rx = time.monotonic()
             if ev.get('err'):
                 ev['msg'] = 'Ошибка передачи: ' + ev['err']
+                ev['msg_key'] = 'cw.err.tx'
+                ev['msg_params'] = {'err': ev['err']}
         self.bc(ev)
 
     def stop(self):
         self.sender.stop()
         self.cancel_proposal()
 
-    # ------------------------------------------------------------------ сообщения пульта
+    # ------------------------------------------------------------------ messages from client
     async def on_msg(self, c, m):
         t = m['t']
         if t == 'cw_hello':
@@ -313,14 +285,14 @@ class CwDesk:
             await self.send(m.get('text', ''), client=c)
         elif t == 'cw_stop':
             self.stop()
-        elif t == 'cw_ai_analyze':
+        elif t in ('cw_ai_analyze', 'cw_analyze'):
             if m.get('text'):
                 item = {'dir': 'rx', 'text': str(m['text'])[:1500], 't': time.time()}
                 self.history.append(item)
                 self._bg(self.analyze(item, client=c))
             else:
                 self._bg(self.analyze(client=c))
-        elif t == 'cw_ai_reply':
+        elif t in ('cw_ai_reply', 'cw_reply'):
             self._bg(self.make_reply(task=str(m.get('task', ''))[:500], client=c))
         elif t == 'cw_proposal_cancel':
             self.cancel_proposal(who=c.name)
@@ -330,7 +302,7 @@ class CwDesk:
                 self.auto_count = 0
                 if not self.cfg.get('my_call'):
                     c.cw_auto = False
-                    c.ws.send_json({'t': 'cw_note', 'msg': 'Для автоответа укажите свой позывной'})
+                    c.ws.send_json(self._note('cw.note.auto_need_call', 'Для автоответа укажите свой позывной'))
             if not self.auto_on():
                 self.cancel_proposal()
             self.bc({'t': 'cw_auto', 'on': self.auto_on()})
@@ -352,18 +324,9 @@ class CwDesk:
                 self.st.save_cfg()
             self.bc({'t': 'cw_op', 'op': self.op(), 'auto_delay': self.cfg.get('cw_auto_delay', 6),
                      'auto_max': self.cfg.get('cw_auto_max', 4)})
-        elif t == 'cw_ai_test':
-            self._bg(self._ai_test(c))
-
-    async def _ai_test(self, c):
-        try:
-            models = await asyncio.to_thread(self.lm().models)
-            c.ws.send_json({'t': 'cw_ai_test', 'ok': True, 'models': models, 'model': self.cfg.get('ai_model')})
-        except ai.AiError as e:
-            c.ws.send_json({'t': 'cw_ai_test', 'ok': False, 'msg': str(e)})
 
     def _bg(self, coro):
-        """ИИ отвечает долго — не держим ни защиту PTT, ни команды пульта."""
+        """Run in background so we don't block PTT watchdog or client commands."""
         task = asyncio.ensure_future(coro)
         self._tasks = getattr(self, '_tasks', set())
         self._tasks.add(task)

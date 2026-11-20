@@ -390,10 +390,10 @@ class SstvDecoder:
                 self._row(_yuv2rgb(y1, u, v))
             self.next_line += 1
             if self.lost >= 12:
-                self.finish('сигнал пропал')
+                self.finish('сигнал пропал', why_key='sstv.why.lost')
                 return
         if self.state == 'image' and self.next_line >= m.frames:
-            self.finish('картинка принята')
+            self.finish('картинка принята', why_key='sstv.why.done')
             return
         # освобождаем память за уже отрисованными строками
         keep_from = int(self.t0 + (self.next_line - 2) * self.T) - self.fb
@@ -406,7 +406,7 @@ class SstvDecoder:
         self.rows.append(rgb)
         self.on_row(i, rgb)
 
-    def finish(self, why):
+    def finish(self, why, why_key=None, why_params=None):
         if self.state != 'image':
             return
         m = self.mode
@@ -415,5 +415,10 @@ class SstvDecoder:
         self.syncs = []
         self.sync_scan = self.fb + len(self.f)
         self.vis_scan = self.fb + len(self.f)
-        self.on_event({'t': 'sstv_done', 'why': why, 'mode': m.name, 'rows': len(self.rows), 'img': img,
-                       'slant': round((self.T / (m.line * FS) - 1) * 1e6)})
+        ev = {'t': 'sstv_done', 'why': why, 'mode': m.name, 'rows': len(self.rows), 'img': img,
+              'slant': round((self.T / (m.line * FS) - 1) * 1e6)}
+        if why_key:
+            ev['why_key'] = why_key
+            if why_params:
+                ev['why_params'] = why_params
+        self.on_event(ev)

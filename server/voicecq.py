@@ -103,35 +103,43 @@ class VoiceCq:
         st = self.st
         mode = (st.rig.state.get('mode') if st.rig else '') or ''
         if not st.rig or not st.running or not st.audio:
-            return 'Связь с трансивером не запущена'
+            return ('vk.err.no_radio', 'Связь с трансивером не запущена', {})
         if st.ptt_owner is not None or st.ft.busy:
-            return 'Сейчас идёт передача с микрофона'
+            return ('vk.err.mic_busy', 'Сейчас идёт передача с микрофона', {})
         if st.cw.sender.busy or st.digi.tx_busy:
-            return 'Идёт передача CW/RTTY'
+            return ('vk.err.cw_rtty', 'Идёт передача CW/RTTY', {})
         if mode.startswith('CW') or mode.startswith('RTTY') or mode == 'PSK':
-            return 'Голосовой вызов работает в SSB/AM/FM (сейчас %s)' % mode
-        return ''
+            return ('vk.err.need_voice_mode', 'Голосовой вызов работает в SSB/AM/FM (сейчас %s)' % mode, {'mode': mode})
+        return None
 
     async def start(self, c, slot, pause, repeats, sig):
         if self.task:
-            return c.ws.send_json({'t': 'vk_note', 'msg': 'Автовызов уже идёт'})
+            return c.ws.send_json({'t': 'vk_note', 'msg': 'Автовызов уже идёт', 'msg_key': 'vk.err.running'})
         why = self._why_not()
         if why:
-            return c.ws.send_json({'t': 'vk_note', 'msg': why})
+            key, msg, params = why
+            return c.ws.send_json({'t': 'vk_note', 'msg': msg, 'msg_key': key, 'msg_params': params})
         x = self._load(slot)
         if x is None:
-            return c.ws.send_json({'t': 'vk_note', 'msg': 'Ячейка %d пустая — сначала запишите сообщение' % slot})
+            return c.ws.send_json({'t': 'vk_note', 'msg': 'Ячейка %d пустая — сначала запишите сообщение' % slot, 'msg_key': 'vk.err.empty_slot', 'msg_params': {'slot': slot}})
         if len(x) / SR > self.st.cfg.get('max_tx_seconds', 180) - 2:
-            return c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение длиннее ограничения передачи'})
+            return c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение длиннее ограничения передачи', 'msg_key': 'vk.err.too_long'})
         pause = float(min(max(pause, 2), 600))
         repeats = int(min(max(repeats, 1), 100))
         self.task = asyncio.create_task(self._loop(x, slot, pause, repeats, int(sig or 0)))
 
-    def stop(self, why=''):
+    def stop(self, why='', key=None, params=None):
         if self.task:
             self.task.cancel()
-            if why:
-                self.bc({'t': 'vk_note', 'msg': 'Автовызов остановлен: ' + why})
+            if why or key:
+                ev = {'t': 'vk_note', 'msg': 'Автовызов остановлен: ' + (why or '')}
+                if key:
+                    ev['msg_key'] = key
+                    ev['msg_params'] = params or {}
+                elif why:
+                    ev['msg_key'] = 'vk.note.stopped_reason'
+                    ev['msg_params'] = {'reason': why}
+                self.bc(ev)
 
     def _set_run(self, **kw):
         self.run = dict(self.run or {}, **kw)
@@ -142,11 +150,12 @@ class VoiceCq:
         log.info("Автовызов: «%s», пауза %.0f с, повторов %d", name, pause, repeats)
         self.run = {'slot': slot, 'name': name, 'n': 0, 'repeats': repeats, 'phase': 'tx', 'left': 0}
         ended = 'готово'
+        ended_key, ended_params = 'vk.note.done', {}
         try:
             for n in range(1, repeats + 1):
                 why = self._why_not()
                 if why:
-                    ended = why
+                    ended_key, ended, ended_params = why[0], why[1], why[2]
                     break
                 self._set_run(n=n, phase='tx', left=round(len(x) / SR))
                 await self._transmit(x)
@@ -164,20 +173,23 @@ class VoiceCq:
                     loud = loud + 0.25 if hot else 0.0
                     if loud >= 0.75:
                         ended = 'в паузе появился сигнал — похоже, ответили'
+                        ended_key, ended_params = 'vk.note.answered', {}
                         raise _Answered
         except _Answered:
             pass
         except asyncio.CancelledError:
             ended = 'остановлено'
+            ended_key, ended_params = 'vk.note.cancelled', {}
         except Exception as e:
             log.exception("Автовызов")
             ended = 'ошибка: %s' % e
+            ended_key, ended_params = 'vk.note.error', {'err': str(e)}
         finally:
             self._ptt(False)
             self.task = None
             self.run = None
             self.bc(self.state())
-            self.bc({'t': 'vk_note', 'msg': 'Автовызов: ' + ended})
+            self.bc({'t': 'vk_note', 'msg': 'Автовызов: ' + ended, 'msg_key': ended_key, 'msg_params': ended_params})
             log.info("Автовызов закончен: %s", ended)
 
     def _ptt(self, on):
@@ -221,13 +233,13 @@ class VoiceCq:
             if not 1 <= slot <= SLOTS:
                 return
             if self.run and self.run.get('slot') == slot:
-                return c.ws.send_json({'t': 'vk_note', 'msg': 'Эта ячейка сейчас передаётся'})
+                return c.ws.send_json({'t': 'vk_note', 'msg': 'Эта ячейка сейчас передаётся', 'msg_key': 'vk.err.slot_tx'})
             try:
                 await asyncio.to_thread(self._save, slot, m.get('name', ''), m.get('pcm', ''))
                 self.bc(self.state())
-                c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение %d сохранено' % slot})
+                c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение %d сохранено' % slot, 'msg_key': 'vk.note.saved', 'msg_params': {'slot': slot}})
             except Exception as e:
-                c.ws.send_json({'t': 'vk_note', 'msg': 'Не сохранилось: %s' % e})
+                c.ws.send_json({'t': 'vk_note', 'msg': 'Не сохранилось: %s' % e, 'msg_key': 'vk.err.save', 'msg_params': {'err': str(e)}})
         elif t == 'vk_delete':
             try:
                 os.remove(self._path(slot))

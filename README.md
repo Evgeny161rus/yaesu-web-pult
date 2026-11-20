@@ -199,7 +199,7 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 
 **Вариант А — готовый Yaesu-Web-Pult.exe** (Python не нужен): скачайте его со страницы
 [Releases → latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/latest) и запускайте двойным кликом.
-Каждое изменение в ветке `main` пересобирает exe автоматически (GitHub Actions); собрать вручную — `build_exe.bat`.
+Каждое изменение в ветке `main` пересобирает exe автоматически (GitHub Actions); собрать вручную — `build-exe.bat` (legacy-вариант: `scripts/build_exe.bat`).
 
 **Вариант Б — без сборки.** Установите Python 3.11+ с python.org (галочка *Add python.exe to PATH*)
 и запустите двойным кликом `Yaesu-Web-Pult.pyw`. При первом запуске программа сама предложит

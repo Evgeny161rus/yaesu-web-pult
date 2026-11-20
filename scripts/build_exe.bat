@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
-rem Сборка FTX1-Pult.exe — один файл, без консоли, Python на целевом ПК не нужен.
-cd /d "%~dp0"
+rem Legacy: сборка FTX1-Pult.exe (venv) — перенесено в scripts/, запуск из корня репозитория.
+cd /d "%~dp0\.."
 where python >nul 2>nul || (echo Нужен Python 3.11+ с python.org & pause & exit /b 1)
 if not exist ".venv\Scripts\python.exe" python -m venv .venv || goto :err
 ".venv\Scripts\python.exe" -m pip install --upgrade pip >nul

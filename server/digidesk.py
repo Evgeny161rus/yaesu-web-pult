@@ -8,7 +8,6 @@
   rt_send {text, reverse}          -> rt_tx_start / rt_tx_progress {pos} / rt_tx_done {ok, msg?}
   rt_stop
   rt_clear
-  rt_ai {text}                     -> rt_ai {ru} | rt_ai_err   (перевод через LM Studio, если есть)
   fax_hello                        -> fax_state + картинка целиком (бинарный кадр 0x06)
   fax_dec {on, lpm, ioc, auto, center, afc}
   fax_start | fax_stop | fax_shift {px} | fax_slant {d}
@@ -24,7 +23,6 @@ import time
 
 import numpy as np
 
-import ai
 from audio import SR
 from digi import FaxDecoder, RttyDecoder, rtty_afsk
 from navtex import NavtexDecoder
@@ -136,7 +134,7 @@ class DigiDesk:
             return name
         except Exception as e:
             log.warning("Не удалось сохранить факс: %s", e)
-            self.bc({'t': 'fax_note', 'msg': 'Не удалось сохранить картинку: %s' % e}, 'fax_on')
+            self.bc({'t': 'fax_note', 'msg': 'Не удалось сохранить картинку: %s' % e, 'msg_key': 'fax.note.save_err', 'msg_params': {'err': str(e)}}, 'fax_on')
             return None
 
     # ------------------------------------------------------------------ SSTV
@@ -187,49 +185,60 @@ class DigiDesk:
         c.ws.send_bin(b'\x06' + struct.pack('<HH', len(data), W) + data.tobytes(), important=True)
 
     # ------------------------------------------------------------------ передача RTTY
-    def _tx_fail(self, c, msg):
+    def _tx_fail(self, c, key, msg, **params):
         if c:
-            c.ws.send_json({'t': 'rt_tx_done', 'ok': False, 'msg': msg})
+            ev = {'t': 'rt_tx_done', 'ok': False, 'msg': msg}
+            if key:
+                ev['msg_key'] = key
+                if params:
+                    ev['msg_params'] = params
+            c.ws.send_json(ev)
 
     async def send(self, c, text, reverse=False):
         text = (text or '').upper()[:2000]
         st = self._rig_state()
         mode = st.get('mode') or ''
         if not text.strip():
-            return self._tx_fail(c, 'Нечего передавать')
+            return self._tx_fail(c, 'digi.tx.nothing', 'Нечего передавать')
         if not self.st.rig or not self.st.running or not self.st.audio:
-            return self._tx_fail(c, 'Связь с трансивером не запущена')
+            return self._tx_fail(c, 'digi.tx.no_radio', 'Связь с трансивером не запущена')
         if self.tx_busy:
-            return self._tx_fail(c, 'Передача уже идёт')
+            return self._tx_fail(c, 'digi.tx.busy', 'Передача уже идёт')
         if self.st.ptt_owner is not None or self.st.ft.busy or self.st.cw.sender.busy or self.st.vk.task:
-            return self._tx_fail(c, 'Передатчик занят (голос или CW)')
+            return self._tx_fail(c, 'digi.tx.busy_other', 'Передатчик занят (голос или CW)')
         if not mode.startswith('DATA'):
-            return self._tx_fail(c, 'Для RTTY через звук переключите трансивер в режим DATA-L или DATA-U '
-                                    '(сейчас %s)' % (mode or '?'))
+            return self._tx_fail(c, 'digi.tx.need_data', 'Для RTTY через звук переключите трансивер в режим DATA-L или DATA-U (сейчас %s)' % (mode or '?'), mode=(mode or '?'))
         # Любительский стандарт: mark — верхняя частота в эфире. В DATA-U это верхний тон звука.
         rev = (mode == 'DATA-U') != bool(reverse)
         r = self.rtty
         x = rtty_afsk(text, baud=r.baud, shift=r.shift, fc=r.fc, reverse=rev, amp=0.5)
         dur = len(x) / SR
         if dur > self.cfg.get('max_tx_seconds', 180):
-            return self._tx_fail(c, 'Слишком длинный текст: %.0f с передачи' % dur)
+            return self._tx_fail(c, 'digi.tx.too_long', 'Слишком длинный текст: %.0f с передачи' % dur, sec=int(dur))
         self.tx_task = asyncio.create_task(self._tx_run(x, text, 'rt', SR / self.rtty.baud * 7.5, 0.4))
 
     async def send_psk(self, c, text):
         text = (text or '')[:2000]
         mode = self._rig_state().get('mode') or ''
-        fail = lambda msg: c and c.ws.send_json({'t': 'psk_tx_done', 'ok': False, 'msg': msg})
+        def fail(key, msg, **params):
+            if c:
+                ev = {'t': 'psk_tx_done', 'ok': False, 'msg': msg}
+                if key:
+                    ev['msg_key'] = key
+                    if params:
+                        ev['msg_params'] = params
+                c.ws.send_json(ev)
         if not text.strip():
-            return fail('Нечего передавать')
+            return fail('digi.tx.nothing', 'Нечего передавать')
         if not self.st.rig or not self.st.running or not self.st.audio:
-            return fail('Связь с трансивером не запущена')
+            return fail('digi.tx.no_radio', 'Связь с трансивером не запущена')
         if self.tx_busy or self.st.ptt_owner is not None or self.st.ft.busy or self.st.cw.sender.busy or self.st.vk.task:
-            return fail('Передатчик занят')
+            return fail('digi.tx.busy', 'Передатчик занят')
         if mode != 'DATA-U':
-            return fail('Для PSK31 переключите трансивер в режим DATA-U (сейчас %s)' % (mode or '?'))
+            return fail('digi.tx.need_data_u', 'Для PSK31 переключите трансивер в режим DATA-U (сейчас %s)' % (mode or '?'), mode=(mode or '?'))
         x = psk31_tx(text, fc=self.psk.fc, amp=0.5)
         if len(x) / SR > self.cfg.get('max_tx_seconds', 180):
-            return fail('Слишком длинный текст')
+            return fail('digi.tx.too_long_short', 'Слишком длинный текст')
         self.tx_task = asyncio.create_task(self._tx_run(x, text, 'psk', SR / 31.25 * 9, 32 / 31.25))
 
     async def _tx_run(self, x, text, pre, per_char, lead_s):
@@ -261,10 +270,13 @@ class DigiDesk:
                     self.bc({'t': pre + '_tx_progress', 'pos': min(p, len(text))}, flag)
             await asyncio.sleep(0.35)
         except asyncio.CancelledError:
-            ok, msg = False, 'Передача остановлена'
+            ok, msg, msg_key, msg_params = False, 'Передача остановлена', 'digi.tx.stopped', {}
         except Exception as e:
             log.exception("Передача %s", pre)
             ok, msg = False, 'Ошибка передачи: %s' % e
+            msg_key, msg_params = 'digi.tx.err', {'err': str(e)}
+        else:
+            msg_key, msg_params = None, None
         finally:
             try:
                 st.rig.ptt(False)
@@ -274,7 +286,11 @@ class DigiDesk:
             self.tx_busy = False
             self.tx_task = None
             st.push_status()
-            self.bc({'t': pre + '_tx_done', 'ok': ok, 'msg': msg}, flag)
+            ev = {'t': pre + '_tx_done', 'ok': ok, 'msg': msg}
+            if msg_key:
+                ev['msg_key'] = msg_key
+                ev['msg_params'] = msg_params
+            self.bc(ev, flag)
 
     def stop(self):
         if self.tx_task:
@@ -306,14 +322,12 @@ class DigiDesk:
             if fc:
                 self.bc(self.rt_state(), 'rt_on')
             else:
-                c.ws.send_json({'t': 'rt_note', 'msg': 'Не нашёл RTTY-сигнал со сдвигом %d Гц — проверьте сдвиг '
-                                                       'или кликните по сигналу на водопаде' % self.rtty.shift})
+                c.ws.send_json({'t': 'rt_note', 'msg': 'Не нашёл RTTY-сигнал со сдвигом %d Гц — проверьте сдвиг или кликните по сигналу на водопаде' % self.rtty.shift,
+                                'msg_key': 'rt.note.autotune_fail', 'msg_params': {'shift': int(self.rtty.shift)}})
         elif t == 'rt_send':
             await self.send(c, m.get('text', ''), bool(m.get('reverse')))
         elif t == 'rt_stop':
             self.stop()
-        elif t in ('rt_ai', 'nx_ai'):
-            asyncio.create_task(self._translate(c, m.get('text', ''), t[:2]))
         elif t == 'nx_dec':
             c.nx_on = bool(m.get('on'))
             if m.get('fc'):
@@ -337,7 +351,7 @@ class DigiDesk:
             if c.sstv_on:
                 self._send_sstv_whole(c)
         elif t == 'sstv_stop':
-            self.sstv.finish('остановлено вручную')
+            self.sstv.finish('остановлено вручную', why_key='sstv.why.manual')
         elif t == 'fax_hello':
             c.ws.send_json(self.fax_state())
             if getattr(c, 'fax_on', False):
@@ -358,31 +372,12 @@ class DigiDesk:
                 self.update()
             self.fax.start_now()
         elif t == 'fax_stop':
-            self.fax.finish('остановлено вручную')
+            self.fax.finish('остановлено вручную', why_key='fax.why.manual')
         elif t == 'fax_shift':
             self.fax.shift_start(float(m.get('px', 0)))
         elif t == 'fax_slant':
             self.fax.configure(slant=self.fax.slant + float(m.get('d', 0)))
             self.bc(self.fax.info(), 'fax_on')
-
-    async def _translate(self, c, text, pre='rt'):
-        text = (text or '').strip()[-3000:]
-        if not text:
-            return c.ws.send_json({'t': pre + '_ai_err', 'msg': 'Нет текста для перевода'})
-        if not self.cfg.get('ai_enabled', True):
-            return c.ws.send_json({'t': pre + '_ai_err', 'msg': 'ИИ выключен в панели управления'})
-        lm = ai.LmStudio(self.cfg.get('ai_url'), self.cfg.get('ai_model'))
-        sys_p = ('Ты помогаешь радиолюбителю читать телетайп (RTTY): метеосводки, навигационные '
-                 'предупреждения, любительские связи. Текст принят с ошибками декодера. Переведи на русский '
-                 'и кратко объясни смысл: синоптические коды, сокращения, координаты. Не выдумывай. '
-                 'Ответ — JSON {"ru": "..."}')
-        try:
-            res, model = await asyncio.to_thread(lm.chat_json, sys_p, text,
-                                                 {'type': 'object', 'properties': {'ru': {'type': 'string'}},
-                                                  'required': ['ru'], 'additionalProperties': False}, 0.2, 900)
-            c.ws.send_json({'t': pre + '_ai', 'ru': str(res.get('ru', '')), 'model': model})
-        except Exception as e:
-            c.ws.send_json({'t': pre + '_ai_err', 'msg': str(e)})
 
     def client_gone(self, c):
         self.update()

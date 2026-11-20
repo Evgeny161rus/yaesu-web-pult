@@ -14,6 +14,17 @@ function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), ms);
 }
+function resolveServerMsg(m, fallback) {
+  if (!m) return fallback || '';
+  const key = m.msg_key || m.key;
+  if (key) {
+    let s = tr(key, m.msg || fallback || key);
+    const params = m.msg_params || m.params || {};
+    for (const [k, v] of Object.entries(params)) s = s.replace(new RegExp('\\{' + k + '\\}', 'g'), v == null ? '' : String(v));
+    return s;
+  }
+  return m.msg != null ? String(m.msg) : (fallback || '');
+}
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 function interp(table, x) {               // кусочно-линейная калибровка шкал
   if (x <= table[0][0]) return table[0][1];
@@ -41,7 +52,8 @@ const W_CW = [500, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 800, 12
 const S_CAL = [[0, 0], [12, 1], [27, 2], [40, 3], [55, 4], [65, 5], [80, 6], [95, 7], [112, 8], [130, 9], [150, 10], [172, 11], [190, 12], [220, 13], [240, 14], [255, 15]];
 const PO_CAL = [[0, 0], [10, .8], [50, 8], [100, 26], [150, 54], [200, 92], [250, 140]];
 const SWR_CAL = [[0, 1], [12, 1], [39, 1.35], [65, 1.5], [89, 2], [242, 5], [255, 6]];
-const MENU_GROUPS = { '01': 'Виды работы', '02': 'CW', '03': 'Работа', '04': 'Дисплей', '05': 'Дата/время', '06': 'APRS', '07': 'APRS маяк', '08': 'APRS фильтр', '09': 'Пресеты', '11': 'Bluetooth' };
+const MENU_GROUPS_FALLBACK = { '01': 'Виды работы', '02': 'CW', '03': 'Работа', '04': 'Дисплей', '05': 'Дата/время', '06': 'APRS', '07': 'APRS маяк', '08': 'APRS фильтр', '09': 'Пресеты', '11': 'Bluetooth' };
+const menuGroupName = c => tr('menu.grp.' + c, MENU_GROUPS_FALLBACK[c] || '');
 
 const isCW = m => /^CW/.test(m || '');
 const isLower = m => /^(LSB|CW-L|DATA-L|RTTY-L)$/.test(m || '');
@@ -152,7 +164,7 @@ function connect() {
         if (C.txOwner && !C.txStart) C.txStart = performance.now();
         if (!C.txOwner) C.txStart = 0;
         updatePtt(); pushGate(); break;
-      case 'note': toast(m.msg, 4000); break;
+      case 'note': toast(resolveServerMsg(m), 4000); break;
       case 'wf_src':
         C.wfSrc = m.mode === 'rf' ? 'rf' : 'audio';
         if (C.wfSrc !== 'rf') wf.rf = null;
@@ -166,7 +178,7 @@ function connect() {
         else if (m.reason) note(tr('wf.scope_err','Широкий водопад: ') + m.reason, 4000);
         renderWfMode();
         break;
-      case 'audio_status': setWfMsg(m.err); break;
+      case 'audio_status': setWfMsg(m.err_key ? tr(m.err_key, m.err) : m.err); break;
       case 'raw': catLine(m.line); break;
       case 'menu_list': buildMenu(m.items); break;
       case 'menu_val': setMenuVal(m.ex, m.v); break;
@@ -1102,7 +1114,7 @@ function buildMenu(items) {
   menu.items = items;
   const groups = [...new Set(items.map(i => i.ex.slice(0, 4)))];
   const secName = {}; items.forEach(i => secName[i.ex.slice(0, 4)] = i.section);
-  fillSelect($('#menuGroup'), [['', 'Все разделы'], ...groups.map(g => [g, `${g} ${MENU_GROUPS[g.slice(0, 2)] || ''}: ${secName[g]}`])]);
+  fillSelect($('#menuGroup'), [['', tr('menu.all_sections', 'Все разделы')], ...groups.map(g => [g, `${g} ${menuGroupName(g.slice(0, 2))}: ${secName[g]}`])]);
   renderMenu();
 }
 function menuFiltered() {
@@ -1116,7 +1128,7 @@ function renderMenu() {
   let html = '', sec = '';
   for (const i of list.slice(0, 450)) {
     const s = i.ex.slice(0, 4);
-    if (s !== sec) { sec = s; html += `<div class="menu-sec">EX${s} · ${MENU_GROUPS[s.slice(0, 2)] || ''} · ${i.section}</div>`; }
+    if (s !== sec) { sec = s; html += `<div class="menu-sec">EX${s} · ${menuGroupName(s.slice(0, 2))} · ${i.section}</div>`; }
     const range = i.string ? tr('app.menu.text','текст') : `${i.min}…${i.max}`;
     const v = menu.vals[i.ex] ?? '';
     html += `<div class="mi" data-ex="${i.ex}"><span class="ex">EX${i.ex}</span><span class="nm">${i.name}${i.spa1 ? ' <small>' + tr('app.menu.spa1','только с SPA-1') + '</small>' : ''}<small>${range}${i.hint ? ' · ' + i.hint : ''}</small></span><input value="${v}" placeholder="?"><button class="btn small">✓</button></div>`;
@@ -1346,17 +1358,16 @@ const cwDesk = (() => {
       ${chip(tr('cw.chip.rst','RST вам'), a.rst)}${chip(tr('cw.chip.name','Имя'), a.name)}${chip(tr('cw.chip.qth','QTH'), a.qth)}${kind ? `<span class="chip">${kind}</span>` : ''}
       ${a.confidence ? `<span class="chip">${tr('cw.chip.conf','уверенность')} <b>${Math.round(a.confidence * 100)}%</b></span>` : ''}</div>`;
   }
-  function aiStatus(text, bad) { const s = $('#cwAiStatus'); if (!s) return; s.textContent = text; s.style.color = bad ? 'var(--tx)' : ''; }
   $('#cwAnalyze').onclick = () => send({ t: 'cw_ai_analyze' });
   $('#cwReply').onclick = () => send({ t: 'cw_ai_reply' });
 
-  // ---- предложение ответа (ИИ / автоответ)
+  // ---- предложение ответа (по шаблону / автоответ)
   function showProposal(p) {
     clearInterval(st.propTimer);
     $('#cwProposal').classList.toggle('hidden', !p);
     if (!p) return;
-    const tpl = p.model === 'шаблон';
-    $('#cwPropTitle').textContent = (p.auto ? tr('app.cw.auto','Автоответ') : tr('app.cw.reply','Ответ')) + (tpl ? tr('app.cw.reply_tpl',' (шаблон)') : tr('app.cw.reply_ai',' ИИ'));
+    const tpl = p.model === 'template' || p.model === 'шаблон';
+    $('#cwPropTitle').textContent = (p.auto ? tr('app.cw.auto','Автоответ') : tr('app.cw.reply','Ответ')) + (tpl ? tr('app.cw.reply_tpl',' (шаблон)') : '');
     $('#cwPropText').textContent = p.text; $('#cwPropRu').textContent = p.ru || '';
     const end = performance.now() + p.left * 1000;
     const tick = () => {
@@ -1449,8 +1460,6 @@ const cwDesk = (() => {
         renderAnalysis(m.analysis); showProposal(m.proposal);
         if (m.busy_tx && m.tx_text) { st.txText = m.tx_text; $('#cwTxLine').classList.remove('hidden'); txProgress(0); }
         $('#cwAuto').checked = false;
-        aiStatus(tr('app.cw.ai_checking','LM Studio: {url}{model} — проверяю…').replace('{url}', m.ai_url).replace('{model}', m.ai_model ? ' · ' + m.ai_model : ''));
-        send({ t: 'cw_ai_test' });
         renderDec();
         break;
       case 'cw_rx': addRx(m.text); break;
@@ -1463,25 +1472,18 @@ const cwDesk = (() => {
       case 'cw_clear': if (cur) { cur.remove(); cur = null; } break;
       case 'cw_new': scr.innerHTML = ''; cur = null; renderAnalysis(null); st.lastCall = ''; toast(tr('toast.new_qso', 'Новая связь')); break;
       case 'cw_dec': break;
-      case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? tr('app.cw.ai_ready','LM Studio: готов') : tr('cw.ai_busy','LM Studio')), false); $('#cwAiStatus')?.classList.toggle('cw-busy', m.on); break;
-      case 'cw_ai': renderAnalysis(m.a); aiStatus(m.a.note ? m.a.note : (m.a.model === 'правила (без ИИ)' ? tr('app.cw.ai_rules','Разбор по правилам (ИИ выключен)') : tr('app.cw.ai_ready','LM Studio: готов') + ' · ' + (m.a.model || '')), !!m.a.note); break;
-      case 'cw_ai_err': aiStatus(tr('app.cw.ai_rules_fallback','ИИ недоступен — работаю по правилам'), true); toast(m.msg, 6000); break;
-      case 'cw_ai_test':
-        st.aiOk = m.ok;
-        aiStatus(m.ok ? tr('app.cw.ai_ready','LM Studio: готов') + ' · ' + (m.model || m.models[0] || tr('app.cw.ai_no_model','модель не загружена')) : m.msg, !m.ok);
-        if (m.ok && !m.models.length) aiStatus(tr('app.cw.ai_model_not_loaded','LM Studio работает, но модель не загружена — загрузите её в LM Studio'), true);
-        break;
+      case 'cw_ai': renderAnalysis(m.a); break;
       case 'cw_proposal': showProposal(m.p); break;
       case 'cw_tx_start': txStart(m.item); break;
       case 'cw_tx_progress': txProgress(m.pos); break;
       case 'cw_tx_done':
         txProgress(st.txText.length);
         setTimeout(() => $('#cwTxLine').classList.add('hidden'), 1200);
-        if (m.msg) toast(m.msg, 5000); else if (!m.ok) toast(tr('toast.cw_stopped', 'Передача CW остановлена'));
+        if (m.msg || m.msg_key) toast(resolveServerMsg(m), 5000); else if (!m.ok) toast(tr('toast.cw_stopped', 'Передача CW остановлена'));
         break;
       case 'cw_auto': if (!m.on) $('#cwAuto').checked = false; break;
       case 'cw_op': renderOp(m.op, m.auto_delay, m.auto_max); break;
-      case 'cw_note': toast(m.msg, 4500); break;
+      case 'cw_note': toast(resolveServerMsg(m), 4500); break;
     }
   }
   function resend() { if (store.get('cwDec', false)) { st.dec = true; sendDec(); } renderDec(); }
@@ -1582,12 +1584,6 @@ const digiDesk = (() => {
     if (scr.textContent.length > 30000) scr.textContent = scr.textContent.slice(-20000);
     if (end) scr.scrollTop = scr.scrollHeight;
   }
-  if ($('#rtAiBtn')) $('#rtAiBtn').onclick = () => {
-    const t = scr.textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
-    $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = tr('rt.translating','Перевожу…'); $('#rtAiModel').textContent = '';
-    send({ t: 'rt_ai', text: t.slice(-3000) });
-  };
-  if ($('#rtAiClose')) $('#rtAiClose').onclick = () => $('#rtAi').classList.add('hidden');
   // передача
   const myCall = () => ($('#opCall').value || '').toUpperCase();
   const RT_MACROS = [['CQ', 'RYRYRY CQ CQ CQ DE {MY} {MY} {MY} PSE K'], ['RYRY', 'RYRYRYRYRYRYRYRYRY'],
@@ -1706,16 +1702,14 @@ const digiDesk = (() => {
         $('#rtInfo').textContent = tr('rt.info','{fc} Гц · {shift}/{baud} · {pol} · ошибок {err}%').replace('{fc}', m.fc).replace('{shift}', m.shift).replace('{baud}', m.baud).replace('{pol}', m.pol).replace('{err}', m.err);
         if (m.fc !== st.fc) { st.fc = m.fc; marks(); }
         break;
-      case 'rt_note': toast(m.msg, 5000); break;
+      case 'rt_note': toast(resolveServerMsg(m), 5000); break;
       case 'rt_tx_start':
         st.txText = m.text.trim(); $('#rtTxLine').classList.remove('hidden'); txProgress(0);
         addText('\n» ' + st.txText + '\n'); break;
       case 'rt_tx_progress': txProgress(m.pos); break;
       case 'rt_tx_done':
         txProgress(st.txText.length); setTimeout(() => $('#rtTxLine').classList.add('hidden'), 1200);
-        if (m.msg) toast(m.msg, 6000); break;
-      case 'rt_ai': $('#rtAiBody').textContent = m.ru; $('#rtAiModel').textContent = m.model || ''; break;
-      case 'rt_ai_err': $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = tr('rt.ai_err','Перевод недоступен: {msg} Приём и передача RTTY работают и без ИИ.').replace('{msg}', m.msg); break;
+        if (m.msg || m.msg_key) toast(resolveServerMsg(m), 6000); break;
       case 'fax_state':
         if (m.state === 'phasing' || (m.state === 'image' && !m.rows && st.fxState !== 'image')) { st.rows = []; redraw(); }
         st.fxState = m.state; if (m.W) st.W = m.W;
@@ -1737,7 +1731,7 @@ const digiDesk = (() => {
         }
         break;
       }
-      case 'fax_note': toast(tr('toast.fax', 'Факс: ') + m.msg, 4500); break;
+      case 'fax_note': toast(m.msg_key ? resolveServerMsg(m) : (tr('toast.fax', 'Факс: ') + (m.msg || '')), 4500); break;
       case 'fax_saved': toast(tr('toast.fax_saved', 'Факс сохранён: ') + m.path, 6000); break;
     }
   }
@@ -1849,8 +1843,8 @@ const HOTKEYS = (() => {
     ['full', tr('hk.group.av','Звук и экран'), tr('hk.full','Во весь экран'), [], () => $('#btnFull').click()],
     ['help', tr('hk.group.av','Звук и экран'), tr('hk.help','Справка по клавишам'), ['Shift+Slash', 'F1'], () => showHelp()],
     ['cwdec', tr('hk.group.cw','CW'), tr('hk.cwdec','Декодер Морзе вкл/выкл'), ['KeyE'], () => cwDesk.toggle()],
-    ['cwai', tr('hk.group.cw','CW'), tr('hk.cwai','ИИ: разобрать принятое'), ['KeyI'], () => send({ t: 'cw_ai_analyze' })],
-    ['cwreply', tr('hk.group.cw','CW'), tr('hk.cwreply','ИИ: составить ответ'), ['KeyY'], () => send({ t: 'cw_ai_reply' })],
+    ['cwai', tr('hk.group.cw','CW'), tr('hk.cwai','Разобрать принятое'), ['KeyI'], () => send({ t: 'cw_ai_analyze' })],
+    ['cwreply', tr('hk.group.cw','CW'), tr('hk.cwreply','Составить ответ по шаблону'), ['KeyY'], () => send({ t: 'cw_ai_reply' })],
     ['cwtext', tr('hk.group.cw','CW'), tr('hk.cwtext','Перейти к тексту для передачи'), ['Backquote'], () => { $('#tabs button[data-tab="cw"]').click(); $('#cwText').focus(); }],
   ];
   for (let n = 1; n <= 5; n++) A.push(['cw' + n, tr('hk.group.cw','CW'), tr('hk.cw_mem','Передать CW-память {n}').replace('{n}', n), ['Shift+Digit' + n], () => { act('cw_play', n); note(tr('note.cw_mem','CW-память ') + n); }]);
@@ -2120,7 +2114,7 @@ const voiceCq = (() => {
   $('#vkStop').onclick = () => send({ t: 'vk_stop' });
   function on(m) {
     if (m.t === 'vk_state') { st.slots = m.slots; st.run = m.run; render(); }
-    else if (m.t === 'vk_note') toast(m.msg, 5000);
+    else if (m.t === 'vk_note') toast(resolveServerMsg(m), 5000);
     else if (m.t === 'vk_audio') playLocal(m);
   }
   return { on, hello: () => send({ t: 'vk_hello' }), stop: () => { if (st.run) send({ t: 'vk_stop' }); stopRec(); }, running: () => !!st.run };
@@ -2203,11 +2197,6 @@ const digi2 = (() => {
     e.target.value = '';
   };
   $('#nxClear').onclick = () => { $('#nxScreen').textContent = ''; $('#nxMsgs').innerHTML = ''; };
-  if ($('#nxAiBtn')) $('#nxAiBtn').onclick = () => {
-    const t = $('#nxScreen').textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
-    $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = tr('nx.translating','Перевожу…'); send({ t: 'nx_ai', text: t.slice(-3000) });
-  };
-  if ($('#nxAiClose')) $('#nxAiClose').onclick = () => $('#nxAi').classList.add('hidden');
 
   // ================= SSTV
   const SV = [['', '— выбрать —'], ['s20', '14,230 МГц USB — главная', 14230000, 'USB'], ['s20b', '14,233 МГц USB', 14233000, 'USB'],
@@ -2277,8 +2266,6 @@ const digi2 = (() => {
         $('#nxMsgs').insertAdjacentHTML('afterbegin', `<span class="m">${m.time} <b>${esc(m.b1)}${esc(m.b2)}${esc(m.num)}</b> ${esc(m.station || 'станция ' + m.b1)} — ${esc(m.subject || m.b2)}</span>`);
         addText($('#nxScreen'), '#nxHint', `\n──── ${m.station || m.b1}: ${m.subject || m.b2} (${m.time}) ────\n`); break;
       case 'nx_end': addText($('#nxScreen'), '#nxHint', '\n──── конец сообщения ────\n'); break;
-      case 'nx_ai': if ($('#nxAiBody')) $('#nxAiBody').textContent = m.ru; if ($('#nxAiModel')) $('#nxAiModel').textContent = m.model || ''; break;
-      case 'nx_ai_err': if ($('#nxAi')) $('#nxAi').classList.remove('hidden'); if ($('#nxAiBody')) $('#nxAiBody').textContent = tr('nx.ai_err','Перевод недоступен: {msg} Приём NAVTEX работает и без ИИ.').replace('{msg}', m.msg); break;
       case 'sstv_state':
         if (m.modes && $('#svMode').options.length < 2) $('#svMode').insertAdjacentHTML('beforeend', m.modes.map(x => `<option>${x}</option>`).join(''));
         if (m.state === 'image' && m.w) svSize(m.w, m.h);
@@ -2288,10 +2275,17 @@ const digi2 = (() => {
       case 'sstv_start':
         svSize(m.w, m.h); $('#svInfo').textContent = tr('sv.info_rx','приём: {mode} ({how}{shift})').replace('{mode}', m.mode).replace('{how}', m.how).replace('{shift}', m.shift ? tr('sv.shift',', расстройка {s} Гц').replace('{s}', m.shift) : '');
         toast(tr('toast.sstv_start', 'SSTV: началась картинка ') + m.mode); break;
-      case 'sstv_done':
-        $('#svInfo').textContent = tr('sv.done','{mode}: {why}, {rows} строк').replace('{mode}', m.mode).replace('{why}', m.why).replace('{rows}', m.rows) + (m.slant ? tr('sv.slant',', наклон {s} ppm').replace('{s}', m.slant) : '');
+      case 'sstv_done': {
+        let why = m.why || '';
+        if (m.why_key) {
+          why = tr(m.why_key, why || m.why_key);
+          const wp = m.why_params || {};
+          for (const [k, v] of Object.entries(wp)) why = why.replace(new RegExp('\\{' + k + '\\}', 'g'), v == null ? '' : String(v));
+        }
+        $('#svInfo').textContent = tr('sv.done','{mode}: {why}, {rows} строк').replace('{mode}', m.mode).replace('{why}', why).replace('{rows}', m.rows) + (m.slant ? tr('sv.slant',', наклон {s} ppm').replace('{s}', m.slant) : '');
         if (m.name) { toast(tr('toast.sstv_saved', 'SSTV сохранена: ') + m.name, 5000); $('#svSaved').insertAdjacentHTML('afterbegin', `<div class="muted">${esc(m.name)}</div>`); }
         break;
+      }
       case 'psk_state': if (m.fc) { st.pkFc = Math.round(m.fc); $('#pkFc').value = st.pkFc; } break;
       case 'psk_rx': addText($('#pkScreen'), '#pkHint', m.text); break;
       case 'psk_info':
@@ -2300,7 +2294,7 @@ const digi2 = (() => {
         break;
       case 'psk_tx_start': st.txText = m.text.trim(); $('#pkTxLine').classList.remove('hidden'); txProg(0); addText($('#pkScreen'), '#pkHint', '\n» ' + st.txText + '\n'); break;
       case 'psk_tx_progress': txProg(m.pos); break;
-      case 'psk_tx_done': txProg(st.txText.length); setTimeout(() => $('#pkTxLine').classList.add('hidden'), 1200); if (m.msg) toast(m.msg, 6000); break;
+      case 'psk_tx_done': txProg(st.txText.length); setTimeout(() => $('#pkTxLine').classList.add('hidden'), 1200); if (m.msg || m.msg_key) toast(resolveServerMsg(m), 6000); break;
     }
   }
   function onBin(b) {
@@ -2669,7 +2663,7 @@ const ft8Desk = (() => {
         break;
       case 'ft_qso': addLog(m.q); toast(tr('toast.ft_logged','В лог: {call} {sent}/{rcvd}').replace('{call}', m.q.call).replace('{sent}', m.q.sent).replace('{rcvd}', m.q.rcvd), 4000); break;
       case 'ft_log': $('#ftLog').innerHTML = m.items.length ? '' : `<span class="muted">${tr('ft.log_empty','Пока нет')}</span>`; m.items.forEach(addLog); break;
-      case 'ft_note': toast(m.msg, 6000); break;
+      case 'ft_note': toast(resolveServerMsg(m), 6000); break;
       case 'ft_alert':
         toast(tr('toast.ft_new_dxcc','★ Новая страна: {country} — {call} ({f} Гц)').replace('{country}', m.country).replace('{call}', m.call).replace('{f}', m.f), 8000);
         if ($('#ftAlertSnd').checked) beep();

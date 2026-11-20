@@ -36,7 +36,8 @@ const memEd = (() => {
     const modes = st.info?.modes || ['LSB', 'USB', 'CW-U', 'CW-L', 'FM', 'FM-N', 'AM', 'AM-N', 'DATA-U', 'DATA-L', 'DATA-FM', 'RTTY-U', 'RTTY-L', 'PSK'];
     const ctcss = st.info?.ctcss || [88.5], dcs = st.info?.dcs || [23];
     const s = st.status[ch];
-    const stIcon = s ? (s.ok ? '<span class="ok" title="' + (window.tr?tr('mem.written_ok','Записан и проверен'):'Записан и проверен') + '">✔</span>' : `<span class="bad" title="${esc(s.msg)}">⚠</span>`) : '';
+    const smsg = s ? ((typeof resolveServerMsg === 'function') ? resolveServerMsg(s, s.msg) : (s.msg || '')) : '';
+    const stIcon = s ? (s.ok ? '<span class="ok" title="' + (window.tr?tr('mem.written_ok','Записан и проверен'):'Записан и проверен') + '">✔</span>' : `<span class="bad" title="${esc(smsg)}">⚠</span>`) : '';
     const grpSel = `<select data-f="group" style="border-left:4px solid ${c.group ? grpColor(c.group) : 'transparent'}"><option value=""></option>${opts(st.groups, c.group)}</select>`;
     return `<tr data-ch="${ch}" class="${e ? 'empty' : ''}${isDirty(ch) ? ' dirty' : ''}${st.sel.has(ch) ? ' sel' : ''}">
       <td><input type="checkbox" data-f="_sel"${st.sel.has(ch) ? ' checked' : ''}></td>
@@ -199,7 +200,7 @@ const memEd = (() => {
       case 'mem_progress':
         prog(m.i, m.n, m.what === 'read' ? (window.tr?tr('mem.progress.read','Чтение канала {i} из {n}'):'Чтение канала {i} из {n}').replace('{i}', m.i).replace('{n}', m.n) : m.what === 'tones' ? (window.tr?tr('mem.progress.tones','Чтение тонов (трансивер переключается по каналам)…'):'Чтение тонов (трансивер переключается по каналам)…') : (window.tr?tr('mem.progress.write','Запись: {i} из {n} (канал {ch})'):'Запись: {i} из {n} (канал {ch})').replace('{i}', m.i).replace('{n}', m.n).replace('{ch}', m.ch));
         break;
-      case 'mem_data':
+      case 'mem_data': {
         st.busy = false; prog(null);
         for (const c of m.chans) {
           const old = st.chans[c.ch];
@@ -208,15 +209,23 @@ const memEd = (() => {
         }
         if (m.file) { st.file = m.file; if (m.groups) st.groups = m.groups; }
         if (m.imported) for (const c of m.chans) if (c.group && !st.groups.includes(c.group)) st.groups.push(c.group);
-        setStatus(m.msg || ''); toast(m.msg || (window.tr?tr('mem.msg.ready','Готово'):'Готово'), 3000); render(); break;
-      case 'mem_written':
+        const _msg = (typeof resolveServerMsg === 'function') ? resolveServerMsg(m) : (m.msg || '');
+        setStatus(_msg); toast(_msg || (window.tr?tr('mem.msg.ready','Готово'):'Готово'), 3000); render(); break;
+      }
+      case 'mem_written': {
         st.busy = false; prog(null);
         for (const r of m.results) {
           st.status[r.ch] = r;
           if (r.ok) st.rig[r.ch] = { ...st.chans[r.ch] };
         }
-        setStatus(m.msg); toast(m.msg + (m.results.some(r => !r.ok) ? (window.tr?tr('mem.warn',' — см. значки ⚠'):' — см. значки ⚠') : ''), 5000); render(); break;
-      case 'mem_err': st.busy = false; prog(null); toast(m.msg, 6000); setStatus(m.msg); renderInfo(); break;
+        const _msg = (typeof resolveServerMsg === 'function') ? resolveServerMsg(m) : (m.msg || '');
+        setStatus(_msg); toast(_msg + (m.results.some(r => !r.ok) ? (window.tr?tr('mem.warn',' — см. значки ⚠'):' — см. значки ⚠') : ''), 5000); render(); break;
+      }
+      case 'mem_err': {
+        st.busy = false; prog(null);
+        const _msg = (typeof resolveServerMsg === 'function') ? resolveServerMsg(m) : (m.msg || '');
+        toast(_msg, 6000); setStatus(_msg); renderInfo(); break;
+      }
       case 'mem_csv': {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob(['﻿' + m.text], { type: 'text/csv' }));

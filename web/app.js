@@ -610,7 +610,8 @@ function wfRow(row, binHz) {
     const secs = C.ftSecs ?? 20;     // сколько секунд помещается на водопаде
     // Замедление по выбранному времени: опираемся на опорную высоту, а не на фактическую
     // высоту холста — иначе на высоком окне N становится 1 и водопад «летит».
-    const refRows = 300;
+    // 10/20с — без накопления (быстро), 35с/60с — заметно медленнее.
+    const refRows = 450;
     const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / refRows)) : 1;
     if (!C.ftAcc || C.ftAcc.length !== row.length) { C.ftAcc = Uint8Array.from(row); C.ftAccN = 0; }
     else for (let i = 0; i < row.length; i++) if (row[i] > C.ftAcc[i]) C.ftAcc[i] = row[i];

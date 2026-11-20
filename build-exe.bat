@@ -20,11 +20,14 @@ if exist dist rmdir /s /q dist
 
 echo.
 echo [3/3] Сборка EXE файла...
+set FTDIDATA=
+if exist ftdi set FTDIDATA=--add-data "ftdi;ftdi"
 python -m PyInstaller --noconfirm --clean --onefile --windowed --name Yaesu-Web-Pult ^
     --icon web\icon.ico ^
     --add-data "web;web" ^
     --add-data "server\menu_ftx1.json;." ^
     --add-data "cty.dat;." ^
+    %FTDIDATA% ^
     --hidden-import numpy ^
     --hidden-import numpy.core ^
     --hidden-import numpy.core.multiarray ^

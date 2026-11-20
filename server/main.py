@@ -533,7 +533,7 @@ class Station:
         cfg = self.cfg
         lib = str(cfg.get('scope_libft4222') or '').strip()
         d2xx = str(cfg.get('scope_d2xx') or '').strip()
-        roots = [os.path.join(BASE, 'ftdi'), BASE]
+        roots = [os.path.join(BASE, 'ftdi'), BASE, os.path.join(RES, 'ftdi'), RES]
         if not lib:
             if IS_WIN:
                 names = ['LibFT4222-64.dll', 'LibFT4222.dll', 'libft4222.dll']

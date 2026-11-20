@@ -40,7 +40,7 @@ jobs:
       - run: >
           pyinstaller --noconfirm --clean --onefile --windowed --noupx --name Yaesu-Web-Pult
           --version-file version_info.txt
-          --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;."
+          --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." --add-data "ftdi;ftdi"
           --hidden-import pystray._win32 --hidden-import _ftx --collect-all numpy --collect-all sounddevice
           --paths server server\main.py
       - name: Вариант-папка (ZIP) — реже вызывает подозрения антивируса
@@ -48,7 +48,7 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --windowed --noupx --name Yaesu-Web-Pult --distpath distdir `
             --version-file version_info.txt `
-            --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." `
+            --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." --add-data "ftdi;ftdi" `
             --hidden-import pystray._win32 --hidden-import _ftx --collect-all numpy --collect-all sounddevice `
             --paths server server\main.py
           Compress-Archive -Path distdir\Yaesu-Web-Pult -DestinationPath dist\Yaesu-Web-Pult-folder.zip

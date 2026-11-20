@@ -39,6 +39,13 @@ worked_import.json
 tools/hamlib/
 tools/hamlib-*.zip
 
+# FTDI scope libraries (proprietary, download separately) - keep README
+ftdi/*.dll
+ftdi/*.so
+ftdi/*.so.*
+ftdi/*.dylib
+ftdi/build/
+
 # IDE
 .vscode/
 .idea/

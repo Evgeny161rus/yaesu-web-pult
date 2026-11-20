@@ -10,8 +10,10 @@ rem Справочник стран для FT8
 powershell -NoProfile -Command "try { Invoke-WebRequest https://www.country-files.com/cty/cty.dat -OutFile server\cty.dat -TimeoutSec 60 } catch { Set-Content server\cty.dat '' }"
 rem Модуль FT8 (нужен Microsoft C++ Build Tools)
 pushd server & "..\.venv\Scripts\python.exe" setup_ftx.py build_ext --inplace & popd
+set FTDIDATA=
+if exist ftdi set FTDIDATA=--add-data "ftdi;ftdi"
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --windowed --name FTX1-Pult ^
-  --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." ^
+  --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." %FTDIDATA% ^
   --hidden-import pystray._win32 --hidden-import _ftx --hidden-import hamlib_backend --paths server server\main.py || goto :err
 echo.
 echo Готово: dist\FTX1-Pult.exe

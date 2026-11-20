@@ -20,6 +20,7 @@ env/
 build/
 dist/
 *.spec
+!Yaesu-Web-Pult.spec
 
 # Application data
 config.json

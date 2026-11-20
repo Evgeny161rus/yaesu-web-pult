@@ -83,7 +83,7 @@ DEFAULT_CFG = {
     "scope_libft4222": "",
     "scope_d2xx": "",
     "scope_serial": "",
-    "scope_auto_download": False,
+    "scope_auto_download": True,
     "simulate": False,
     "my_call": "",
     "my_name": "",

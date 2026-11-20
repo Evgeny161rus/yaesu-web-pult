@@ -160,9 +160,9 @@
         <label class="field"><span>LibFT4222 (путь к .dll / .so, можно пусто при авто-поиске в папке ftdi)</span><input id="scope_libft4222" type="text" placeholder="авто: ./ftdi/LibFT4222-64.dll или ./ftdi/libft4222.so"></label>
         <label class="field"><span>D2XX (ftd2xx.dll / libftd2xx, если требуется отдельно)</span><input id="scope_d2xx" type="text" placeholder="обычно рядом с LibFT4222; можно оставить пустым"></label>
         <label class="field"><span>Серийный номер SPI-интерфейса (необязательно)</span><input id="scope_serial" type="text" placeholder="Пусто — открыть «FT4222 A» по описанию"></label>
-        <label class="chk"><input type="checkbox" id="scope_auto_download"> Автоматически скачивать библиотеки FTDI при обнаружении совместимого трансивера (opt-in, нужен интернет)</label>
+        <label class="chk"><input type="checkbox" id="scope_auto_download"> Автоматически скачивать библиотеки FTDI при обнаружении совместимого трансивера (нужен интернет; по умолчанию включено)</label>
         <div class="row"><button class="btn" id="scopeDownload">Скачать библиотеки FTDI сейчас</button><span class="small muted" id="scopeDlMsg"></span></div>
-        <p class="hint">Скачиваются сторонние библиотеки FTDI с официального сайта в папку <code>ftdi</code> рядом с программой. Адреса загрузки версионированы и могут устареть — если не получилось, скачайте вручную по ссылкам в документации. Изменения применяются при следующем подключении (или после успешной загрузки — переподключение выполнится автоматически). На Raspberry Pi нужны библиотеки ARM64 (aarch64).</p>
+        <p class="hint">При обнаружении FT-710/FTDX10/FTDX101 и отсутствии библиотек программа попробует скачать сторонние файлы FTDI с официального сайта в папку <code>ftdi</code> (в фоне, без блокировки работы). Адреса загрузки версионированы и могут устареть — если не получилось, скачайте вручную по ссылкам в документации. Можно отключить галочку. На Raspberry Pi нужны библиотеки ARM64 (aarch64).</p>
       </details>
     </section>
 

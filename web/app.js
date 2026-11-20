@@ -109,7 +109,7 @@ function connect() {
   C.ws = ws;
   ws.onopen = () => send({ t: 'hello', pw: C.pw, rate: C.rate || 16000 });
   ws.onclose = () => {
-    C.authed = false; setLink(false, 'Нет связи с сервером', 'conn.lost');
+    C.authed = false; setLink(false, tr('conn.lost','Нет связи с сервером'), 'conn.lost');
     if (C.txOwner) { C.txOwner = false; updatePtt(); }
     setTimeout(connect, 2000);
   };
@@ -163,7 +163,7 @@ function connect() {
       case 'wf_scope':
         C.wfScope = m.state === 'live';
         if (C.wfScope) { renderWfMode(); syncWfSource(true); }
-        else if (m.reason) note('Широкий водопад: ' + m.reason, 4000);
+        else if (m.reason) note(tr('wf.scope_err','Широкий водопад: ') + m.reason, 4000);
         renderWfMode();
         break;
       case 'audio_status': setWfMsg(m.err); break;
@@ -209,8 +209,8 @@ function onBinary(b) {
 function setWfMsg(err) {
   const el = $('#wfMsg');
   el.classList.toggle('hidden', !err);
-  if (err) el.innerHTML = `<div><b>Нет звука с трансивера</b>${err.replace(/[&<]/g, c => c === '&' ? '&amp;' : '&lt;')}` +
-    (C.local ? '<br><br>Выберите устройства в панели управления сервером (кнопка ⚙ вверху).' : '') + '</div>';
+  if (err) el.innerHTML = `<div><b>${tr('audio.no_rig','Нет звука с трансивера')}</b>${err.replace(/[&<]/g, c => c === '&' ? '&amp;' : '&lt;')}` +
+    (C.local ? '<br><br>' + tr('audio.select_panel','Выберите устройства в панели управления сервером (кнопка ⚙ вверху).') : '') + '</div>';
 }
 function setLink(ok, text, key) {
   $('#linkDot').className = 'dot ' + (ok ? 'ok' : 'bad');
@@ -250,7 +250,7 @@ function applyState(d, full) {
   renderBadges();
   renderControls(d);
   drawOverlay();
-  if ('tuning' in d) $('#tuneState').textContent = S.tuning ? 'Идёт настройка…' : '';
+  if ('tuning' in d) $('#tuneState').textContent = S.tuning ? tr('status.tuning','Идёт настройка…') : '';
   if ('tx' in d) document.body.classList.toggle('txon', !!S.tx);
   if ('mode' in d) { C.autoLock = null; C.bwHist = []; updateSpan(true); renderSq(); pushGate(); renderCenterBtn(); }
   if ('busy' in d || 'tx' in d) pushGate();
@@ -278,7 +278,7 @@ function renderBadges() {
   $$('#modes .btn').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
   const bd = bandOf(S.freq_a || 0);
   $$('#bands .btn').forEach(b => b.classList.toggle('on', !!bd && b.dataset.b === bd[0]));
-  if (S.power != null) $('#pwrInfo').textContent = `${S.power} Вт`;
+  if (S.power != null) $('#pwrInfo').textContent = `${S.power}` + tr('status.power_w',' Вт');
 }
 
 const fmtFreq = f => { const s = String(Math.round(f)).padStart(7, '0'); return `${s.slice(0, -6)}.${s.slice(-6, -3)}.${s.slice(-3)}`; };

@@ -29,7 +29,7 @@
 </div>
 
 <header class="topbar">
-  <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" class="muted small">нет связи</span></div>
+  <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" class="muted small" data-i18n="rig.nolink">нет связи</span></div>
   <div class="top-actions">
     <button id="btnAudio" class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
@@ -46,18 +46,18 @@
   <section class="panel display" id="display">
     <div class="vfo-row">
       <div class="badges">
-        <button class="badge bb" id="bVfo" title="Основной приёмник MAIN / SUB — переключить">MAIN</button>
-        <button class="badge bb off" id="bVm" title="Режим VFO / каналы памяти — переключить">VFO</button>
+        <button class="badge bb" id="bVfo" title="Основной приёмник MAIN / SUB — переключить" data-i18n-title="disp.main_sub">MAIN</button>
+        <button class="badge bb off" id="bVm" title="Режим VFO / каналы памяти — переключить" data-i18n-title="disp.vfo_mem">VFO</button>
         <span class="badge mode" id="bMode">—</span>
-        <button class="badge bb off" id="bSplit" title="SPLIT, как на трансивере: частота второго приёмника переносится в основной — частоты меняются местами">SPLIT</button>
-        <button class="badge bb off" id="bClar" title="Расстройка приёма (CLAR) — включить/выключить">CLAR</button>
-        <button class="badge bb off" id="bLock" title="Блокировка ручки трансивера — включить/выключить">LOCK</button>
-        <span class="badge busy off" id="bBusy" title="Шумоподавитель трансивера открыт — есть сигнал">BUSY</span>
+        <button class="badge bb off" id="bSplit" title="SPLIT, как на трансивере: частота второго приёмника переносится в основной — частоты меняются местами" data-i18n-title="disp.split">SPLIT</button>
+        <button class="badge bb off" id="bClar" title="Расстройка приёма (CLAR) — включить/выключить" data-i18n-title="disp.clar">CLAR</button>
+        <button class="badge bb off" id="bLock" title="Блокировка ручки трансивера — включить/выключить" data-i18n-title="disp.lock">LOCK</button>
+        <span class="badge busy off" id="bBusy" title="Шумоподавитель трансивера открыт — есть сигнал" data-i18n-title="disp.busy">BUSY</span>
         <span class="badge tx off" id="bTx">TX</span>
       </div>
-      <div class="freq" id="freqA" title="Колесо или клик по верхней/нижней половине цифры — изменить разряд"></div>
+      <div class="freq" id="freqA" title="Колесо или клик по верхней/нижней половине цифры — изменить разряд" data-i18n-title="disp.freq"></div>
       <div class="sub-row">
-        <span class="muted" id="lblB">B:</span> <span id="freqB" class="freq-b">—</span> <span class="badge small-b" id="bModeB">—</span> <span class="badge tx small-b hidden" id="bTxB" title="SPLIT: передача на этой частоте">TX</span>
+        <span class="muted" id="lblB">B:</span> <span id="freqB" class="freq-b">—</span> <span class="badge small-b" id="bModeB">—</span> <span class="badge tx small-b hidden" id="bTxB" title="SPLIT: передача на этой частоте" data-i18n-title="disp.tx_split">TX</span>
         <span class="spacer"></span>
         <span class="muted small" id="pwrInfo"></span>
       </div>
@@ -74,28 +74,28 @@
   <!-- ===== Настройка частоты ===== -->
   <section class="panel tune">
     <div class="tune-row">
-      <canvas class="dial" id="dial" title="Основная ручка: вращайте по кругу мышью или пальцем, колесо мыши — по шагу. Резкий бросок — ручка докрутится по инерции"></canvas>
+      <canvas class="dial" id="dial" title="Основная ручка: вращайте по кругу мышью или пальцем, колесо мыши — по шагу. Резкий бросок — ручка докрутится по инерции" data-i18n-title="tune.dial"></canvas>
       <div class="tune-side">
-      <div class="tune-btns"><button class="btn" data-step="-1" title="Шаг вниз">−</button><button class="btn" data-step="1" title="Шаг вверх">+</button></div>
-      <select id="step" title="Шаг настройки (на одно деление ручки)">
-        <option value="1">1 Гц</option><option value="10" selected>10 Гц</option><option value="50">50 Гц</option>
-        <option value="100">100 Гц</option><option value="500">500 Гц</option><option value="1000">1 кГц</option>
-        <option value="5000">5 кГц</option><option value="9000">9 кГц</option><option value="10000">10 кГц</option>
-        <option value="12500">12.5 кГц</option><option value="25000">25 кГц</option><option value="100000">100 кГц</option>
+      <div class="tune-btns"><button class="btn" data-step="-1" title="Шаг вниз" data-i18n-title="tune.step_down">−</button><button class="btn" data-step="1" title="Шаг вверх" data-i18n-title="tune.step_up">+</button></div>
+      <select id="step" title="Шаг настройки (на одно деление ручки)" data-i18n-title="tune.step">
+        <option value="1">1 Hz</option><option value="10" selected>10 Hz</option><option value="50">50 Hz</option>
+        <option value="100">100 Hz</option><option value="500">500 Hz</option><option value="1000">1 kHz</option>
+        <option value="5000">5 kHz</option><option value="9000">9 kHz</option><option value="10000">10 kHz</option>
+        <option value="12500">12.5 kHz</option><option value="25000">25 kHz</option><option value="100000">100 kHz</option>
       </select>
-      <input id="freqInput" inputmode="decimal" placeholder="МГц, 7.074" class="freq-input">
+      <input id="freqInput" inputmode="decimal" placeholder="МГц, 7.074" data-i18n-placeholder="tune.freq_ph" class="freq-input">
       </div>
     </div>
     <div class="btn-grid bands" id="bands"></div>
     <div class="btn-grid modes" id="modes"></div>
     <div class="sq-row" id="sqRow">
-      <span class="sq-title">Шумодав</span>
+      <span class="sq-title" data-i18n="sq.title">Шумодав</span>
       <div class="seg" id="sqMode">
-        <button data-v="off">Выкл</button><button data-v="radio" title="По шумоподавителю трансивера (SQL)">По ТРХ</button><button data-v="level" title="По уровню сигнала — порог ниже">По уровню</button>
+        <button data-v="off" data-i18n="sq.off">Выкл</button><button data-v="radio" title="По шумоподавителю трансивера (SQL)" data-i18n="sq.radio" data-i18n-title="sq.radio.title">По ТРХ</button><button data-v="level" title="По уровню сигнала — порог ниже" data-i18n="sq.level" data-i18n-title="sq.level.title">По уровню</button>
       </div>
-      <label class="sq-ctl" id="sqRadioCtl" title="SQL трансивера: чем больше, тем сильнее нужен сигнал">SQL <input type="range" id="sqRadio" min="0" max="255"><b id="sqRadioV">—</b></label>
-      <label class="sq-ctl hidden" id="sqLevelCtl" title="Порог открытия по уровню звука">Порог <input type="range" id="sqThr" min="-100" max="-10"><b id="sqThrV"></b></label>
-      <span class="sq-lamp" id="sqLamp" title="Звук открыт / закрыт шумодавом"></span>
+      <label class="sq-ctl" id="sqRadioCtl" title="SQL трансивера: чем больше, тем сильнее нужен сигнал" data-i18n-title="sq.radio_ctl">SQL <input type="range" id="sqRadio" min="0" max="255"><b id="sqRadioV">—</b></label>
+      <label class="sq-ctl hidden" id="sqLevelCtl" title="Порог открытия по уровню звука" data-i18n-title="sq.level_ctl"><span data-i18n="sq.level_ctl_label">Порог</span> <input type="range" id="sqThr" min="-100" max="-10"><b id="sqThrV"></b></label>
+      <span class="sq-lamp" id="sqLamp" title="Звук открыт / закрыт шумодавом" data-i18n-title="sq.lamp"></span>
       <span class="muted small mono" id="sqLvl"></span>
     </div>
   </section>
@@ -105,11 +105,11 @@
   <!-- ===== Водопад ===== -->
   <section class="panel wfpanel">
     <div class="wf-tools">
-      <button class="btn chip hidden" id="wfSrc" title="Источник водопада">Звук</button>
+      <button class="btn chip hidden" id="wfSrc" title="Источник водопада" data-i18n-title="wf.src" data-i18n="wf.src.audio">Звук</button>
       <div class="seg" id="spanSeg">
-        <button data-v="0" title="По реальной полосе звука трансивера">Авто</button><button data-v="3000">3k</button><button data-v="4000">4k</button><button data-v="6000">6k</button><button data-v="8000">8k</button><button data-v="12000">12k</button><button data-v="24000">24k</button>
+        <button data-v="0" title="По реальной полосе звука трансивера" data-i18n="wf.auto" data-i18n-title="wf.auto.title">Авто</button><button data-v="3000">3k</button><button data-v="4000">4k</button><button data-v="6000">6k</button><button data-v="8000">8k</button><button data-v="12000">12k</button><button data-v="24000">24k</button>
       </div>
-      <button class="btn chip hidden" id="wfCenter" title="AM/FM: звук показывается от центра в обе стороны — сигнал посередине, как на экране трансивера">◇ Центр</button>
+      <button class="btn chip hidden" id="wfCenter" title="AM/FM: звук показывается от центра в обе стороны — сигнал посередине, как на экране трансивера" data-i18n="wf.center" data-i18n-title="wf.center.title">◇ Центр</button>
       <label class="mini"><span data-i18n="wf.floor">Пол</span><input id="wfFloor" type="range" min="0" max="200" value="70"></label>
       <label class="mini"><span data-i18n="wf.contrast">Конт</span><input id="wfRange" type="range" min="20" max="160" value="80"></label>
       <span class="muted small" id="wfHint" data-i18n="wf.hint">Двойной клик — настроиться на сигнал</span>
@@ -195,16 +195,16 @@
 
       <div class="vk card-lite">
         <div class="vk-head">
-          <b>📢 Автовызов голосом</b>
-          <span class="muted small">Запишите CQ — пульт будет передавать его по кругу, слушая эфир в паузах. PTT, Esc или «Стоп» — прекратить.</span>
+          <b data-i18n="tx.vk.title">📢 Автовызов голосом</b>
+          <span class="muted small" data-i18n="tx.vk.hint">Запишите CQ — пульт будет передавать его по кругу, слушая эфир в паузах. PTT, Esc или «Стоп» — прекратить.</span>
         </div>
         <div class="vk-slots" id="vkSlots"></div>
         <div class="vk-opts">
-          <label class="mini">Пауза, с<input type="number" id="vkPause" class="num" min="2" max="600" value="10"></label>
-          <label class="mini">Повторов<input type="number" id="vkRep" class="num" min="1" max="100" value="10"></label>
-          <label class="mini" title="Остановить автовызов, если в паузе появился сигнал не слабее">Стоп при сигнале
-            <select id="vkSig"><option value="0">не следить</option><option value="3">S3</option><option value="5" selected>S5</option><option value="7">S7</option><option value="9">S9</option></select></label>
-          <button class="btn" id="vkStop">■ Стоп автовызова</button>
+          <label class="mini"><span data-i18n="vk.pause">Пауза, с</span><input type="number" id="vkPause" class="num" min="2" max="600" value="10"></label>
+          <label class="mini"><span data-i18n="vk.rep">Повторов</span><input type="number" id="vkRep" class="num" min="1" max="100" value="10"></label>
+          <label class="mini" title="Остановить автовызов, если в паузе появился сигнал не слабее" data-i18n-title="vk.stop_sig.title"><span data-i18n="vk.stop_sig_label">Стоп при сигнале</span>
+            <select id="vkSig"><option value="0" data-i18n="vk.nofollow">не следить</option><option value="3">S3</option><option value="5" selected>S5</option><option value="7">S7</option><option value="9">S9</option></select></label>
+          <button class="btn" id="vkStop" data-i18n="vk.stop">■ Стоп автовызова</button>
           <span class="cw-meter mono" id="vkStatus">—</span>
         </div>
         <input type="file" id="vkFile" accept="audio/*" class="hidden">
@@ -213,18 +213,18 @@
 
     <div class="tab" id="tab-vfo">
       <div class="btn-row">
-        <button class="btn" data-set="vfo:0">Работа на MAIN</button>
-        <button class="btn" data-set="vfo:1">Работа на SUB</button>
-        <button class="btn" data-act="a_to_b">A → B</button>
-        <button class="btn" data-act="b_to_a">B → A</button>
-        <button class="btn" data-act="swap">A ⇄ B</button>
-        <button class="btn" id="btnSplit" title="Как кнопка SPLIT на трансивере: частоты A и B меняются местами">SPLIT (A ⇄ B)</button>
+        <button class="btn" data-set="vfo:0" data-i18n="vfo.work_main">Работать на MAIN</button>
+        <button class="btn" data-set="vfo:1" data-i18n="vfo.work_sub">Работать на SUB</button>
+        <button class="btn" data-act="a_to_b" data-i18n="vfo.a_to_b">A → B</button>
+        <button class="btn" data-act="b_to_a" data-i18n="vfo.b_to_a">B → A</button>
+        <button class="btn" data-act="swap" data-i18n="vfo.swap">A ⇄ B</button>
+        <button class="btn" id="btnSplit" title="Как кнопка SPLIT на трансивере: частоты A и B меняются местами" data-i18n="vfo.split" data-i18n-title="vfo.split.title">SPLIT (A ⇄ B)</button>
       </div>
       <div class="btn-row">
         <button class="btn" data-act="band_down" data-i18n="vfo.band_down">Диапазон ◀</button>
         <button class="btn" data-act="band_up" data-i18n="vfo.band_up">Диапазон ▶</button>
         <button class="btn" data-act="scan_down" data-i18n="vfo.scan_down">Скан ◀</button>
-        <button class="btn" data-act="scan_stop">Скан ■</button>
+        <button class="btn" data-act="scan_stop" data-i18n="vfo.scan_stop">■ Скан</button>
         <button class="btn" data-act="scan_up" data-i18n="vfo.scan_up">Скан ▶</button>
         <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
       </div>
@@ -233,7 +233,7 @@
         <button class="btn" data-act="mem_mode" data-i18n="vfo.mode_mem">Режим памяти</button>
         <input id="memCh" type="number" min="1" max="999" value="1" class="num">
         <button class="btn" id="btnMemCh" data-i18n="vfo.mem_go">Вызвать канал</button>
-        <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems">Редактор каналов…</button>
+        <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems" data-i18n="vfo.mem_ed">Редактор каналов…</button>
         <button class="btn" data-act="qmb_store" data-i18n="vfo.qmb_sto">QMB запомнить</button>
         <button class="btn" data-act="qmb_recall" data-i18n="vfo.qmb_rcl">QMB вызвать</button>
         <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
@@ -250,17 +250,17 @@
     <div class="tab" id="tab-cw">
       <!-- ===== Декодер ===== -->
       <div class="cw-bar">
-        <button class="btn" id="cwDecBtn" title="Расшифровка азбуки Морзе из звука приёма">● Декодер</button>
-        <div class="seg" id="cwAlpha"><button data-v="lat" class="on">LAT</button><button data-v="cyr">КИР</button></div>
-        <label class="mini" title="Частота тона: авто — сам находит самый сильный сигнал в полосе. Правый клик по водопаду — задать вручную">Тон
-          <select id="cwFreq"><option value="0">авто</option></select></label>
-        <label class="mini" title="Чувствительность: меньше — читает слабее сигналы, но больше мусора от помех">Порог<input type="range" id="cwSq" min="11" max="28" value="15"></label>
+        <button class="btn" id="cwDecBtn" title="Расшифровка азбуки Морзе из звука приёма" data-i18n="cw.dec_on" data-i18n-title="cw.dec_on.title">● Декодер</button>
+        <div class="seg" id="cwAlpha"><button data-v="lat" class="on">LAT</button><button data-v="cyr" data-i18n="cw.alpha.cyr">КИР</button></div>
+        <label class="mini" title="Частота тона: авто — сам находит самый сильный сигнал в полосе. Правый клик по водопаду — задать вручную" data-i18n-title="cw.tone.title"><span data-i18n="cw.tone">Тон</span>
+          <select id="cwFreq"><option value="0" data-i18n="cw.tone.auto">авто</option></select></label>
+        <label class="mini" title="Чувствительность: меньше — читает слабее сигналы, но больше мусора от помех" data-i18n-title="cw.thr.title"><span data-i18n="cw.thr">Порог</span><input type="range" id="cwSq" min="11" max="28" value="15"></label>
         <span class="cw-meter mono" id="cwInfo">—</span>
         <span class="spacer"></span>
         <button class="btn small" id="cwClear" title="Очистить экран" data-i18n="cw.clear" data-i18n-title="common.clear">Очистить</button>
-        <button class="btn small" id="cwNew" title="Начать новую связь" data-i18n="cw.new">Новая связь</button>
+        <button class="btn small" id="cwNew" title="Начать новую связь" data-i18n="cw.new" data-i18n-title="cw.new.title">Новая связь</button>
       </div>
-      <div class="cw-screen mono" id="cwScreen" aria-live="polite"><span class="muted" id="cwHint">Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW).</span></div>
+      <div class="cw-screen mono" id="cwScreen" aria-live="polite"><span class="muted" id="cwHint" data-i18n="cw.hint">Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW).</span></div>
 
       <!-- ===== Разбор принятого ===== -->
       <div class="cw-ai" id="cwAi">
@@ -268,10 +268,10 @@
           <b data-i18n="cw.ai.title">Разбор принятого</b>
           <span class="muted small" data-i18n="cw.ai.sub">По правилам CW-связи</span>
           <span class="spacer"></span>
-          <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)" data-i18n="cw.analyze">Разобрать</button>
-          <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)" data-i18n="cw.reply">📝 Ответ</button>
+          <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)" data-i18n="cw.analyze" data-i18n-title="cw.analyze.title">Разобрать</button>
+          <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)" data-i18n="cw.reply" data-i18n-title="cw.reply.title">📝 Ответ</button>
         </div>
-        <div id="cwAiBody" class="cw-ai-body muted small">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
+        <div id="cwAiBody" class="cw-ai-body muted small" data-i18n="cw.ai.body">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
       </div>
 
       <!-- ===== Передача ===== -->
@@ -283,7 +283,7 @@
         </div>
         <div class="cw-macros" id="cwMacros"></div>
         <div class="cw-txrow">
-          <textarea id="cwText" class="mono" rows="2" placeholder="Текст для передачи (Ctrl+Enter — передать). {CALL} — позывной корреспондента, {MY} — ваш"></textarea>
+          <textarea id="cwText" class="mono" rows="2" placeholder="Текст для передачи (Ctrl+Enter — передать). {CALL} — позывной корреспондента, {MY} — ваш" data-i18n-placeholder="cw.text.ph"></textarea>
           <div class="cw-txbtns">
             <button class="btn primary" id="cwSend" title="Ctrl+Enter" data-i18n="cw.send">▶ Передать</button>
             <button class="btn" id="cwStop" title="Esc" data-i18n="cw.stop">■ Стоп</button>
@@ -291,10 +291,10 @@
         </div>
         <div class="cw-txline mono hidden" id="cwTxLine"></div>
         <div class="cw-auto">
-          <label class="chk"><input type="checkbox" id="cwAuto"> <b>Автоответ по шаблону</b></label>
-          <span class="muted small">Когда корреспондент зовёт ваш позывной и закончил передачу, пульт составит ответ по шаблону и передаст его через
-            <input type="number" id="cwAutoDelay" min="3" max="30" class="num tiny"> с (можно отменить). Не больше
-            <input type="number" id="cwAutoMax" min="1" max="20" class="num tiny"> передач подряд.</span>
+          <label class="chk"><input type="checkbox" id="cwAuto"> <b data-i18n="cw.auto">Автоответ по шаблону</b></label>
+          <span class="muted small"><span data-i18n="cw.auto.hint1">Когда корреспондент зовёт ваш позывной и закончил передачу, пульт составит ответ по шаблону и передаст его через</span>
+            <input type="number" id="cwAutoDelay" min="3" max="30" class="num tiny"> <span data-i18n="cw.auto.hint2">с (можно отменить). Не больше</span>
+            <input type="number" id="cwAutoMax" min="1" max="20" class="num tiny"> <span data-i18n="cw.auto.hint3">передач подряд.</span></span>
         </div>
       </div>
 
@@ -303,7 +303,7 @@
         <label><span data-i18n="cw.op.call">Позывной</span><input id="opCall" class="text mono" placeholder="R6AAF"></label>
         <label><span data-i18n="cw.op.name">Имя</span><input id="opName" class="text" placeholder="EUGENE"></label>
         <label><span data-i18n="cw.op.qth">QTH</span><input id="opQth" class="text" placeholder="GELENDZHIK"></label>
-        <label class="grow">Ещё о себе (для шаблонов)<input id="opExtra" class="text" placeholder="RIG YAESU 10W ANT VERTICAL"></label>
+        <label class="grow"><span data-i18n="cw.op.extra">Ещё о себе (для шаблонов)</span><input id="opExtra" class="text" placeholder="RIG YAESU 10W ANT VERTICAL"></label>
       </div>
 
       <h4 data-i18n="cw.rig">Ключ трансивера</h4>
@@ -315,98 +315,94 @@
         <div class="ctl" data-k="bk_delay" data-min="0" data-max="33" data-label="Задержка BK" data-fmt="delay" data-label-key="ctl.bk_delay"></div>
       </div>
       <div class="btn-row">
-        <button class="btn" data-act="spot_on">SPOT вкл</button><button class="btn" data-act="spot_off">SPOT выкл</button>
+        <button class="btn" data-act="spot_on" data-i18n="cw.spot_on">SPOT вкл</button><button class="btn" data-act="spot_off" data-i18n="cw.spot_off">SPOT выкл</button>
         <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
       </div>
       <h4 data-i18n="cw.mems">Память ключа</h4>
       <div id="cwMems" class="cw-mems"></div>
-      <p class="muted small">Текст передаёт сам трансивер из своей памяти ключа (до 50 знаков за раз) — без задержек сети. BREAK-IN включается автоматически.
-        Длинный текст передаётся кусками через ячейку 5.</p>
+      <p class="muted small" data-i18n="cw.mems.hint">Текст передаёт сам трансивер из своей памяти ключа (до 50 знаков за раз) — без задержек сети. BREAK-IN включается автоматически. Длинный текст передаётся кусками через ячейку 5.</p>
     </div>
 
     <div class="tab" id="tab-digi">
       <div class="dg-head">
-        <div class="seg" id="dgSw"><button data-v="rtty" class="on">RTTY</button><button data-v="fax">Метеофакс</button><button data-v="nx">NAVTEX</button><button data-v="sstv">SSTV</button><button data-v="psk">PSK31</button></div>
-        <span class="muted small" id="dgHint">Правый клик по водопаду — настроить декодер на сигнал</span>
+        <div class="seg" id="dgSw"><button data-v="rtty" class="on">RTTY</button><button data-v="fax" data-i18n="digi.fax">Метеофакс</button><button data-v="nx">NAVTEX</button><button data-v="sstv">SSTV</button><button data-v="psk">PSK31</button></div>
+        <span class="muted small" id="dgHint" data-i18n="digi.hint">Правый клик по водопаду — настроить декодер на сигнал</span>
       </div>
 
       <!-- ===== RTTY ===== -->
       <div id="dgRtty">
         <div class="cw-bar">
-          <button class="btn" id="rtDecBtn">○ Декодер выкл</button>
+          <button class="btn" id="rtDecBtn" data-i18n="rt.dec_off">○ Декодер выкл</button>
           <label class="mini"><span data-i18n="rt.baud">Скорость</span><select id="rtBaud"><option>45.45</option><option>50</option><option>75</option><option>100</option></select></label>
           <label class="mini"><span data-i18n="rt.shift">Сдвиг</span><select id="rtShift"><option>170</option><option>200</option><option>425</option><option>450</option><option>850</option></select></label>
-          <label class="mini" title="Середина между тонами mark и space, Гц звука">Центр<input type="number" id="rtFc" class="num" min="500" max="2900" step="5" value="2210"></label>
-          <button class="btn small" id="rtTune" title="Найти пару тонов RTTY в полосе приёма">Автонастройка</button>
-          <label class="mini" title="Авто — декодер сам определяет, перевёрнуты ли тоны (LSB/USB, «реверс»)">Полярность<select id="rtPol"><option value="0">авто</option><option value="1">прямая</option><option value="-1">обратная</option></select></label>
-          <label class="chk mini" title="Unshift on space: после пробела — буквы"><input type="checkbox" id="rtUsos" checked> USOS</label>
+          <label class="mini" title="Середина между тонами mark и space, Гц звука"><span data-i18n="rt.center">Центр</span><input type="number" id="rtFc" class="num" min="500" max="2900" step="5" value="2210"></label>
+          <button class="btn small" id="rtTune" title="Найти пару тонов RTTY в полосе приёма" data-i18n="rt.autotune" data-i18n-title="rt.autotune.title">Автонастройка</button>
+          <label class="mini" title="Авто — декодер сам определяет, перевёрнуты ли тоны (LSB/USB, «реверс»)" data-i18n-title="rt.pol.title"><span data-i18n="rt.pol">Полярность</span><select id="rtPol"><option value="0" data-i18n="rt.pol.auto">авто</option><option value="1" data-i18n="rt.pol.norm">прямая</option><option value="-1" data-i18n="rt.pol.inv">обратная</option></select></label>
+          <label class="chk mini" title="Unshift on space: после пробела — буквы" data-i18n-title="rt.usos.title"><input type="checkbox" id="rtUsos" checked> <span data-i18n="rt.usos">USOS</span></label>
           <span class="cw-meter mono" id="rtInfo">—</span>
           <span class="spacer"></span>
           <label class="mini"><span data-i18n="rt.station">Станция</span><select id="rtPreset"></select></label>
           <button class="btn small" id="rtClear" data-i18n="rt.clear">Очистить</button>
         </div>
-        <div class="cw-screen dg-screen mono" id="rtScreen"><span class="muted" id="rtHintS">Включите декодер и настройтесь на телетайп. Метеосводки DWD (Германия): 50 Бод, сдвиг 450 Гц — выберите станцию в списке справа. Любительский RTTY: 45,45 Бод / 170 Гц, около 14080–14090 кГц.</span></div>
-        <div class="cw-ai hidden" id="rtAi"><div class="cw-ai-head"><b>Перевод</b><span class="muted small" id="rtAiModel"></span><span class="spacer"></span><button class="btn small" id="rtAiClose">✕</button></div><div class="cw-ai-body small" id="rtAiBody"></div></div>
+        <div class="cw-screen dg-screen mono" id="rtScreen"><span class="muted" id="rtHintS" data-i18n="rt.hint">Включите декодер и настройтесь на телетайп. Метеосводки DWD (Германия): 50 Бод, сдвиг 450 Гц — выберите станцию в списке справа. Любительский RTTY: 45,45 Бод / 170 Гц, около 14080–14090 кГц.</span></div>
+        <div class="cw-ai hidden" id="rtAi"><div class="cw-ai-head"><b data-i18n="rt.translate">Перевод</b><span class="muted small" id="rtAiModel"></span><span class="spacer"></span><button class="btn small" id="rtAiClose">✕</button></div><div class="cw-ai-body small" id="rtAiBody"></div></div>
         <div class="cw-tx">
           <div class="cw-macros" id="rtMacros"></div>
           <div class="cw-txrow">
-            <textarea id="rtText" class="mono" rows="2" placeholder="Текст для передачи RTTY (Ctrl+Enter — передать). {MY} — ваш позывной"></textarea>
+            <textarea id="rtText" class="mono" rows="2" placeholder="Текст для передачи RTTY (Ctrl+Enter — передать). {MY} — ваш позывной" data-i18n-placeholder="rt.text.ph"></textarea>
             <div class="cw-txbtns">
               <button class="btn primary" id="rtSend" title="Ctrl+Enter" data-i18n="rt.send">▶ Передать</button>
               <button class="btn" id="rtStop" title="Esc" data-i18n="rt.stop">■ Стоп</button>
             </div>
           </div>
           <div class="cw-txline mono hidden" id="rtTxLine"></div>
-          <p class="muted small">Передача — звуком через USB (AFSK), трансивер должен быть в режиме <b>DATA-L</b> или <b>DATA-U</b>.
-            Тоны ставятся по любительскому стандарту (mark — верхняя частота в эфире); если корреспондент не читает — <label class="chk"><input type="checkbox" id="rtRev"> реверс</label>.</p>
+          <p class="muted small"><span data-i18n="rt.tx.hint">Передача — звуком через USB (AFSK), трансивер должен быть в режиме DATA-L или DATA-U. Тоны ставятся по любительскому стандарту (mark — верхняя частота в эфире); если корреспондент не читает —</span> <label class="chk"><input type="checkbox" id="rtRev"> <span data-i18n="rt.rev">реверс</span></label>.</p>
         </div>
       </div>
 
       <!-- ===== WEFAX ===== -->
       <div id="dgFax" class="hidden">
         <div class="cw-bar">
-          <button class="btn" id="fxDecBtn">○ Приём выкл</button>
-          <label class="mini">Строк/мин<select id="fxLpm"><option>60</option><option>90</option><option selected>120</option><option>240</option></select></label>
+          <button class="btn" id="fxDecBtn" data-i18n="fx.dec_off">○ Приём выкл</button>
+          <label class="mini"><span data-i18n="fx.lpm">Строк/мин</span><select id="fxLpm"><option>60</option><option>90</option><option selected>120</option><option>240</option></select></label>
           <label class="mini"><span data-i18n="fx.ioc">IOC</span><select id="fxIoc"><option selected>576</option><option>288</option></select></label>
-          <label class="chk mini" title="Начинать по тону старта и заканчивать по тону стопа"><input type="checkbox" id="fxAuto" checked> авто старт/стоп</label>
-          <label class="mini" title="Середина между чёрным и белым, Гц звука (обычно 1900). Правый клик по водопаду — поставить по сигналу">Центр<input type="number" id="fxCenter" class="num" min="1000" max="2800" step="10" value="1900"></label>
-          <label class="chk mini" title="Автоподстройка центра по тону старта и фазированию"><input type="checkbox" id="fxAfc" checked> АПЧ</label>
-          <button class="btn small" id="fxStart" title="Начать картинку сразу, не дожидаясь тона старта">Начать сейчас</button>
-          <button class="btn small" id="fxStop" title="Закончить и сохранить картинку" data-i18n="fx.stop">Стоп и сохранить</button>
+          <label class="chk mini" title="Начинать по тону старта и заканчивать по тону стопа" data-i18n-title="fx.auto.title"><input type="checkbox" id="fxAuto" checked> <span data-i18n="fx.auto">авто старт/стоп</span></label>
+          <label class="mini" title="Середина между чёрным и белым, Гц звука (обычно 1900). Правый клик по водопаду — поставить по сигналу" data-i18n-title="fx.center.title"><span data-i18n="fx.center">Центр</span><input type="number" id="fxCenter" class="num" min="1000" max="2800" step="10" value="1900"></label>
+          <label class="chk mini" title="Автоподстройка центра по тону старта и фазированию" data-i18n-title="fx.afc.title"><input type="checkbox" id="fxAfc" checked> <span data-i18n="fx.afc">АПЧ</span></label>
+          <button class="btn small" id="fxStart" title="Начать картинку сразу, не дожидаясь тона старта" data-i18n="fx.start_now" data-i18n-title="fx.start_now.title">Начать сейчас</button>
+          <button class="btn small" id="fxStop" title="Закончить и сохранить картинку" data-i18n="fx.stop_save" data-i18n-title="fx.stop_save.title">Стоп и сохранить</button>
           <span class="mini"><span data-i18n="fx.slant">Наклон</span><button class="btn small" id="fxSlM" title="Shift — шаг 10">◀</button><b class="mono" id="fxSlant">0</b><button class="btn small" id="fxSlP" title="Shift — шаг 10">▶</button></span>
           <span class="cw-meter mono" id="fxInfo">—</span>
           <span class="spacer"></span>
           <label class="mini"><span data-i18n="fx.station">Станция</span><select id="fxPreset"></select></label>
           <button class="btn small" id="fxPng">💾 PNG</button>
-          <button class="btn small" id="fxBig" title="Во весь экран (Esc — назад)">⛶</button>
+          <button class="btn small" id="fxBig" title="Во весь экран (Esc — назад)" data-i18n-title="fx.full">⛶</button>
         </div>
-        <div class="fx-wrap" id="fxWrap"><button class="btn small fx-close" id="fxClose" title="Esc">✕</button><canvas id="fxCanvas"></canvas><div class="fx-empty muted" id="fxEmpty"><div>Метеофакс принимается в <b>USB</b> на 1,9 кГц ниже частоты станции (выберите станцию в списке — частота и вид работы поставятся сами). Полоса WIDTH — не уже 2,4 кГц: сигнал занимает 1500–2300 Гц.
-          Картинка начнётся сама по тону старта. Клик по картинке — указать, где левый край карты; ◀ ▶ — исправить наклон.</div></div></div>
+        <div class="fx-wrap" id="fxWrap"><button class="btn small fx-close" id="fxClose" title="Esc" data-i18n-title="fx.close.title">✕</button><canvas id="fxCanvas"></canvas><div class="fx-empty muted" id="fxEmpty"><div>Метеофакс принимается в <b>USB</b> на 1,9 кГц ниже частоты станции (выберите станцию в списке — частота и вид работы поставятся сами). Полоса WIDTH — не уже 2,4 кГц: сигнал занимает 1500–2300 Гц.
+          <span data-i18n="fx.empty.tail">Картинка начнётся сама по тону старта. Клик по картинке — указать, где левый край карты; ◀ ▶ — исправить наклон.</span></div></div></div>
         <div class="muted small" id="fxSaved"></div>
       </div>
 
       <!-- ===== NAVTEX ===== -->
       <div id="dgNx" class="hidden">
         <div class="cw-bar">
-          <button class="btn" id="nxDecBtn">○ Приём выкл</button>
-          <label class="mini" title="Середина между тонами (сдвиг 170 Гц), Гц звука">Центр<input type="number" id="nxFc" class="num" min="500" max="2900" step="5" value="1700"></label>
+          <button class="btn" id="nxDecBtn" data-i18n="nx.dec_off">○ Приём выкл</button>
+          <label class="mini" title="Середина между тонами (сдвиг 170 Гц), Гц звука" data-i18n-title="nx.center.title"><span data-i18n="nx.center">Центр</span><input type="number" id="nxFc" class="num" min="500" max="2900" step="5" value="1700"></label>
           <span class="cw-meter mono" id="nxInfo">—</span>
           <span class="spacer"></span>
           <label class="mini"><span data-i18n="nx.station">Станция</span><select id="nxPreset"></select></label>
           <button class="btn small" id="nxClear" data-i18n="nx.clear">Очистить</button>
         </div>
         <div class="nx-msgs small" id="nxMsgs"></div>
-        <div class="cw-screen dg-screen mono" id="nxScreen"><span class="muted" id="nxHint">NAVTEX — морские предупреждения и прогнозы на 518 кГц. Выберите станцию: трансивер встанет в USB на 516,3 кГц,
-          сигнал окажется около 1700 Гц. Станции передают по расписанию (время — в списке); между сеансами эфир пустой.
-          Ближайшая — Новороссийск (A), на 518 кГц её хорошо слышно на десятки и сотни километров.</span></div>
+        <div class="cw-screen dg-screen mono" id="nxScreen"><span class="muted" id="nxHint" data-i18n="nx.hint">NAVTEX — морские предупреждения и прогнозы на 518 кГц. Выберите станцию: трансивер встанет в USB на 516,3 кГц, сигнал окажется около 1700 Гц. Станции передают по расписанию (время — в списке); между сеансами эфир пустой. Ближайшая — Новороссийск (A), на 518 кГц её хорошо слышно на десятки и сотни километров.</span></div>
       </div>
 
       <!-- ===== SSTV ===== -->
       <div id="dgSstv" class="hidden">
         <div class="cw-bar">
-          <button class="btn" id="svDecBtn">○ Приём выкл</button>
-          <label class="mini" title="Обычно вид картинки узнаётся сам (по коду VIS или по синхроимпульсам)">Вид<select id="svMode"><option value="">авто</option></select></label>
-          <label class="chk mini" title="Начинать картинку и без кода VIS — по синхроимпульсам (если начало пропущено)"><input type="checkbox" id="svAuto" checked> ловить с середины</label>
+          <button class="btn" id="svDecBtn" data-i18n="sv.dec_off">○ Приём выкл</button>
+          <label class="mini" title="Обычно вид картинки узнаётся сам (по коду VIS или по синхроимпульсам)" data-i18n-title="sv.mode.title"><span data-i18n="sv.mode">Вид</span><select id="svMode"><option value="" data-i18n="sv.mode.auto">авто</option></select></label>
+          <label class="chk mini" title="Начинать картинку и без кода VIS — по синхроимпульсам (если начало пропущено)" data-i18n-title="sv.catch.title"><input type="checkbox" id="svAuto" checked> <span data-i18n="sv.catch">ловить с середины</span></label>
           <button class="btn small" id="svStop" data-i18n="sv.stop">Стоп и сохранить</button>
           <span class="cw-meter mono" id="svInfo">—</span>
           <span class="spacer"></span>
@@ -415,8 +411,7 @@
         </div>
         <div class="sv-wrap"><canvas id="svCanvas" width="320" height="256"></canvas>
           <div class="sv-side small">
-            <p class="muted">SSTV — картинки от радиолюбителей: 14,230 МГц USB (самая людная), 21,340, 28,680 МГц; на 80 и 40 м — LSB.
-              На 145,800 МГц FM — сеансы с МКС (о них объявляют заранее). Картинка начнётся сама; виды Martin, Scottie, Robot 36, PD.</p>
+            <p class="muted" data-i18n="sv.hint">SSTV — картинки от радиолюбителей: 14,230 МГц USB (самая людная), 21,340, 28,680 МГц; на 80 и 40 м — LSB. На 145,800 МГц FM — сеансы с МКС (о них объявляют заранее). Картинка начнётся сама; виды Martin, Scottie, Robot 36, PD.</p>
             <div id="svSaved"></div>
           </div>
         </div>
@@ -425,20 +420,19 @@
       <!-- ===== PSK31 ===== -->
       <div id="dgPsk" class="hidden">
         <div class="cw-bar">
-          <button class="btn" id="pkDecBtn">○ Приём выкл</button>
-          <label class="mini" title="Частота сигнала в звуке, Гц — правый клик по нему на водопаде">Частота<input type="number" id="pkFc" class="num" min="200" max="3500" step="1" value="1000"></label>
-          <label class="chk mini" title="Автоподстройка к сигналу"><input type="checkbox" id="pkAfc" checked> АПЧ</label>
+          <button class="btn" id="pkDecBtn" data-i18n="pk.dec_off">○ Приём выкл</button>
+          <label class="mini" title="Частота сигнала в звуке, Гц — правый клик по нему на водопаде" data-i18n-title="pk.freq.title"><span data-i18n="pk.freq">Частота</span><input type="number" id="pkFc" class="num" min="200" max="3500" step="1" value="1000"></label>
+          <label class="chk mini" title="Автоподстройка к сигналу" data-i18n-title="pk.afc.title"><input type="checkbox" id="pkAfc" checked> <span data-i18n="pk.afc">АПЧ</span></label>
           <span class="cw-meter mono" id="pkInfo">—</span>
           <span class="spacer"></span>
           <label class="mini"><span data-i18n="pk.band">Диапазон</span><select id="pkPreset"></select></label>
           <button class="btn small" id="pkClear" data-i18n="pk.clear">Очистить</button>
         </div>
-        <div class="cw-screen dg-screen mono" id="pkScreen"><span class="muted" id="pkHint">PSK31 — тихие текстовые связи: на водопаде это тонкие «ниточки». Выберите диапазон, затем правый клик
-          по ниточке на водопаде — декодер встанет на неё. Передача — в режиме DATA-U.</span></div>
+        <div class="cw-screen dg-screen mono" id="pkScreen"><span class="muted" id="pkHint" data-i18n="pk.hint">PSK31 — тихие текстовые связи: на водопаде это тонкие «ниточки». Выберите диапазон, затем правый клик по ниточке на водопаде — декодер встанет на неё. Передача — в режиме DATA-U.</span></div>
         <div class="cw-tx">
           <div class="cw-macros" id="pkMacros"></div>
           <div class="cw-txrow">
-            <textarea id="pkText" class="mono" rows="2" placeholder="Текст PSK31 (Ctrl+Enter — передать). {MY} — ваш позывной"></textarea>
+            <textarea id="pkText" class="mono" rows="2" placeholder="Текст PSK31 (Ctrl+Enter — передать). {MY} — ваш позывной" data-i18n-placeholder="pk.text.ph"></textarea>
             <div class="cw-txbtns">
               <button class="btn primary" id="pkSend" data-i18n="pk.send">▶ Передать</button>
               <button class="btn" id="pkStop" data-i18n="pk.stop">■ Стоп</button>
@@ -451,33 +445,32 @@
 
     <div class="tab" id="tab-ft8">
       <div class="cw-bar ft-bar">
-        <button class="btn" id="ftOnBtn">○ Приём выкл</button>
+        <button class="btn" id="ftOnBtn" data-i18n="ft8.off">○ Приём выкл</button>
         <div class="seg" id="ftModeSw"><button data-v="FT8" class="on">FT8</button><button data-v="FT4">FT4</button></div>
         <label class="mini"><span data-i18n="ft8.band">Диапазон</span><select id="ftBand"></select></label>
         <span class="ft-clock mono" id="ftClock">--:--:--</span>
         <div class="ft-slot"><div id="ftSlotBar"></div></div>
-        <span class="muted small mono" id="ftDt" title="Среднее смещение времени принятых станций. Больше ±0,5 с — подведите часы ПК">dt —</span>
+        <span class="muted small mono" id="ftDt" title="Среднее смещение времени принятых станций. Больше ±0,5 с — подведите часы ПК" data-i18n-title="ft8.dt.title">dt —</span>
         <span class="spacer"></span>
-        <label class="mini" title="Сколько секунд помещается на водопаде. На водопаде: клик — RX, правый клик/Shift — TX, двойной — оба">Водопад<select id="ftWfSpeed">
+        <label class="mini" title="Сколько секунд помещается на водопаде. На водопаде: клик — RX, правый клик/Shift — TX, двойной — оба" data-i18n-title="ft8.wf.title"><span data-i18n="ft8.wf.label">Водопад</span><select id="ftWfSpeed">
           <option value="0" data-i18n="ft8.wf.0">как в других режимах</option><option value="10" data-i18n="ft8.wf.10">быстро (~10 с)</option>
           <option value="20" data-i18n="ft8.wf.20">средне (~20 с)</option><option value="35" data-i18n="ft8.wf.35">медленно (~35 с)</option><option value="60" data-i18n="ft8.wf.60">очень медленно (~60 с)</option></select></label>
       </div>
       <div class="ft-main">
       <div class="ft-panes">
         <div class="ft-pane">
-          <div class="ft-head"><b title="Активность диапазона">Активность</b>
-            <select id="ftFilter" class="mini-sel" title="Что показывать. Цветные метки: фиолетовая — новая страна, оранжевая — страна не на этом диапазоне, голубая — новый позывной; бледные строки — уже работали">
-              <option value="all">все</option><option value="cq">CQ и мне</option><option value="new">новые и мне</option></select>
+          <div class="ft-head"><b title="Активность диапазона" data-i18n="ft8.activity" data-i18n-title="ft8.activity">Активность</b>
+            <select id="ftFilter" class="mini-sel" title="Что показывать. Цветные метки: фиолетовая — новая страна, оранжевая — страна не на этом диапазоне, голубая — новый позывной; бледные строки — уже работали" data-i18n-title="ft8.filter.title">
+              <option value="all" data-i18n="ft8.filter.all">все</option><option value="cq" data-i18n="ft8.filter.cq">CQ и мне</option><option value="new" data-i18n="ft8.filter.new">новые и мне</option></select>
 
             <span class="spacer"></span><button class="btn small" id="ftClear" data-i18n="ft8.clear">Очистить</button></div>
-          <div class="ft-th mono"><span>UTC</span><span>дБ</span><span>DT</span><span>Част</span><span>Сообщение</span></div>
-          <div class="ft-list mono" id="ftList"><div class="muted ft-hint" id="ftHint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц.
-            Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div></div>
+          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
+          <div class="ft-list mono" id="ftList"><div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div></div>
         </div>
         <div class="ft-pane">
           <div class="ft-head"><b data-i18n="ft8.rxpane">Частота RX</b> <span class="mono ft-rxlbl" id="ftRxLbl">1500 Гц</span>
             <span class="spacer"></span><button class="btn small" id="ftClear2" data-i18n="ft8.clear">Очистить</button></div>
-          <div class="ft-th mono"><span>UTC</span><span>дБ</span><span>DT</span><span>Част</span><span>Сообщение</span></div>
+          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
           <div class="ft-list mono" id="ftRxList"></div>
         </div>
       </div>
@@ -486,36 +479,36 @@
       <div class="ft-ctl">
         <div class="ft-box ft-btns">
           <button class="btn" id="ftEnable" title="Разрешить передачу (Enable TX)" data-i18n="ft8.enable">Включить TX</button>
-          <button class="btn danger" id="ftHalt" title="Прекратить передачу и сбросить связь (Halt TX)">Стоп TX</button>
-          <button class="btn" id="ftTune" title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC">Настройка</button>
+          <button class="btn danger" id="ftHalt" title="Прекратить передачу и сбросить связь (Halt TX)" data-i18n="ft8.halt">Стоп TX</button>
+          <button class="btn" id="ftTune" title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC" data-i18n="ft8.tune">Настройка</button>
           <button class="btn primary" id="ftCq" data-i18n="ft8.cq">CQ</button>
-          <label class="chk mini" title="Автоматическое проведение связи (Auto Seq)"><input type="checkbox" id="ftAutoSeq" checked> Авто-послед.</label>
+          <label class="chk mini" title="Автоматическое проведение связи (Auto Seq)"><input type="checkbox" id="ftAutoSeq" checked> <span data-i18n="ft8.autoseq">Авто-послед.</span></label>
           <label class="chk mini" title="После каждой связи снова звать CQ"><input type="checkbox" id="ftAutoCq"> <span data-i18n="ft8.autocq">Авто-CQ</span></label>
-          <label class="mini" title="В каком периоде передаём: 1-й (00/30 с) или 2-й (15/45 с)">Период<select id="ftPar"><option value="0" data-i18n="ft8.parity.0">1-й (чётн.)</option><option value="1" data-i18n="ft8.parity.1">2-й (нечётн.)</option></select></label>
+          <label class="mini" title="В каком периоде передаём: 1-й (00/30 с) или 2-й (15/45 с)"><span data-i18n="ft8.parity">Период</span><select id="ftPar"><option value="0" data-i18n="ft8.parity.0">1-й (чётн.)</option><option value="1" data-i18n="ft8.parity.1">2-й (нечётн.)</option></select></label>
         </div>
         <div class="ft-box ft-freqs">
           <label class="mini"><span data-i18n="ft8.rxhz">RX, Гц</span><input type="number" id="ftRxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
           <label class="mini"><span data-i18n="ft8.txhz">TX, Гц</span><input type="number" id="ftTxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
-          <div class="btn-row"><button class="btn small" id="ftTx2Rx" title="Частоту RX поставить равной TX">RX ← TX</button>
-            <button class="btn small" id="ftRx2Tx" title="Частоту TX поставить равной RX">TX ← RX</button></div>
+          <div class="btn-row"><button class="btn small" id="ftTx2Rx" title="Частоту RX поставить равной TX" data-i18n="ft8.rx2tx_btn" data-i18n-title="ft8.rx2tx.title">RX ← TX</button>
+            <button class="btn small" id="ftRx2Tx" title="Частоту TX поставить равной RX" data-i18n="ft8.tx2rx_btn" data-i18n-title="ft8.tx2rx.title">TX ← RX</button></div>
           <label class="mini"><span data-i18n="ft8.dxcall">DX позывной</span><input id="ftDxCall" class="text mono" maxlength="11"></label>
           <label class="mini"><span data-i18n="ft8.dxgrid">DX локатор</span><input id="ftDxGrid" class="text mono" maxlength="4"></label>
           <label class="mini"><span data-i18n="ft8.rpt">Рапорт</span><input id="ftRpt" class="num mono" type="number" min="-30" max="30" value="-10"></label>
-          <button class="btn small" id="ftGen" title="Сформировать стандартные сообщения">Сформировать</button>
+          <button class="btn small" id="ftGen" title="Сформировать стандартные сообщения" data-i18n="ft8.gen" data-i18n-title="ft8.gen.title">Сформировать</button>
         </div>
         <div class="ft-box ft-msgs" id="ftMsgs"></div>
       </div>
       <div class="ft-bottom">
         <div>
-          <h4>Связи <span class="muted small" id="ftLogInfo"></span></h4>
-          <div class="ft-log mono small" id="ftLog"><span class="muted">Пока нет</span></div>
+          <h4><span data-i18n="ft8.log.title">Связи</span> <span class="muted small" id="ftLogInfo"></span></h4>
+          <div class="ft-log mono small" id="ftLog"><span class="muted" data-i18n="ft8.log.empty">Пока нет</span></div>
         </div>
         <div class="ft-heard">
           <div class="ft-head"><b data-i18n="ft8.heard">Меня слышат</b> <span class="muted small" id="ftHeardInfo" data-i18n="ft8.heard.info">PSK Reporter, 30 мин</span>
             <span class="spacer"></span>
             <a class="btn small" id="ftHeardMap" target="_blank" rel="noopener" title="Карта на pskreporter.info" data-i18n="ft8.heard.map">Карта</a>
-            <button class="btn small" id="ftHeardBtn" title="Обновить (не чаще раза в 5 минут)">Обновить</button></div>
-          <div class="ft-log mono small" id="ftHeard"><span class="muted">После первых передач здесь появятся станции, которые вас приняли</span></div>
+            <button class="btn small" id="ftHeardBtn" title="Обновить (не чаще раза в 5 минут)" data-i18n="ft8.heard.update" data-i18n-title="ft8.heard.update.title">Обновить</button></div>
+          <div class="ft-log mono small" id="ftHeard"><span class="muted" data-i18n="ft8.heard.empty">После первых передач здесь появятся станции, которые вас приняли</span></div>
         </div>
         <details class="ft-cfg">
           <summary data-i18n="ft8.cfg">Настройки FT8 и лог</summary>
@@ -523,31 +516,29 @@
             <label class="mini"><span data-i18n="ft8.call">Позывной</span><input id="ftCall" class="text mono" maxlength="11" placeholder="R6AAF"></label>
             <label class="mini"><span data-i18n="ft8.grid">Локатор</span><input id="ftGrid" class="text mono" maxlength="6" placeholder="KN94"></label>
             <label class="mini"><span data-i18n="ft8.pwr">Мощность, Вт</span><input id="ftPwr" class="text mono" maxlength="5" placeholder="10"></label>
-            <label class="mini" title="Сколько раз повторять без ответа">Повторов<input id="ftTries" type="number" class="num" min="2" max="20" value="6"></label>
-            <label class="mini" title="Уровень сигнала передачи (ALC должен почти не двигаться)">Уровень TX<input id="ftLevel" type="range" min="0.05" max="1" step="0.05" value="0.5"></label>
-            <label class="chk mini"><input type="checkbox" id="ftWide" checked> расширять полосу DATA-U до 3000 Гц</label>
-            <label class="chk mini"><input type="checkbox" id="ftWfLab" checked> позывные и время на водопаде</label>
-            <label class="chk mini"><input type="checkbox" id="ftUdpOn" checked> отправлять в лог (UDP, как WSJT-X)</label>
-            <label class="mini">Адрес<input id="ftUdpHost" class="text mono" value="127.0.0.1"></label>
+            <label class="mini" title="Сколько раз повторять без ответа" data-i18n-title="ft8.tries.title"><span data-i18n="ft8.tries">Повторов</span><input id="ftTries" type="number" class="num" min="2" max="20" value="6"></label>
+            <label class="mini" title="Уровень сигнала передачи (ALC должен почти не двигаться)" data-i18n-title="ft8.level.title"><span data-i18n="ft8.level">Уровень TX</span><input id="ftLevel" type="range" min="0.05" max="1" step="0.05" value="0.5"></label>
+            <label class="chk mini"><input type="checkbox" id="ftWide" checked> <span data-i18n="ft8.wide">расширять полосу DATA-U до 3000 Гц</span></label>
+            <label class="chk mini"><input type="checkbox" id="ftWfLab" checked> <span data-i18n="ft8.wflab">позывные и время на водопаде</span></label>
+            <label class="chk mini"><input type="checkbox" id="ftUdpOn" checked> <span data-i18n="ft8.udp">отправлять в лог (UDP, как WSJT-X)</span></label>
+            <label class="mini"><span data-i18n="ft8.udp.host">Адрес</span><input id="ftUdpHost" class="text mono" value="127.0.0.1"></label>
             <label class="mini"><span data-i18n="ft8.port">Порт</span><input id="ftUdpPort" type="number" class="num" value="2237"></label>
-            <label class="chk mini"><input type="checkbox" id="ftPskOn" checked> отправлять принятые станции в PSK Reporter</label>
-            <label class="mini" style="grid-column: 1 / -1">Антенна (для PSK Reporter)<input id="ftPskAnt" class="text" maxlength="60" placeholder="например: EFHW 20 м, 1:64"></label>
-            <label class="chk mini"><input type="checkbox" id="ftAlertDx" checked> оповещать о новой стране</label>
-            <label class="chk mini"><input type="checkbox" id="ftAlertSnd"> со звуком</label>
+            <label class="chk mini"><input type="checkbox" id="ftPskOn" checked> <span data-i18n="ft8.psk">отправлять принятые станции в PSK Reporter</span></label>
+            <label class="mini" style="grid-column: 1 / -1"><span data-i18n="ft8.psk.ant">Антенна (для PSK Reporter)</span><input id="ftPskAnt" class="text" maxlength="60" placeholder="например: EFHW 20 м, 1:64" data-i18n-placeholder="ft8.psk.ant.ph"></label>
+            <label class="chk mini"><input type="checkbox" id="ftAlertDx" checked> <span data-i18n="ft8.alert_dx">оповещать о новой стране</span></label>
+            <label class="chk mini"><input type="checkbox" id="ftAlertSnd"> <span data-i18n="ft8.alert_snd">со звуком</span></label>
           </div>
           <div class="ft-worked">
-            <b>Сработанное</b> <span class="muted small" id="ftWorkedInfo">—</span>
-            <p class="muted small">Чтобы подсветка «новая страна / новый позывной» учитывала весь ваш журнал, загрузите его экспорт в ADIF
-              (в HAMLOG: экспорт журнала в ADIF). Связи, проведённые в пульте, добавляются сами.</p>
+            <b data-i18n="ft8.worked">Сработанное</b> <span class="muted small" id="ftWorkedInfo" data-i18n="ft8.worked.none">—</span>
+            <p class="muted small" data-i18n="ft8.worked.hint">Чтобы подсветка «новая страна / новый позывной» учитывала весь ваш журнал, загрузите его экспорт в ADIF (в HAMLOG: экспорт журнала в ADIF). Связи, проведённые в пульте, добавляются сами.</p>
             <div class="btn-row">
               <label class="btn small ft-file"><span data-i18n="ft8.import">Загрузить ADIF…</span><input type="file" id="ftAdifFile" accept=".adi,.adif,.txt" multiple hidden></label>
-              <label class="chk mini"><input type="checkbox" id="ftAdifReplace"> заменить ранее загруженное</label>
-              <button class="btn small" id="ftAdifClear">Удалить загруженное</button>
+              <label class="chk mini"><input type="checkbox" id="ftAdifReplace"> <span data-i18n="ft8.adif_replace">заменить ранее загруженное</span></label>
+              <button class="btn small" id="ftAdifClear" data-i18n="ft8.adif_clear">Удалить загруженное</button>
             </div>
             <div class="muted small" id="ftCtyInfo"></div>
           </div>
-          <p class="muted small">Каждая связь пишется в файл <span class="mono">ft8_log.adi</span> рядом с программой и отправляется по UDP в формате WSJT-X —
-            его принимают HAMLOG-агент, Log4OM, JTAlert, GridTracker. Часы ПК должны быть точными (±0,5 с).</p>
+          <p class="muted small" data-i18n="ft8.log.hint">Каждая связь пишется в файл ft8_log.adi рядом с программой и отправляется по UDP в формате WSJT-X — его принимают HAMLOG-агент, Log4OM, JTAlert, GridTracker. Часы ПК должны быть точными (±0,5 с).</p>
         </details>
       </div>
       </div>
@@ -556,17 +547,11 @@
 
     <div class="tab" id="tab-menu">
       <div class="btn-row">
-        <input id="menuSearch" class="text grow" placeholder="Поиск по меню (например MOD_SOURCE, AGC, USB)" data-i18n-placeholder="menu.search">
+        <input id="menuSearch" class="text grow" placeholder="Поиск по меню (например MOD_SOURCE, AGC, USB)" data-i18n-placeholder="menu.search.ph">
         <select id="menuGroup"></select>
-        <button class="btn" id="menuReadAll">Прочитать раздел</button>
+        <button class="btn" id="menuReadAll" data-i18n="menu.read">Прочитать раздел</button>
       </div>
-      <div class="note" id="usbAudioHelp">
-        <b>Для связи через микрофон ПК</b> в меню трансивера для нужных видов работы
-        (SSB / AM / FM / DATA) параметр <code>…_MOD_SOURCE</code> должен указывать на USB,
-        а <code>…_USB_MOD_GAIN</code> задаёт уровень звука с ПК. <code>…_USB_OUT_LEVEL</code> — громкость
-        приёма, идущая в ПК. Номера значений сверьте со страницей «MOD SOURCE» в инструкции к трансиверу.
-        <button class="btn small" id="menuUsbShow" data-i18n="menu.usb.btn">Показать эти пункты</button>
-      </div>
+      <div class="note" id="usbAudioHelp"><span data-i18n="menu.usb.help">Для связи через микрофон ПК в меню трансивера для нужных видов работы (SSB / AM / FM / DATA) параметр …_MOD_SOURCE должен указывать на USB, а …_USB_MOD_GAIN задаёт уровень звука с ПК. …_USB_OUT_LEVEL — громкость приёма, идущая в ПК. Номера значений сверьте со страницей «MOD SOURCE» в инструкции к трансиверу.</span> <button class="btn small" id="menuUsbShow" data-i18n="menu.usb.btn">Показать эти пункты</button></div>
       <div id="menuList" class="menu-list"></div>
     </div>
 
@@ -574,7 +559,7 @@
       <div class="btn-row">
         <input id="catCmd" class="text grow mono" placeholder="Команда CAT, например FA; или MD02;" data-i18n-placeholder="cat.placeholder">
         <button class="btn" id="catSend" data-i18n="cat.send">Отправить</button>
-        <label class="chk"><input type="checkbox" id="catLog"> журнал обмена</label>
+        <label class="chk"><input type="checkbox" id="catLog"> <span data-i18n="cat.log">журнал обмена</span></label>
         <button class="btn" id="catClear" data-i18n="cat.clear">Очистить</button>
       </div>
       <pre id="catOut" class="console"></pre>
@@ -590,46 +575,46 @@
         </label>
         <label><span data-i18n="opts.appearance">Оформление пульта</span>
           <select id="optAppearance">
-            <option value="original">Исходное</option>
-            <option value="studio">Studio — синий, студийная панель</option>
-            <option value="daylight">Daylight — светлый, управление справа</option>
-            <option value="heritage">Heritage — янтарный, приборная панель</option>
-            <option value="field">Field — зелёный, крупные кнопки</option>
-            <option value="radio-night">Radio Night — передняя панель, тёмная</option>
-            <option value="radio-silver">Radio Silver — передняя панель, серебристая</option>
+            <option value="original" data-i18n="opts.appearance.original">Исходное</option>
+            <option value="studio" data-i18n="opts.appearance.studio">Studio — синий, студийная панель</option>
+            <option value="daylight" data-i18n="opts.appearance.daylight">Daylight — светлый, управление справа</option>
+            <option value="heritage" data-i18n="opts.appearance.heritage">Heritage — янтарный, приборная панель</option>
+            <option value="field" data-i18n="opts.appearance.field">Field — зелёный, крупные кнопки</option>
+            <option value="radio-night" data-i18n="opts.appearance.radio_night">Radio Night — передняя панель, тёмная</option>
+            <option value="radio-silver" data-i18n="opts.appearance.radio_silver">Radio Silver — передняя панель, серебристая</option>
           </select>
         </label>
         <label><span data-i18n="opts.audio_rate">Качество звука по сети</span>
-          <select id="optRate"><option value="48000">48 кГц — без сжатия (этот ПК, проводная сеть)</option><option value="16000">16 кГц (Wi-Fi, телефон дома)</option><option value="8000">8 кГц (мобильный интернет)</option></select></label>
+          <select id="optRate"><option value="48000" data-i18n="opts.rate.48">48 кГц — без сжатия (этот ПК, проводная сеть)</option><option value="16000" data-i18n="opts.rate.16">16 кГц (Wi-Fi, телефон дома)</option><option value="8000" data-i18n="opts.rate.8">8 кГц (мобильный интернет)</option></select></label>
         <p class="muted small" id="audioStat"></p>
         <label>Микрофон этого устройства <select id="optMic"><option value="" data-i18n="opts.mic.default">По умолчанию</option></select></label>
-        <div class="row"><button class="btn small" id="micTest" title="Включить микрофон без передачи и проверить уровень">🎙 Проверить микрофон</button>
+        <div class="row"><button class="btn small" id="micTest" title="Включить микрофон без передачи и проверить уровень" data-i18n="opts.mic_test" data-i18n-title="opts.mic_test.hint">🎙 Проверить микрофон</button>
           <span class="muted small" id="micTestRes">Передатчик при проверке не включается</span></div>
-        <label>Усиление микрофона, % <input id="optMicGain" type="range" min="10" max="400" value="100"><span id="optMicGainV">100</span></label>
+        <label><span data-i18n="opts.mic_gain">Усиление микрофона, %</span> <input id="optMicGain" type="range" min="10" max="400" value="100"><span id="optMicGainV">100</span></label>
         <details class="opt-more"><summary>Обработка микрофона в браузере и приглушение приёма</summary>
           <p class="muted small">Для эфира лучше всего всё выключено: обработка браузера рассчитана на звонки и портит голос
             (булькает, «съедает» слоги). Включайте эхоподавление, только если микрофон слышит колонки.</p>
-          <label class="chk"><input type="checkbox" id="optEcho"> Эхоподавление</label>
-          <label class="chk"><input type="checkbox" id="optNs"> Шумоподавление микрофона</label>
+          <label class="chk"><input type="checkbox" id="optEcho"> <span data-i18n="opts.echo">Эхоподавление</span></label>
+          <label class="chk"><input type="checkbox" id="optNs"> <span data-i18n="opts.ns">Шумоподавление микрофона</span></label>
           <label class="chk"><input type="checkbox" id="optAgc"> Автоусиление микрофона (AGC браузера)</label>
-          <label class="chk"><input type="checkbox" id="optMuteTx" checked> Глушить приём во время передачи</label>
-          <label>Глушить «хвост» после передачи, мс <input id="optTail" type="range" min="0" max="2000" step="50" value="500"><span id="optTailV">500</span></label>
+          <label class="chk"><input type="checkbox" id="optMuteTx" checked> <span data-i18n="opts.mute_tx">Глушить приём во время передачи</span></label>
+          <label><span data-i18n="opts.tail">Глушить «хвост» после передачи, мс</span> <input id="optTail" type="range" min="0" max="2000" step="50" value="500"><span id="optTailV">500</span></label>
         </details>
         <label><span data-i18n="opts.scale">Масштаб интерфейса</span>
           <select id="optScale"><option value="auto" data-i18n="opts.scale.auto">Авто — под размер экрана</option><option value="0.8">80 %</option><option value="0.9">90 %</option><option value="1">100 %</option><option value="1.1">110 %</option><option value="1.25">125 %</option><option value="1.5">150 %</option><option value="1.75">175 %</option><option value="2">200 %</option></select></label>
         <label>Кнопка PTT
-          <select id="optPttMode"><option value="hold" data-i18n="opts.ptt.hold">Удерживать</option><option value="toggle">Нажал — передача, ещё раз — приём</option></select></label>
+          <select id="optPttMode"><option value="hold" data-i18n="opts.ptt.hold">Удерживать</option><option value="toggle" data-i18n="opts.ptt.toggle">Нажал — передача, ещё раз — приём</option></select></label>
         <label><span data-i18n="opts.palette">Палитра водопада</span>
-          <select id="optPalette"><option value="classic">Классика</option><option value="yaesu">Синяя</option><option value="gray" data-i18n="opts.palette.gray">Серая</option><option value="fire">Огонь</option></select></label>
+          <select id="optPalette"><option value="classic" data-i18n="opts.palette.classic">Классика</option><option value="yaesu">Синяя</option><option value="gray" data-i18n="opts.palette.gray">Серая</option><option value="fire" data-i18n="opts.palette.fire">Огонь</option></select></label>
         <p class="muted small" id="srvInfo"></p>
         <p class="muted small" id="fwInfo"></p>
         <h4 style="margin-top:6px">Записи связей</h4>
         <p class="muted small">Кнопка «⏺ Запись» вверху пишет приём и передачу в один файл WAV в папку <code>records</code> рядом с программой.</p>
         <div id="recList" class="rec-list small"></div>
         <h4 style="margin-top:6px" data-i18n="opts.hotkeys">Горячие клавиши</h4>
-        <label class="chk"><input type="checkbox" id="optHotkeys" checked> <span data-i18n="opts.hotkeys_enable" data-i18n-html="1">Включены (справка — клавиша <kbd>?</kbd> или <kbd>F1</kbd>)</span></label>
+        <label class="chk"><input type="checkbox" id="optHotkeys" checked> <span data-i18n="opts.hotkeys_enable">Включены (справка — клавиша ? или F1)</span></label>
         <div id="hkList" class="hk-list"></div>
-        <div class="btn-row"><button class="btn" id="hkReset">Вернуть клавиши по умолчанию</button></div>
+        <div class="btn-row"><button class="btn" id="hkReset" data-i18n="opts.hotkeys_reset">Вернуть клавиши по умолчанию</button></div>
       </div>
     </div>
   </section>

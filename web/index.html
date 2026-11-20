@@ -233,7 +233,7 @@
         <button class="btn" data-act="mem_mode" data-i18n="vfo.mode_mem">Режим памяти</button>
         <input id="memCh" type="number" min="1" max="999" value="1" class="num">
         <button class="btn" id="btnMemCh" data-i18n="vfo.mem_go">Вызвать канал</button>
-        <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems" data-i18n="vfo.mem_ed">Редактор каналов…</button>
+        <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems" data-i18n-title="vfo.mem_ed.title" data-i18n="vfo.mem_ed">Редактор каналов…</button>
         <button class="btn" data-act="qmb_store" data-i18n="vfo.qmb_sto">QMB запомнить</button>
         <button class="btn" data-act="qmb_recall" data-i18n="vfo.qmb_rcl">QMB вызвать</button>
         <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
@@ -335,7 +335,7 @@
           <button class="btn" id="rtDecBtn" data-i18n="rt.dec_off">○ Декодер выкл</button>
           <label class="mini"><span data-i18n="rt.baud">Скорость</span><select id="rtBaud"><option>45.45</option><option>50</option><option>75</option><option>100</option></select></label>
           <label class="mini"><span data-i18n="rt.shift">Сдвиг</span><select id="rtShift"><option>170</option><option>200</option><option>425</option><option>450</option><option>850</option></select></label>
-          <label class="mini" title="Середина между тонами mark и space, Гц звука"><span data-i18n="rt.center">Центр</span><input type="number" id="rtFc" class="num" min="500" max="2900" step="5" value="2210"></label>
+          <label class="mini" title="Середина между тонами mark и space, Гц звука" data-i18n-title="rt.center.title"><span data-i18n="rt.center">Центр</span><input type="number" id="rtFc" class="num" min="500" max="2900" step="5" value="2210"></label>
           <button class="btn small" id="rtTune" title="Найти пару тонов RTTY в полосе приёма" data-i18n="rt.autotune" data-i18n-title="rt.autotune.title">Автонастройка</button>
           <label class="mini" title="Авто — декодер сам определяет, перевёрнуты ли тоны (LSB/USB, «реверс»)" data-i18n-title="rt.pol.title"><span data-i18n="rt.pol">Полярность</span><select id="rtPol"><option value="0" data-i18n="rt.pol.auto">авто</option><option value="1" data-i18n="rt.pol.norm">прямая</option><option value="-1" data-i18n="rt.pol.inv">обратная</option></select></label>
           <label class="chk mini" title="Unshift on space: после пробела — буквы" data-i18n-title="rt.usos.title"><input type="checkbox" id="rtUsos" checked> <span data-i18n="rt.usos">USOS</span></label>
@@ -371,7 +371,7 @@
           <label class="chk mini" title="Автоподстройка центра по тону старта и фазированию" data-i18n-title="fx.afc.title"><input type="checkbox" id="fxAfc" checked> <span data-i18n="fx.afc">АПЧ</span></label>
           <button class="btn small" id="fxStart" title="Начать картинку сразу, не дожидаясь тона старта" data-i18n="fx.start_now" data-i18n-title="fx.start_now.title">Начать сейчас</button>
           <button class="btn small" id="fxStop" title="Закончить и сохранить картинку" data-i18n="fx.stop_save" data-i18n-title="fx.stop_save.title">Стоп и сохранить</button>
-          <span class="mini"><span data-i18n="fx.slant">Наклон</span><button class="btn small" id="fxSlM" title="Shift — шаг 10">◀</button><b class="mono" id="fxSlant">0</b><button class="btn small" id="fxSlP" title="Shift — шаг 10">▶</button></span>
+          <span class="mini"><span data-i18n="fx.slant">Наклон</span><button class="btn small" id="fxSlM" title="Shift — шаг 10" data-i18n-title="fx.slant_step.title">◀</button><b class="mono" id="fxSlant">0</b><button class="btn small" id="fxSlP" title="Shift — шаг 10" data-i18n-title="fx.slant_step.title">▶</button></span>
           <span class="cw-meter mono" id="fxInfo">—</span>
           <span class="spacer"></span>
           <label class="mini"><span data-i18n="fx.station">Станция</span><select id="fxPreset"></select></label>
@@ -478,13 +478,13 @@
       <div class="ft-status"><span class="ft-txmsg mono" id="ftTxMsg">—</span> <span class="ft-qso small" id="ftQso" data-i18n="ft8.qso">Связи нет</span></div>
       <div class="ft-ctl">
         <div class="ft-box ft-btns">
-          <button class="btn" id="ftEnable" title="Разрешить передачу (Enable TX)" data-i18n="ft8.enable">Включить TX</button>
-          <button class="btn danger" id="ftHalt" title="Прекратить передачу и сбросить связь (Halt TX)" data-i18n="ft8.halt">Стоп TX</button>
-          <button class="btn" id="ftTune" title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC" data-i18n="ft8.tune">Настройка</button>
+          <button class="btn" id="ftEnable" title="Разрешить передачу (Enable TX)" data-i18n-title="ft8.enable.title" data-i18n="ft8.enable">Включить TX</button>
+          <button class="btn danger" id="ftHalt" title="Прекратить передачу и сбросить связь (Halt TX)" data-i18n-title="ft8.halt.title" data-i18n="ft8.halt">Стоп TX</button>
+          <button class="btn" id="ftTune" title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC" data-i18n-title="ft8.tune.title" data-i18n="ft8.tune">Настройка</button>
           <button class="btn primary" id="ftCq" data-i18n="ft8.cq">CQ</button>
-          <label class="chk mini" title="Автоматическое проведение связи (Auto Seq)"><input type="checkbox" id="ftAutoSeq" checked> <span data-i18n="ft8.autoseq">Авто-послед.</span></label>
-          <label class="chk mini" title="После каждой связи снова звать CQ"><input type="checkbox" id="ftAutoCq"> <span data-i18n="ft8.autocq">Авто-CQ</span></label>
-          <label class="mini" title="В каком периоде передаём: 1-й (00/30 с) или 2-й (15/45 с)"><span data-i18n="ft8.parity">Период</span><select id="ftPar"><option value="0" data-i18n="ft8.parity.0">1-й (чётн.)</option><option value="1" data-i18n="ft8.parity.1">2-й (нечётн.)</option></select></label>
+          <label class="chk mini" title="Автоматическое проведение связи (Auto Seq)" data-i18n-title="ft8.autoseq.title"><input type="checkbox" id="ftAutoSeq" checked> <span data-i18n="ft8.autoseq">Авто-послед.</span></label>
+          <label class="chk mini" title="После каждой связи снова звать CQ" data-i18n-title="ft8.autocq.title"><input type="checkbox" id="ftAutoCq"> <span data-i18n="ft8.autocq">Авто-CQ</span></label>
+          <label class="mini" title="В каком периоде передаём: 1-й (00/30 с) или 2-й (15/45 с)" data-i18n-title="ft8.parity.title"><span data-i18n="ft8.parity">Период</span><select id="ftPar"><option value="0" data-i18n="ft8.parity.0">1-й (чётн.)</option><option value="1" data-i18n="ft8.parity.1">2-й (нечётн.)</option></select></label>
         </div>
         <div class="ft-box ft-freqs">
           <label class="mini"><span data-i18n="ft8.rxhz">RX, Гц</span><input type="number" id="ftRxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
@@ -506,7 +506,7 @@
         <div class="ft-heard">
           <div class="ft-head"><b data-i18n="ft8.heard">Меня слышат</b> <span class="muted small" id="ftHeardInfo" data-i18n="ft8.heard.info">PSK Reporter, 30 мин</span>
             <span class="spacer"></span>
-            <a class="btn small" id="ftHeardMap" target="_blank" rel="noopener" title="Карта на pskreporter.info" data-i18n="ft8.heard.map">Карта</a>
+            <a class="btn small" id="ftHeardMap" target="_blank" rel="noopener" title="Карта на pskreporter.info" data-i18n-title="ft8.heard.map.title" data-i18n="ft8.heard.map">Карта</a>
             <button class="btn small" id="ftHeardBtn" title="Обновить (не чаще раза в 5 минут)" data-i18n="ft8.heard.update" data-i18n-title="ft8.heard.update.title">Обновить</button></div>
           <div class="ft-log mono small" id="ftHeard"><span class="muted" data-i18n="ft8.heard.empty">После первых передач здесь появятся станции, которые вас приняли</span></div>
         </div>
@@ -644,19 +644,19 @@
   </div>
   <div class="me-tools">
     <div class="me-grp">
-      <button class="btn primary" id="meRead" title="Прочитать каналы из трансивера" data-i18n="me.read">⬇ Прочитать</button>
+      <button class="btn primary" id="meRead" title="Прочитать каналы из трансивера" data-i18n-title="me.read.title" data-i18n="me.read">⬇ Прочитать</button>
       <label class="mini"><span data-i18n="me.from">с</span><input type="number" id="meFrom" class="num" min="1" max="999" value="1"></label>
       <label class="mini"><span data-i18n="me.to">по</span><input type="number" id="meTo" class="num" min="1" max="999" value="999"></label>
       <label class="chk mini" title="Номер тона CTCSS / код DCS: трансивер на мгновение переключается на каждый канал с тоном" data-i18n-title="me.tones_title"><input type="checkbox" id="meTones" checked> <span data-i18n="me.tones">тоны</span></label>
     </div>
     <div class="me-grp">
-      <button class="btn tx-on" id="meWrite" title="Записать в трансивер изменённые каналы" data-i18n="me.write">⬆ Записать изменённые <span id="meDirtyN">0</span></button>
-      <button class="btn" id="meWriteSel" title="Записать в трансивер отмеченные каналы" data-i18n="me.write_sel">⬆ Отмеченные</button>
+      <button class="btn tx-on" id="meWrite" title="Записать в трансивер изменённые каналы" data-i18n-title="me.write.title" data-i18n="me.write">⬆ Записать изменённые <span id="meDirtyN">0</span></button>
+      <button class="btn" id="meWriteSel" title="Записать в трансивер отмеченные каналы" data-i18n-title="me.write_sel.title" data-i18n="me.write_sel">⬆ Отмеченные</button>
       <button class="btn danger hidden" id="meStop" data-i18n="me.stop">■ Стоп</button>
     </div>
     <div class="me-grp">
       <select id="meFiles" title="Сохранённые наборы каналов на ПК" data-i18n-title="me.files_title"><option value="" data-i18n="me.files_opt">Файлы…</option></select>
-      <button class="btn" id="meSave" title="Сохранить набор на ПК" data-i18n="me.save">Сохранить</button>
+      <button class="btn" id="meSave" title="Сохранить набор на ПК" data-i18n-title="me.save.title" data-i18n="me.save">Сохранить</button>
       <button class="btn" id="meSaveAs" data-i18n="me.save_as">Сохранить как…</button>
       <button class="btn" id="meDelFile" title="Удалить выбранный файл" data-i18n-title="me.delfile_title">🗑</button>
     </div>
@@ -666,7 +666,7 @@
     </div>
     <div class="me-grp" title="Бэкап каналов с флешки трансивера (если поддерживается)" data-i18n-title="me.sd_grp_title">
       <label class="btn"><span data-i18n="me.sd_open">💾 Открыть с SD</span><input type="file" id="meSdIn" accept=".dat" hidden></label>
-      <button class="btn" id="meSdOut" title="Сохранить .dat для загрузки в трансивер с флешки" data-i18n="me.sd_out">💾 Сохранить для SD</button>
+      <button class="btn" id="meSdOut" title="Сохранить .dat для загрузки в трансивер с флешки" data-i18n-title="me.sd_out.title" data-i18n="me.sd_out">💾 Сохранить для SD</button>
     </div>
   </div>
   <div class="me-prog hidden" id="meProg"><i></i><span></span></div>

@@ -87,7 +87,7 @@ function send(o) {
   if (C.ws && C.ws.readyState === 1) C.ws.send(JSON.stringify(o));
 }
 function setParam(k, v) {
-  if (S.backend === 'hamlib' && !(S.radio_caps?.keys || []).includes(k)) return note('Регулятор недоступен для этого драйвера');
+  if (S.backend === 'hamlib' && !(S.radio_caps?.keys || []).includes(k)) return note(tr('app.hamlib.ctrl','Регулятор недоступен для этого драйвера'));
   const rk = rawKey(k);
   C.lockUntil[k] = performance.now() + 1200;
   if (k === 'vfo') { const was = !!R.vfo; R.vfo = v; if (!!v !== was) remapVfo(); }
@@ -100,7 +100,7 @@ function remapVfo() {                     // MAIN/SUB переключили —
   if (typeof renderFreq === 'function') { renderFreq(); renderBadges(); }
   if (typeof updateSpan === 'function') setTimeout(() => { updateSpan(); drawOverlay(); }, 0);
 }
-function act(a, arg) { if (S.backend === 'hamlib') return note('Функция недоступна через Hamlib'); send({ t: 'act', a, arg }); }
+function act(a, arg) { if (S.backend === 'hamlib') return note(tr('app.hamlib.func','Функция недоступна через Hamlib')); send({ t: 'act', a, arg }); }
 
 function connect() {
   const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -129,7 +129,7 @@ function connect() {
         $('#login').classList.add('hidden');
         $('#btnPanel').classList.toggle('hidden', !m.local);
         fillSelect($('.ctl[data-k=ctcss] select'), m.ctcss.map((v, i) => [i, v.toFixed(1)]));
-        $('#srvInfo').textContent = `Сервер v${m.version}. PTT: ${m.ptt_method}. Ограничение передачи: ${m.max_tx} с.` + (m.audio_err ? ` ЗВУК: ${m.audio_err}` : '');
+        $('#srvInfo').textContent = `${tr('app.srv.info','Сервер')} v${m.version}. ${tr('app.srv.ptt','PTT')}: ${m.ptt_method}. ${tr('app.srv.maxtx','Ограничение передачи')}: ${m.max_tx} s.` + (m.audio_err ? ` ${tr('app.srv.audio','ЗВУК')}: ${m.audio_err}` : '');
         setWfMsg(m.audio_err);
         updateSpan(true);
         renderWfMode();
@@ -469,7 +469,7 @@ function rememberBand() {
 for (const b of BANDS) {
   const el = document.createElement('button');
   el.className = 'btn'; el.dataset.b = b[0];
-  el.textContent = /^\d+$/.test(b[0]) ? (b[0] === '70' ? '70см' : b[0] + 'м') : b[0];
+  el.textContent = /^\d+$/.test(b[0]) ? (b[0] === '70' ? tr('app.band.70cm','70см') : b[0] + tr('app.band.m','м')) : b[0];
   // кнопка диапазона = кнопка BAND на трансивере: он сам восстанавливает свою частоту, вид работы,
   // полосу и прочее для этого диапазона (код BS совпадает с порядком в BANDS)
   const code = BANDS.indexOf(b);
@@ -528,7 +528,7 @@ function initControls() {
         clearTimeout(r._t); r._t = setTimeout(() => setParam(k, +r.value), 120);
       };
       if (el.dataset.reset != null) b.ondblclick = () => { r.value = el.dataset.reset; r.oninput(); };
-      if (el.dataset.reset != null) b.title = 'Двойной клик — сброс';
+      if (el.dataset.reset != null) b.title = tr('app.reset_dbl','Двойной клик — сброс');
     }
   }
 }
@@ -843,7 +843,7 @@ function updateSpan(force) {
   const span = C.wfMax || autoSpan();
   $$('#spanSeg button').forEach(x => x.classList.toggle('on', +x.dataset.v === C.wfMax));
   const ab = $('#spanSeg button[data-v="0"]');
-  ab.textContent = C.wfMax ? 'Авто' : `Авто ${(span / 1000).toFixed(span % 1000 ? 1 : 0)}k`;
+  ab.textContent = C.wfMax ? tr('app.auto','Авто') : `${tr('app.auto','Авто')} ${(span / 1000).toFixed(span % 1000 ? 1 : 0)}k`;
   if (span === C.span && !force) return;
   C.span = span; wf.canvas.width = 0;
   send({ t: 'wf', on: true, max: span, src: C.wfSrc === 'rf' ? 'rf' : 'audio' });
@@ -872,15 +872,15 @@ function renderWfMode() {
   btn.classList.toggle('hidden', !scoped);
   btn.classList.toggle('on', rf);
   const khz = (wf.rfSpan || 0) / 1000;
-  btn.textContent = rf ? `RF ${khz >= 1000 ? (khz / 1000).toFixed(1) + 'M' : Math.round(khz) + 'k'}` : 'Звук';
-  btn.title = rf ? 'Широкий водопад USB-scope трансивера. Нажмите, чтобы вернуться к звуковому'
-    : 'Звуковой водопад. Нажмите, чтобы включить широкий USB-scope (вкладки RX/TX/VFO)';
+  btn.textContent = rf ? `RF ${khz >= 1000 ? (khz / 1000).toFixed(1) + 'M' : Math.round(khz) + 'k'}` : tr('wf.src.audio','Звук');
+  btn.title = rf ? tr('app.wf.src.scope','Широкий водопад USB-scope трансивера. Нажмите, чтобы вернуться к звуковому')
+    : tr('app.wf.src.audio','Звуковой водопад. Нажмите, чтобы включить широкий USB-scope (вкладки RX/TX/VFO)');
   $('#spanSeg').classList.toggle('hidden', rf);
   renderCenterBtn();
   const hint = $('#wfHint');
   if (hint) hint.textContent = rf
-    ? 'Широкий водопад: шкала — абсолютная частота. Двойной клик — настроиться'
-    : (C.tab === 'ft8' ? 'Клик — RX, правый клик / Shift — TX, двойной — оба' : 'Двойной клик — настроиться на сигнал');
+    ? tr('app.wf.hint.rf','Широкий водопад: шкала — абсолютная частота. Двойной клик — настроиться')
+    : (C.tab === 'ft8' ? tr('app.wf.hint.ft8','Клик — RX, правый клик / Shift — TX, двойной — оба') : tr('app.wf.hint.audio','Двойной клик — настроиться на сигнал'));
 }
 (() => {
   const b = $('#wfSrc'); if (!b) return;
@@ -889,7 +889,7 @@ function renderWfMode() {
     opts.rfWf = !opts.rfWf;
     saveOpts();
     wfModeKey = '';
-    toast(opts.rfWf ? 'Широкий водопад включён (вкладки RX/TX/VFO)' : 'Водопад: звук с трансивера');
+    toast(opts.rfWf ? tr('app.wf.on','Широкий водопад включён (вкладки RX/TX/VFO)') : tr('app.wf.off','Водопад: звук с трансивера'));
     syncWfSource(true);
   };
 })();
@@ -953,8 +953,7 @@ async function ensureAudioContext() {
       return;
     }
     const s = e.data.stat; if (!s) return;
-    $('#audioStat').textContent = `Приём: ${C.rate / 1000} кГц, звуковая карта ${ac.sampleRate / 1000} кГц, буфер ${s.ms} мс, ` +
-      `пропусков ${s.under}, подстройка ${((s.adj - 1) * 100).toFixed(2)} %`;
+    $('#audioStat').textContent = `${tr('app.rx','Приём')}: ${C.rate / 1000} kHz, ${ac.sampleRate / 1000} kHz, ${s.ms} ms, underruns ${s.under}, ${((s.adj - 1) * 100).toFixed(2)} %`;
   };
   C.player.port.postMessage({ gain: C.gain });
   pushGate();
@@ -967,7 +966,7 @@ $('#btnAudio').onclick = async () => {
   C.audioOn = !C.audioOn;
   C.player.port.postMessage({ reset: true });
   send({ t: 'audio', on: C.audioOn, rate: C.rate });
-  $('#btnAudio').textContent = C.audioOn ? '🔊 Звук' : '🔇 Звук';
+  $('#btnAudio').textContent = C.audioOn ? ('🔊 ' + tr('top.audio_label','Звук').replace(/^🔊\s*/,'').replace(/^🔇\s*/,'')) : ('🔇 ' + tr('top.audio_label','Звук').replace(/^🔊\s*/,'').replace(/^🔇\s*/,''));
   $('#btnAudio').classList.toggle('on', !!C.audioOn);
   store.set('audioOn', C.audioOn);
 };
@@ -978,23 +977,20 @@ $('#volume').oninput = e => { C.gain = e.target.value / 100; store.set('vol', +e
 function renderFw() {
   const names = ['MAIN', 'DISPLAY', 'SDR', 'DSP', 'SPA-1', 'FC-80'];
   const parts = names.map((n, i) => S['fw' + i] && S['fw' + i] !== '?' ? `${n} ${S['fw' + i]}` : '').filter(Boolean);
-  $('#fwInfo').textContent = parts.length ? 'Прошивки трансивера: ' + parts.join(' · ') : '';
+  $('#fwInfo').textContent = parts.length ? tr('app.fw','Прошивки трансивера: ') + parts.join(' · ') : '';
 }
 
 // ------------------------------------------------------------------ микрофон и PTT
 function micErrorText(e) {
   const n = e && e.name, m = (e && e.message) || '';
   if (n === 'NotAllowedError' && /system/i.test(m))
-    return 'Windows запрещает программам доступ к микрофону. Параметры Windows → Конфиденциальность и защита → ' +
-      'Микрофон: включите «Доступ к микрофону» и «Разрешить классическим приложениям доступ к микрофону», затем перезапустите браузер.';
+    return tr('app.mic.win','Windows запрещает программам доступ к микрофону. Параметры Windows → Конфиденциальность и защита → Микрофон: включите «Доступ к микрофону» и «Разрешить классическим приложениям доступ к микрофону», затем перезапустите браузер.');
   if (n === 'NotAllowedError' || n === 'SecurityError')
-    return 'браузер запретил микрофон для этого сайта. Нажмите значок слева от адреса → «Микрофон» → разрешить и обновите страницу.';
+    return tr('app.mic.browser','браузер запретил микрофон для этого сайта. Нажмите значок слева от адреса → «Микрофон» → разрешить и обновите страницу.');
   if (n === 'NotFoundError' || n === 'OverconstrainedError')
-    return 'микрофон не найден. Подключите микрофон/гарнитуру или выберите другой в списке «Микрофон этого устройства» ' +
-      '(и проверьте, что он не отключён в Параметры → Система → Звук → Ввод).';
+    return tr('app.mic.notfound','микрофон не найден. Подключите микрофон/гарнитуру или выберите другой в списке «Микрофон этого устройства» (и проверьте, что он не отключён в Параметры → Система → Звук → Ввод).');
   if (n === 'NotReadableError' || n === 'AbortError')
-    return 'микрофон занят или не запускается: закройте программы, которые держат его монопольно (Discord, Zoom, OBS), ' +
-      'или снимите галочку «Разрешить приложениям монопольный режим» в свойствах микрофона.';
+    return tr('app.mic.busy','микрофон занят или не запускается: закройте программы, которые держат его монопольно (Discord, Zoom, OBS), или снимите галочку «Разрешить приложениям монопольный режим» в свойствах микрофона.');
   return (n ? n + ': ' : '') + m;
 }
 async function startMic() {
@@ -1065,9 +1061,9 @@ function updatePtt() {
   b.classList.toggle('ready', !!C.micStream);
   b.classList.toggle('active', !!(C.pttPressed && C.txOwner));
   b.classList.toggle('busy', !!C.pttBusy);
-  $('#pttState').textContent = C.pttBusy ? 'Передаёт другой клиент'
-    : C.pttPressed ? (C.txOwner ? 'ПЕРЕДАЧА' : 'Включаю…')
-      : C.micStream ? 'Микрофон готов' : 'Микрофон — по PTT';
+  $('#pttState').textContent = C.pttBusy ? tr('app.ptt.other','Передаёт другой клиент')
+    : C.pttPressed ? (C.txOwner ? tr('app.ptt.tx','ПЕРЕДАЧА') : tr('app.ptt.starting','Включаю…'))
+      : C.micStream ? tr('app.ptt.ready','Микрофон готов') : tr('app.ptt.wait','Микрофон — по PTT');
 }
 setInterval(() => {
   $('#txTimer').textContent = (C.txOwner && C.txStart) ? `TX ${Math.floor((performance.now() - C.txStart) / 1000)} с` : '';
@@ -1121,12 +1117,12 @@ function renderMenu() {
   for (const i of list.slice(0, 450)) {
     const s = i.ex.slice(0, 4);
     if (s !== sec) { sec = s; html += `<div class="menu-sec">EX${s} · ${MENU_GROUPS[s.slice(0, 2)] || ''} · ${i.section}</div>`; }
-    const range = i.string ? 'текст' : `${i.min}…${i.max}`;
+    const range = i.string ? tr('app.menu.text','текст') : `${i.min}…${i.max}`;
     const v = menu.vals[i.ex] ?? '';
-    html += `<div class="mi" data-ex="${i.ex}"><span class="ex">EX${i.ex}</span><span class="nm">${i.name}${i.spa1 ? ' <small>только с SPA-1</small>' : ''}<small>${range}${i.hint ? ' · ' + i.hint : ''}</small></span><input value="${v}" placeholder="?"><button class="btn small">✓</button></div>`;
+    html += `<div class="mi" data-ex="${i.ex}"><span class="ex">EX${i.ex}</span><span class="nm">${i.name}${i.spa1 ? ' <small>' + tr('app.menu.spa1','только с SPA-1') + '</small>' : ''}<small>${range}${i.hint ? ' · ' + i.hint : ''}</small></span><input value="${v}" placeholder="?"><button class="btn small">✓</button></div>`;
   }
-  if (list.length > 450) html += `<p class="muted small">Показаны первые 450 из ${list.length}. Уточните поиск.</p>`;
-  box.innerHTML = html || '<p class="muted">Ничего не найдено</p>';
+  if (list.length > 450) html += `<p class="muted small">${tr('app.menu.more','Показаны первые 450 из ')}${list.length}${tr('app.menu.more2','. Уточните поиск.')}</p>`;
+  box.innerHTML = html || `<p class="muted">${tr('app.menu.none','Ничего не найдено')}</p>`;
 }
 function setMenuVal(ex, v) {
   menu.vals[ex] = v;
@@ -1141,7 +1137,7 @@ $('#menuGroup').onchange = renderMenu;
 $('#menuReadAll').onclick = () => {
   if (!menu.items) return;
   const l = menuFiltered();
-  if (l.length > 120 && !confirm(`Прочитать ${l.length} пунктов? Это займёт около ${Math.ceil(l.length / 8)} с.`)) return;
+  if (l.length > 120 && !confirm(tr('app.menu.read_confirm','Прочитать {n} пунктов? Это займёт около {s} с.').replace('{n}', l.length).replace('{s}', Math.ceil(l.length / 8)))) return;
   readMenu(l.map(i => i.ex));
 };
 $('#menuUsbShow').onclick = () => {
@@ -1153,7 +1149,7 @@ function menuCommit(row) {
   const ex = row.dataset.ex, item = menu.items.find(i => i.ex === ex), v = $('input', row).value.trim();
   if (!item.string) {
     const n = parseInt(v, 10);
-    if (!isFinite(n) || n < item.min || n > item.max) { toast(`Допустимо ${item.min}…${item.max}`); return; }
+    if (!isFinite(n) || n < item.min || n > item.max) { toast(tr('app.menu.range','Допустимо {min}…{max}').replace('{min}', item.min).replace('{max}', item.max)); return; }
     send({ t: 'menu_set', ex, v: n });
   } else send({ t: 'menu_set', ex, v });
 }
@@ -1185,11 +1181,11 @@ $('#catClear').onclick = () => { $('#catOut').textContent = ''; };
   const box = $('#cwMems');
   for (let i = 1; i <= 5; i++) {
     const row = document.createElement('div'); row.className = 'cw-mem';
-    row.innerHTML = `<b>${i}</b><input class="text mono" maxlength="50"><button class="btn small">Записать</button><button class="btn small">▶ Передать</button>`;
+    row.innerHTML = `<b>${i}</b><input class="text mono" maxlength="50"><button class="btn small">${tr('app.cw.write','Записать')}</button><button class="btn small">${tr('app.cw.play','▶ Передать')}</button>`;
     const inp = $('input', row); inp.value = texts[i - 1] || '';
     const [wr, play] = $$('button', row);
     inp.onchange = () => { texts[i - 1] = inp.value.toUpperCase(); inp.value = texts[i - 1]; store.set('cwMem', texts); };
-    wr.onclick = () => { act('cw_store', [i, inp.value]); toast(`Ячейка ${i} записана в трансивер`); };
+    wr.onclick = () => { act('cw_store', [i, inp.value]); toast(tr('app.cw.stored','Ячейка {i} записана в трансивер').replace('{i}', i)); };
     play.onclick = () => act('cw_play', i);
     box.appendChild(row);
   }
@@ -1201,7 +1197,7 @@ function renderFavs() {
   box.innerHTML = '';
   favs.forEach((f, i) => {
     const el = document.createElement('span'); el.className = 'fav';
-    el.innerHTML = `<button class="btn">${f.name ? f.name + ' · ' : ''}${fmtFreq(f.f)} ${f.m || ''}</button><button class="btn small" title="Удалить">×</button>`;
+    el.innerHTML = `<button class="btn">${f.name ? f.name + ' · ' : ''}${fmtFreq(f.f)} ${f.m || ''}</button><button class="btn small" title="${tr('app.fav.del','Удалить')}">×</button>`;
     const [go, del] = $$('button', el);
     go.onclick = () => { setFreq(f.f); if (f.m) setTimeout(() => setParam('mode', f.m), 120); };
     del.onclick = () => { favs.splice(i, 1); store.set('favs', favs); renderFavs(); };
@@ -1219,7 +1215,7 @@ async function listMics() {
   try {
     const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
     const sel = $('#optMic'), cur = opts.micId;
-    fillSelect(sel, [['', 'По умолчанию'], ...devs.map((d, i) => [d.deviceId, d.label || `Микрофон ${i + 1}`])]);
+    fillSelect(sel, [['', tr('app.mic.default','По умолчанию')], ...devs.map((d, i) => [d.deviceId, d.label || (tr('app.mic.n','Микрофон ') + (i + 1))])]);
     sel.value = cur;
   } catch { }
 }
@@ -1242,12 +1238,12 @@ function initOpts() {
   };
   $('#optMic').onchange = e => { opts.micId = e.target.value; saveOpts(); resetMic(); };
   $('#micTest').onclick = async () => {
-    $('#micTestRes').textContent = 'Включаю микрофон…';
+    $('#micTestRes').textContent = tr('app.mic.enabling','Включаю микрофон…');
     if (await startMic()) {
-      const lab = C.micStream.getAudioTracks()[0]?.label || 'микрофон';
+      const lab = C.micStream.getAudioTracks()[0]?.label || tr('app.mic.n','Микрофон ').trim();
       $('#micTestRes').textContent = /USB Audio (Device|CODEC)/i.test(lab)
-        ? '⚠ Сейчас выбран «' + lab + '» — это звуковая карта трансивера, а не ваш микрофон. Выберите свой в списке выше.'
-        : '✓ Работает: ' + lab + '. Скажите что-нибудь — полоска слева от PTT должна двигаться.';
+        ? tr('app.mic.is_rig','⚠ Сейчас выбран «{lab}» — это звуковая карта трансивера, а не ваш микрофон. Выберите свой в списке выше.').replace('{lab}', lab)
+        : tr('app.mic.ok','✓ Работает: {lab}. Скажите что-нибудь — полоска слева от PTT должна двигаться.').replace('{lab}', lab);
     }
   };
   $('#optMicGain').value = opts.micGain; $('#optMicGainV').textContent = opts.micGain;
@@ -1274,7 +1270,7 @@ function initOpts() {
 // ------------------------------------------------------------------ вход, полноэкранный режим, PWA
 $('#loginBtn').onclick = () => {
   C.pw = $('#loginPw').value;              // запоминаем, только когда сервер пароль принял (hello_ok)
-  $('#loginMsg').textContent = 'Проверяю…';
+  $('#loginMsg').textContent = tr('app.login.checking','Проверяю…');
   if (C.ws && C.ws.readyState === 1) send({ t: 'hello', pw: C.pw, rate: C.rate || 16000 });
   else { try { C.ws && C.ws.close(); } catch { } connect(); }
 };
@@ -1315,7 +1311,7 @@ const cwDesk = (() => {
   function sendDec() { send({ t: 'cw_dec', on: st.dec, cyr: st.cyr, freq: st.freq, sq: st.sq }); }
   function renderDec() {
     $('#cwDecBtn').classList.toggle('on', st.dec);
-    $('#cwDecBtn').textContent = st.dec ? '● Декодер вкл' : '○ Декодер выкл';
+    $('#cwDecBtn').textContent = st.dec ? tr('app.cw.dec_on','● Декодер вкл') : tr('app.cw.dec_off','○ Декодер выкл');
     $$('#cwAlpha button').forEach(b => b.classList.toggle('on', (b.dataset.v === 'cyr') === st.cyr));
     $('#cwSq').value = st.sq;
     const sel = $('#cwFreq');
@@ -1323,10 +1319,10 @@ const cwDesk = (() => {
     sel.value = st.freq;
     if (!st.dec) { $('#cwInfo').textContent = '—'; C.cwMark = 0; drawOverlay(); }
   }
-  function toggle(on = !st.dec) { st.dec = on; store.set('cwDec', on); sendDec(); renderDec(); if (on) note('Декодер Морзе включён'); }
+  function toggle(on = !st.dec) { st.dec = on; store.set('cwDec', on); sendDec(); renderDec(); if (on) note(tr('app.cw.dec_enabled','Декодер Морзе включён')); }
   function setFreq(hz) {
     if (!st.dec) toggle(true);
-    st.freq = clamp(hz, 200, 3000); sendDec(); renderDec(); note(`Декодер слушает ${st.freq} Гц`);
+    st.freq = clamp(hz, 200, 3000); sendDec(); renderDec(); note(tr('app.cw.listening','Декодер слушает {hz} Гц').replace('{hz}', st.freq));
   }
   const note = m => toast(m, 1600);
   for (let f = 400; f <= 1000; f += 50) $('#cwFreq').add(new Option(f + ' Гц', f));
@@ -1340,7 +1336,7 @@ const cwDesk = (() => {
   // ---- ИИ
   function renderAnalysis(a) {
     st.analysis = a;
-    if (!a) { $('#cwAiBody').innerHTML = '<span class="muted small">Разбора пока нет.</span>'; return; }
+    if (!a) { $('#cwAiBody').innerHTML = `<span class="muted small">${tr('app.cw.no_analysis','Разбора пока нет.')}</span>`; return; }
     if (a.call) st.lastCall = a.call;
     const me = a.calls_me && a.calls_me_strict;
     const chip = (k, v) => v ? `<span class="chip">${k} <b>${esc(v)}</b></span>` : '';
@@ -1360,7 +1356,7 @@ const cwDesk = (() => {
     $('#cwProposal').classList.toggle('hidden', !p);
     if (!p) return;
     const tpl = p.model === 'шаблон';
-    $('#cwPropTitle').textContent = (p.auto ? 'Автоответ' : 'Ответ') + (tpl ? ' (шаблон)' : ' ИИ');
+    $('#cwPropTitle').textContent = (p.auto ? tr('app.cw.auto','Автоответ') : tr('app.cw.reply','Ответ')) + (tpl ? tr('app.cw.reply_tpl',' (шаблон)') : tr('app.cw.reply_ai',' ИИ'));
     $('#cwPropText').textContent = p.text; $('#cwPropRu').textContent = p.ru || '';
     const end = performance.now() + p.left * 1000;
     const tick = () => {

@@ -1277,3 +1277,94 @@ if(!R['ft8.wf.35']) R['ft8.wf.35']='медленно (~35 с)';
 if(!R['ft8.wf.60']) R['ft8.wf.60']='очень медленно (~60 с)';
 if(window.I18N&&I18N.apply) try{I18N.apply(document);}catch(e){}
 })();
+
+
+// extra14 app.js visible strings
+(function(){ if(!window.I18N||!I18N.dict) return; const R=I18N.dict.ru||(I18N.dict.ru={}); const E=I18N.dict.en||(I18N.dict.en={});
+Object.assign(R,{
+  'app.hamlib.ctrl':'Регулятор недоступен для этого драйвера',
+  'app.hamlib.func':'Функция недоступна через Hamlib',
+  'app.srv.info':'Сервер','app.srv.ptt':'PTT','app.srv.maxtx':'Ограничение передачи','app.srv.audio':'ЗВУК',
+  'app.band.70cm':'70см','app.band.m':'м',
+  'app.wf.src.scope':'Широкий водопад USB-scope трансивера. Нажмите, чтобы вернуться к звуковому',
+  'app.wf.src.audio':'Звуковой водопад. Нажмите, чтобы включить широкий USB-scope (вкладки RX/TX/VFO)',
+  'app.wf.hint.rf':'Широкий водопад: шкала — абсолютная частота. Двойной клик — настроиться',
+  'app.wf.hint.ft8':'Клик — RX, правый клик / Shift — TX, двойной — оба',
+  'app.wf.hint.audio':'Двойной клик — настроиться на сигнал',
+  'app.wf.on':'Широкий водопад включён (вкладки RX/TX/VFO)','app.wf.off':'Водопад: звук с трансивера',
+  'app.auto':'Авто','app.audio':'Звук','app.rx':'Приём',
+  'app.audio.stat':'Приём: {rate} кГц, звуковая карта {ac} кГц, буфер {ms} мс, пропусков {u}, подстройка {adj} %',
+  'app.fw':'Прошивки трансивера: ',
+  'app.mic.win':'Windows запрещает программам доступ к микрофону. Параметры Windows → Конфиденциальность и защита → Микрофон: включите «Доступ к микрофону» и «Разрешить классическим приложениям доступ к микрофону», затем перезапустите браузер.',
+  'app.mic.browser':'браузер запретил микрофон для этого сайта. Нажмите значок слева от адреса → «Микрофон» → разрешить и обновите страницу.',
+  'app.mic.notfound':'микрофон не найден. Подключите микрофон/гарнитуру или выберите другой в списке «Микрофон этого устройства» (и проверьте, что он не отключён в Параметры → Система → Звук → Ввод).',
+  'app.mic.busy':'микрофон занят или не запускается: закройте программы, которые держат его монопольно (Discord, Zoom, OBS), или снимите галочку «Разрешить приложениям монопольный режим» в свойствах микрофона.',
+  'app.ptt.other':'Передаёт другой клиент','app.ptt.tx':'ПЕРЕДАЧА','app.ptt.starting':'Включаю…',
+  'app.ptt.ready':'Микрофон готов','app.ptt.wait':'Микрофон — по PTT',
+  'app.menu.text':'текст','app.menu.spa1':'только с SPA-1','app.menu.more':'Показаны первые 450 из ','app.menu.more2':'. Уточните поиск.',
+  'app.menu.none':'Ничего не найдено','app.menu.read_confirm':'Прочитать {n} пунктов? Это займёт около {s} с.',
+  'app.menu.range':'Допустимо {min}…{max}',
+  'app.cw.write':'Записать','app.cw.play':'▶ Передать','app.cw.stored':'Ячейка {i} записана в трансивер',
+  'app.fav.del':'Удалить',
+  'app.mic.default':'По умолчанию','app.mic.n':'Микрофон ',
+  'app.mic.enabling':'Включаю микрофон…','app.mic.is_rig':'⚠ Сейчас выбран «{lab}» — это звуковая карта трансивера, а не ваш микрофон. Выберите свой в списке выше.',
+  'app.mic.ok':'✓ Работает: {lab}. Скажите что-нибудь — полоска слева от PTT должна двигаться.',
+  'app.login.checking':'Проверяю…',
+  'app.cw.dec_on':'● Декодер вкл','app.cw.dec_off':'○ Декодер выкл','app.cw.dec_enabled':'Декодер Морзе включён',
+  'app.cw.listening':'Декодер слушает {hz} Гц','app.cw.no_analysis':'Разбора пока нет.',
+  'app.cw.auto':'Автоответ','app.cw.reply':'Ответ','app.cw.reply_tpl':' (шаблон)','app.cw.reply_ai':' ИИ',
+  'app.reset_dbl':'Двойной клик — сброс',
+  'toast.nofinetune_amfm':'В AM/FM подстройка по водопаду недоступна',
+  'toast.audio_unavail':'Звук недоступен: ',
+  'toast.mic_https':'Микрофон недоступен: откройте пульт по https:// (или http://localhost на самом ПК)',
+  'toast.mic_denied':'Нет доступа к микрофону: ',
+  'toast.tx_busy':'Передача занята другим подключением',
+});
+Object.assign(E,{
+  'app.hamlib.ctrl':'Control not available for this driver',
+  'app.hamlib.func':'Function not available via Hamlib',
+  'app.srv.info':'Server','app.srv.ptt':'PTT','app.srv.maxtx':'TX limit','app.srv.audio':'AUDIO',
+  'app.band.70cm':'70cm','app.band.m':'m',
+  'app.wf.src.scope':'Wide USB-scope waterfall from radio. Click to return to audio',
+  'app.wf.src.audio':'Audio waterfall. Click to enable wide USB-scope (RX/TX/VFO tabs)',
+  'app.wf.hint.rf':'Wide waterfall: scale shows absolute frequency. Double-click to tune',
+  'app.wf.hint.ft8':'Click — RX, right-click / Shift — TX, double — both',
+  'app.wf.hint.audio':'Double-click to tune to signal',
+  'app.wf.on':'Wide waterfall enabled (RX/TX/VFO tabs)','app.wf.off':'Waterfall: audio from radio',
+  'app.auto':'Auto','app.audio':'Audio','app.rx':'RX',
+  'app.audio.stat':'RX: {rate} kHz, sound card {ac} kHz, buffer {ms} ms, underruns {u}, adjust {adj} %',
+  'app.fw':'Radio firmware: ',
+  'app.mic.win':'Windows blocks microphone access for apps. Windows Settings → Privacy & security → Microphone: enable “Microphone access” and “Let desktop apps access your microphone”, then restart the browser.',
+  'app.mic.browser':'Browser blocked microphone for this site. Click the icon left of the address → “Microphone” → allow and reload the page.',
+  'app.mic.notfound':'Microphone not found. Connect a microphone/headset or choose another in “Microphone from this device” (and check it is not disabled in Settings → System → Sound → Input).',
+  'app.mic.busy':'Microphone is busy or failed to start: close apps that hold it exclusively (Discord, Zoom, OBS), or disable “Allow applications to take exclusive control” in microphone properties.',
+  'app.ptt.other':'Another client is transmitting','app.ptt.tx':'TRANSMIT','app.ptt.starting':'Starting…',
+  'app.ptt.ready':'Microphone ready','app.ptt.wait':'Microphone — on PTT',
+  'app.menu.text':'text','app.menu.spa1':'SPA-1 only','app.menu.more':'Showing first 450 of ','app.menu.more2':'. Refine search.',
+  'app.menu.none':'Nothing found','app.menu.read_confirm':'Read {n} items? This will take about {s} s.',
+  'app.menu.range':'Allowed {min}…{max}',
+  'app.cw.write':'Write','app.cw.play':'▶ Send','app.cw.stored':'Slot {i} written to radio',
+  'app.fav.del':'Delete',
+  'app.mic.default':'Default','app.mic.n':'Microphone ',
+  'app.mic.enabling':'Enabling microphone…','app.mic.is_rig':'⚠ Selected “{lab}” is the radio sound card, not your microphone. Choose yours from the list above.',
+  'app.mic.ok':'✓ Working: {lab}. Say something — the bar left of PTT should move.',
+  'app.login.checking':'Checking…',
+  'app.cw.dec_on':'● Decoder on','app.cw.dec_off':'○ Decoder off','app.cw.dec_enabled':'Morse decoder enabled',
+  'app.cw.listening':'Decoder listening at {hz} Hz','app.cw.no_analysis':'No analysis yet.',
+  'app.cw.auto':'Auto-reply','app.cw.reply':'Reply','app.cw.reply_tpl':' (template)','app.cw.reply_ai':' AI',
+  'app.reset_dbl':'Double-click to reset',
+  'toast.nofinetune_amfm':'Fine tuning by waterfall is not available in AM/FM',
+  'toast.audio_unavail':'Audio unavailable: ',
+  'toast.mic_https':'Microphone unavailable: open the app via https:// (or http://localhost on this PC)',
+  'toast.mic_denied':'Microphone access denied: ',
+  'toast.tx_busy':'Transmit is busy by another connection',
+});
+if(window.I18N&&I18N.apply) try{I18N.apply(document);}catch(e){}
+})();
+
+
+// extra14b
+(function(){ if(!window.I18N||!I18N.dict) return; const R=I18N.dict.ru||(I18N.dict.ru={}); const E=I18N.dict.en||(I18N.dict.en={});
+if(!R['top.audio_label']) R['top.audio_label']='Звук';
+if(!E['top.audio_label']) E['top.audio_label']='Audio';
+})();

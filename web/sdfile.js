@@ -1,5 +1,6 @@
 'use strict';
 // ======================================================================= Файлы SD-карты FTX-1 (MemList/*.dat)
+const _sdTr = (k, fb) => (window.I18N && I18N.t ? I18N.t(k, fb) : (window.tr ? window.tr(k, fb) : (fb != null ? fb : k)));
 // Формат разобран на бэкапах FTX-1 (прошивка 1.13) и проверен загрузкой в трансивер:
 //   0..511     — строки пробелов с CRLF
 //   512..575   — заголовок «MemList  80  XXXXXXXX» (XXXXXXXX — CRC32, см. crc()) + CRLF
@@ -39,9 +40,9 @@ const sdFile = (() => {
   /** Разобрать файл. Возвращает {kind, ok, crcOk, chans:[{ch,...}], d}. Бросает Error на чужой файл. */
   function parse(buf) {
     const raw = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
-    if (raw.length < BODY + 1000) throw new Error('Файл слишком короткий — это не бэкап FTX-1');
+    if (raw.length < BODY + 1000) throw new Error(_sdTr('sd.err.too_short', 'Файл слишком короткий — это не бэкап FTX-1'));
     const h = header(raw), m = /^(\w+)\s+(\d+)\s+([0-9A-F]{8})/i.exec(h);
-    if (!m) throw new Error('Нет заголовка FTX-1 (ожидалось «MemList … CRC»)');
+    if (!m) throw new Error(_sdTr('sd.err.no_header', 'Нет заголовка FTX-1 (ожидалось «MemList … CRC»)'));
     const kind = m[1], crcOk = parseInt(m[3], 16) === crc(raw);
     if (kind !== 'MemList') return { kind, crcOk, chans: [], d: null, raw };
     const d = dec(raw), chans = [];
@@ -52,7 +53,7 @@ const sdFile = (() => {
       let name = ''; for (let i = 0; i < 12; i++) name += String.fromCharCode((d[S + 59 + 2 * i] << 8) | d[S + 60 + 2 * i]);
       const split = sh === 3;
       chans.push({
-        ch, empty: false, freq: u32(d, S + 55), mode: MODE[code] || `код 0x${code.toString(16).padStart(2, '0')}`,
+        ch, empty: false, freq: u32(d, S + 55), mode: MODE[code] || (_sdTr('sd.mode.code', 'код 0x') + code.toString(16).padStart(2, '0')),
         name: name.replace(/[\0￿]/g, '').trimEnd(),
         shift: split ? 0 : sh === 1 ? 0 : sh === 0 ? 2 : 1,     // 0x40 симплекс, 0x00 «−», 0x80 «+»
         split, tx_freq: split ? u32(d, S + 83) : 0,
@@ -64,7 +65,7 @@ const sdFile = (() => {
 
   /** Собрать новый файл: base — результат parse(), chans — каналы из редактора. Возвращает {bytes, changed, errors}. */
   function build(base, chans) {
-    if (!base?.d) throw new Error('Сначала откройте файл MemList с флешки');
+    if (!base?.d) throw new Error(_sdTr('sd.err.no_base', 'Сначала откройте файл MemList с флешки'));
     const d = base.d.slice(), errors = [], changed = [];
     const orig = Object.fromEntries(base.chans.map(c => [c.ch, c]));
     const same = (a, b) => ['empty', 'freq', 'mode', 'name', 'shift', 'split', 'tx_freq', 'tone_mode'].every(k => String(a[k] ?? '') === String(b[k] ?? ''))
@@ -77,9 +78,9 @@ const sdFile = (() => {
       const err = m => errors.push(`${c.ch}: ${m}`);
       let code = MODE_CODE[c.mode];
       if (code === undefined && c.mode === o.mode && !o.empty) code = d[S];          // вид не меняли — оставляем как был
-      if (code === undefined) { err(`вид «${c.mode}» в файл пока писать не умею (можно FM, FM-N, C4FM-DN)`); continue; }
-      if (!(c.freq >= 30e3 && c.freq < 470e6)) { err('частота вне диапазона'); continue; }
-      if (c.tone_mode === 3) { err('DCS в файл пока писать не умею'); continue; }
+      if (code === undefined) { err(_sdTr('sd.err.mode', 'вид «{mode}» в файл пока писать не умею (можно FM, FM-N, C4FM-DN)').replace('{mode}', c.mode)); continue; }
+      if (!(c.freq >= 30e3 && c.freq < 470e6)) { err(_sdTr('sd.err.range', 'частота вне диапазона')); continue; }
+      if (c.tone_mode === 3) { err(_sdTr('sd.err.dcs', 'DCS в файл пока писать не умею')); continue; }
       if (o.empty) {                                   // новый канал — чистая запись по образцу простого FM-канала
         d.fill(0, S, S + REC); d[S + 2] = 0x40; d[S + 46] = 0x04; setUsed(d, c.ch, true);
       }
@@ -88,7 +89,7 @@ const sdFile = (() => {
       d[S + 3] = (d[S + 3] & ~3) | TONE_OUT[c.tone_mode || 0];
       if (c.tone_mode === 1 || c.tone_mode === 2) {
         const i = CTCSS.findIndex(t => Math.abs(t - c.ctcss) < 0.05);
-        if (i < 0) { err(`нет такого тона ${c.ctcss}`); continue; }
+        if (i < 0) { err(_sdTr('sd.err.tone', 'нет такого тона {tone}').replace('{tone}', c.ctcss)); continue; }
         d[S + 51] = i;
       }
       put32(d, S + 55, Math.round(c.freq));

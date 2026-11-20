@@ -476,10 +476,48 @@ class Station:
     def scope_live(self):
         return self.scope_state == 'live' and self.scope is not None
 
+    def _resolve_scope_libs(self):
+        """Configured paths, or auto-detect from <BASE>/ftdi and <BASE>."""
+        cfg = self.cfg
+        lib = str(cfg.get('scope_libft4222') or '').strip()
+        d2xx = str(cfg.get('scope_d2xx') or '').strip()
+        roots = [os.path.join(BASE, 'ftdi'), BASE]
+        if not lib:
+            if IS_WIN:
+                names = ['LibFT4222-64.dll', 'LibFT4222.dll', 'libft4222.dll']
+            else:
+                names = ['libft4222.so', 'libft4222.so.1', 'libft4222.so.1.4.4.44']
+            cands = []
+            for r in roots:
+                for n in names:
+                    cands += [os.path.join(r, n), os.path.join(r, 'build', n),
+                              os.path.join(r, 'build-x86_64', n), os.path.join(r, 'build-arm-v8', n)]
+            lib = next((os.path.abspath(p) for p in cands if os.path.isfile(p)), '')
+        elif not os.path.isabs(lib):
+            alt = os.path.join(BASE, lib)
+            if os.path.isfile(alt):
+                lib = os.path.abspath(alt)
+        if not d2xx and lib:
+            if IS_WIN:
+                names = ['ftd2xx64.dll', 'ftd2xx.dll']
+            else:
+                names = ['libftd2xx.so', 'libftd2xx.so.1', 'libftd2xx.so.1.4.27']
+            folder = os.path.dirname(lib)
+            cands = [os.path.join(folder, n) for n in names]
+            for r in roots:
+                for n in names:
+                    cands.append(os.path.join(r, n))
+            d2xx = next((os.path.abspath(p) for p in cands if os.path.isfile(p)), '')
+        elif d2xx and not os.path.isabs(d2xx):
+            alt = os.path.join(BASE, d2xx)
+            if os.path.isfile(alt):
+                d2xx = os.path.abspath(alt)
+        return lib, d2xx
+
     def _start_scope(self):
         """Open the optional FT4222 scope interface; never disturb CAT/audio.
 
-        ``waterfall_source`` is ``auto`` (try when configured, else audio),
+        ``waterfall_source`` is ``auto`` (try when libraries/device available, else audio),
         ``scope`` (require it and log failures) or ``audio`` (never try).
         Any failure leaves the audio waterfall untouched.
         """
@@ -490,14 +528,14 @@ class Station:
         if mode == 'audio' or self.sim or (self.rig is not None and is_hamlib(self.rig)):
             self.scope_state, self.scope_reason = 'off', ''
             return
-        lib = str(self.cfg.get('scope_libft4222') or '').strip()
-        d2xx = str(self.cfg.get('scope_d2xx') or '').strip()
+        explicit = bool(str(self.cfg.get('scope_libft4222') or '').strip())
+        lib, d2xx = self._resolve_scope_libs()
         serial = str(self.cfg.get('scope_serial') or '').strip()
         if not lib:
             self.scope_state = 'unavailable'
-            self.scope_reason = 'не задана библиотека LibFT4222'
-            if mode == 'scope':
-                log.warning("Широкий водопад включён, но не задан scope_libft4222 в config.json")
+            self.scope_reason = 'библиотека LibFT4222 не найдена (положите в папку ftdi рядом с программой или укажите путь в настройках)'
+            if mode == 'scope' or explicit:
+                log.warning("Широкий водопад недоступен: %s", self.scope_reason)
             return
         try:
             from ft4222_transport import Ft4222Transport, load_api

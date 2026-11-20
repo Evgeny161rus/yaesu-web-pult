@@ -607,8 +607,11 @@ function wfRow(row, binHz) {
   if (C.wfT) C.wfRate = (C.wfRate || 30) * 0.95 + 0.05 * (1000 / Math.max(1, tNow - C.wfT));
   C.wfT = tNow;
   if (C.tab === 'ft8' && !mirrored()) {
-    const secs = C.ftSecs ?? 20;     // сколько секунд видно на водопаде
-    const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / Math.max(50, wf.rows || 300))) : 1;
+    const secs = C.ftSecs ?? 20;     // сколько секунд помещается на водопаде
+    // Замедление по выбранному времени: опираемся на опорную высоту, а не на фактическую
+    // высоту холста — иначе на высоком окне N становится 1 и водопад «летит».
+    const refRows = 300;
+    const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / refRows)) : 1;
     if (!C.ftAcc || C.ftAcc.length !== row.length) { C.ftAcc = Uint8Array.from(row); C.ftAccN = 0; }
     else for (let i = 0; i < row.length; i++) if (row[i] > C.ftAcc[i]) C.ftAcc[i] = row[i];
     if (++C.ftAccN < N) return;

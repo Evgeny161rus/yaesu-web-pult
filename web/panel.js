@@ -328,4 +328,10 @@ new ResizeObserver(() => {
   lastH = hh; clearTimeout(roT); roT = setTimeout(applyScale, 80);
 }).observe($('.wrap'));
 applyScale();
+const langSel = $('#langSel');
+if (langSel && window.I18N) {
+  langSel.value = I18N.getLang();
+  langSel.onchange = e => I18N.setLang(e.target.value);
+  window.addEventListener('langchange', () => { langSel.value = I18N.getLang(); });
+}
 connect();

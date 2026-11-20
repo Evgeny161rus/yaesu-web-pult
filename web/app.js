@@ -1340,11 +1340,11 @@ const cwDesk = (() => {
     if (a.call) st.lastCall = a.call;
     const me = a.calls_me && a.calls_me_strict;
     const chip = (k, v) => v ? `<span class="chip">${k} <b>${esc(v)}</b></span>` : '';
-    const kind = { cq: 'общий вызов CQ', answer: 'ответ на вызов', report: 'рапорт', final: 'завершение связи' }[a.kind] || '';
+    const kind = { cq: tr('cw.kind.cq','общий вызов CQ'), answer: tr('cw.kind.answer','ответ на вызов'), report: tr('cw.kind.report','рапорт'), final: tr('cw.kind.final','завершение связи') }[a.kind] || '';
     $('#cwAiBody').innerHTML = `<div class="clean">${esc(a.clean || a.raw)}</div><div class="ru">${esc(a.ru)}</div>
-      <div class="cw-chips">${me ? '<span class="chip me">Зовёт вас</span>' : ''}${chip('Позывной', a.call)}${chip('Кому', a.to)}
-      ${chip('RST вам', a.rst)}${chip('Имя', a.name)}${chip('QTH', a.qth)}${kind ? `<span class="chip">${kind}</span>` : ''}
-      ${a.confidence ? `<span class="chip">уверенность <b>${Math.round(a.confidence * 100)}%</b></span>` : ''}</div>`;
+      <div class="cw-chips">${me ? `<span class="chip me">${tr('cw.chip.calls_you','Зовёт вас')}</span>` : ''}${chip(tr('cw.chip.call','Позывной'), a.call)}${chip(tr('cw.chip.to','Кому'), a.to)}
+      ${chip(tr('cw.chip.rst','RST вам'), a.rst)}${chip(tr('cw.chip.name','Имя'), a.name)}${chip(tr('cw.chip.qth','QTH'), a.qth)}${kind ? `<span class="chip">${kind}</span>` : ''}
+      ${a.confidence ? `<span class="chip">${tr('cw.chip.conf','уверенность')} <b>${Math.round(a.confidence * 100)}%</b></span>` : ''}</div>`;
   }
   function aiStatus(text, bad) { const s = $('#cwAiStatus'); if (!s) return; s.textContent = text; s.style.color = bad ? 'var(--tx)' : ''; }
   $('#cwAnalyze').onclick = () => send({ t: 'cw_ai_analyze' });
@@ -1361,7 +1361,7 @@ const cwDesk = (() => {
     const end = performance.now() + p.left * 1000;
     const tick = () => {
       const s = Math.max(0, Math.ceil((end - performance.now()) / 1000));
-      $('#cwPropCount').textContent = p.auto ? `передача через ${s} с` : '';
+      $('#cwPropCount').textContent = p.auto ? tr('app.cw.tx_in','передача через {s} с').replace('{s}', s) : '';
     };
     tick(); if (p.auto) st.propTimer = setInterval(tick, 200);
     st.prop = p;
@@ -1377,13 +1377,13 @@ const cwDesk = (() => {
       .replace(/\{QTH\}/g, o.my_qth || '').replace(/\{RST\}/g, st.lastRst || '599').replace(/\s+/g, ' ').trim();
   }
   const MACROS = [
-    ['CQ', 'CQ CQ CQ DE {MY} {MY} {MY} K'],
-    ['Ответ', '{CALL} DE {MY} {MY} K'],
-    ['Рапорт', '{CALL} DE {MY} GM TNX FER CALL UR RST {RST} {RST} NAME {NAME} {NAME} QTH {QTH} {QTH} HW? {CALL} DE {MY} KN'],
-    ['73', '{CALL} DE {MY} TNX FER QSO 73 GL <SK>'],
-    ['AGN?', 'AGN? AGN?'],
-    ['QRZ?', 'QRZ? DE {MY} K'],
-    ['Позывной', '{MY}'],
+    [tr('cw.macro.cq','CQ'), 'CQ CQ CQ DE {MY} {MY} {MY} K'],
+    [tr('cw.macro.ans','Ответ'), '{CALL} DE {MY} {MY} K'],
+    [tr('cw.macro.rst','Рапорт'), '{CALL} DE {MY} GM TNX FER CALL UR RST {RST} {RST} NAME {NAME} {NAME} QTH {QTH} {QTH} HW? {CALL} DE {MY} KN'],
+    [tr('cw.macro.73','73'), '{CALL} DE {MY} TNX FER QSO 73 GL <SK>'],
+    [tr('cw.macro.agn','AGN?'), 'AGN? AGN?'],
+    [tr('cw.macro.qrz','QRZ?'), 'QRZ? DE {MY} K'],
+    [tr('cw.macro.my','Позывной'), '{MY}'],
   ];
   $('#cwMacros').innerHTML = MACROS.map(([n, t], i) => `<button class="btn" data-i="${i}" title="${esc(t)}">${n}</button>`).join('');
   $('#cwMacros').onclick = e => {
@@ -1392,7 +1392,7 @@ const cwDesk = (() => {
     const missing = (tpl.includes('{CALL}') && !st.lastCall) || (tpl.includes('{MY}') && !st.op.my_call);
     if (e.shiftKey || missing) {                                          // Shift — только вставить в поле
       $('#cwText').value = t; $('#cwText').focus();
-      if (missing) toast(!st.op.my_call ? 'Укажите свой позывной в разделе «Оператор»' : 'Позывной корреспондента ещё неизвестен — впишите его вместо «?»', 3500);
+      if (missing) toast(!st.op.my_call ? tr('toast.need_mycall_op','Укажите свой позывной в разделе «Оператор»') : tr('app.cw.missing_call','Позывной корреспондента ещё неизвестен — впишите его вместо «?»'), 3500);
     } else send({ t: 'cw_send', text: t });
   };
   function sendText() {
@@ -1445,17 +1445,17 @@ const cwDesk = (() => {
         scr.innerHTML = ''; cur = null;
         for (const h of m.history) line(h.dir === 'tx' ? 'tx-line' : 'rx-over', h.clean && h.dir === 'rx' ? h.text : h.text);
         if (m.over) curLine().textContent = m.over;
-        if (!m.history.length && !m.over) scr.innerHTML = '<span class="muted" id="cwHint">Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW). Правый клик по сигналу — декодер будет слушать именно его.</span>';
+        if (!m.history.length && !m.over) scr.innerHTML = `<span class="muted" id="cwHint">${tr('app.cw.hint','Включите декодер и настройтесь на телеграфную станцию: двойной клик по сигналу на водопаде (в режиме CW). Правый клик по сигналу — декодер будет слушать именно его.')}</span>`;
         renderAnalysis(m.analysis); showProposal(m.proposal);
         if (m.busy_tx && m.tx_text) { st.txText = m.tx_text; $('#cwTxLine').classList.remove('hidden'); txProgress(0); }
         $('#cwAuto').checked = false;
-        aiStatus(`LM Studio: ${m.ai_url}${m.ai_model ? ' · ' + m.ai_model : ''} — проверяю…`);
+        aiStatus(tr('app.cw.ai_checking','LM Studio: {url}{model} — проверяю…').replace('{url}', m.ai_url).replace('{model}', m.ai_model ? ' · ' + m.ai_model : ''));
         send({ t: 'cw_ai_test' });
         renderDec();
         break;
       case 'cw_rx': addRx(m.text); break;
       case 'cw_info': {
-        $('#cwInfo').innerHTML = `<span class="sig ${m.sig ? 'on' : ''}"></span>${m.wpm ? m.wpm + ' WPM · ' : ''}${m.freq} Гц${m.auto ? ' (авто)' : ''} · ${m.snr} дБ`;
+        $('#cwInfo').innerHTML = `<span class="sig ${m.sig ? 'on' : ''}"></span>${m.wpm ? m.wpm + ' ' + tr('app.cw.wpm','WPM') + ' · ' : ''}${m.freq} Hz${m.auto ? tr('app.cw.auto_suffix',' (авто)') : ''} · ${m.snr} dB`;
         if (C.cwMark !== m.freq) { C.cwMark = m.freq; drawOverlay(); }
         break;
       }
@@ -1463,13 +1463,13 @@ const cwDesk = (() => {
       case 'cw_clear': if (cur) { cur.remove(); cur = null; } break;
       case 'cw_new': scr.innerHTML = ''; cur = null; renderAnalysis(null); st.lastCall = ''; toast(tr('toast.new_qso', 'Новая связь')); break;
       case 'cw_dec': break;
-      case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? 'LM Studio: готов' : 'LM Studio'), false); $('#cwAiStatus')?.classList.toggle('cw-busy', m.on); break;
-      case 'cw_ai': renderAnalysis(m.a); aiStatus(m.a.note ? m.a.note : (m.a.model === 'правила (без ИИ)' ? 'Разбор по правилам (ИИ выключен)' : 'LM Studio: готов · ' + (m.a.model || '')), !!m.a.note); break;
-      case 'cw_ai_err': aiStatus('ИИ недоступен — работаю по правилам', true); toast(m.msg, 6000); break;
+      case 'cw_ai_busy': aiStatus(m.on ? m.what : (st.aiOk ? tr('app.cw.ai_ready','LM Studio: готов') : tr('cw.ai_busy','LM Studio')), false); $('#cwAiStatus')?.classList.toggle('cw-busy', m.on); break;
+      case 'cw_ai': renderAnalysis(m.a); aiStatus(m.a.note ? m.a.note : (m.a.model === 'правила (без ИИ)' ? tr('app.cw.ai_rules','Разбор по правилам (ИИ выключен)') : tr('app.cw.ai_ready','LM Studio: готов') + ' · ' + (m.a.model || '')), !!m.a.note); break;
+      case 'cw_ai_err': aiStatus(tr('app.cw.ai_rules_fallback','ИИ недоступен — работаю по правилам'), true); toast(m.msg, 6000); break;
       case 'cw_ai_test':
         st.aiOk = m.ok;
-        aiStatus(m.ok ? `LM Studio: готов · ${m.model || m.models[0] || 'модель не загружена'}` : m.msg, !m.ok);
-        if (m.ok && !m.models.length) aiStatus('LM Studio работает, но модель не загружена — загрузите её в LM Studio', true);
+        aiStatus(m.ok ? tr('app.cw.ai_ready','LM Studio: готов') + ' · ' + (m.model || m.models[0] || tr('app.cw.ai_no_model','модель не загружена')) : m.msg, !m.ok);
+        if (m.ok && !m.models.length) aiStatus(tr('app.cw.ai_model_not_loaded','LM Studio работает, но модель не загружена — загрузите её в LM Studio'), true);
         break;
       case 'cw_proposal': showProposal(m.p); break;
       case 'cw_tx_start': txStart(m.item); break;
@@ -1548,7 +1548,7 @@ const digiDesk = (() => {
   }
   function renderRt() {
     $('#rtDecBtn').classList.toggle('on', st.rt);
-    $('#rtDecBtn').textContent = st.rt ? '● Декодер вкл' : '○ Декодер выкл';
+    $('#rtDecBtn').textContent = st.rt ? tr('rt.dec_on','● Декодер вкл') : tr('rt.dec_off_btn','○ Декодер выкл');
   }
   $('#rtDecBtn').onclick = () => { st.rt = !st.rt; store.set('rtOn', st.rt); renderRt(); sendRt(); marks(); };
   ['#rtBaud', '#rtShift', '#rtFc', '#rtPol', '#rtUsos'].forEach(id => $(id).onchange = () => {
@@ -1566,11 +1566,11 @@ const digiDesk = (() => {
     st.shift = p[2].shift; st.fc = +$('#rtFc').value;
     if (p[2].f && p[2].lsb) {                       // любительский RTTY — по традиции в LSB, «частота» = mark
       setParam('mode', 'LSB'); setFreq(p[2].f + 2125);
-      toast(`LSB ${((p[2].f + 2125) / 1000).toFixed(3)} кГц: mark 2125, space 2295 Гц. Правый клик по сигналу — подстроить.`, 6000);
+      toast(tr('toast.rt_preset_lsb','LSB {freq} кГц: mark 2125, space 2295 Гц. Правый клик по сигналу — подстроить.').replace('{freq}', ((p[2].f + 2125) / 1000).toFixed(3)), 6000);
       $('#rtFc').value = 2210; st.fc = 2210;
     } else if (p[2].f) {                            // частота станции — середина между тонами; ставим её на центр декодера
       setParam('mode', 'USB'); setFreq(Math.round((p[2].f - st.fc) / 10) * 10);
-      toast(`USB, ${(p[2].f / 1000).toFixed(1)} кГц на центре ${st.fc} Гц. Расписание станций меняется — сверяйтесь со свежим.`, 6000);
+      toast(tr('toast.rt_preset_usb','USB, {freq} кГц на центре {fc} Гц. Расписание станций меняется — сверяйтесь со свежим.').replace('{freq}', (p[2].f / 1000).toFixed(1)).replace('{fc}', st.fc), 6000);
     }
     if (!st.rt) { st.rt = true; renderRt(); }
     sendRt(); marks(); e.target.value = '';
@@ -1584,7 +1584,7 @@ const digiDesk = (() => {
   }
   if ($('#rtAiBtn')) $('#rtAiBtn').onclick = () => {
     const t = scr.textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
-    $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = 'Перевожу…'; $('#rtAiModel').textContent = '';
+    $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = tr('rt.translating','Перевожу…'); $('#rtAiModel').textContent = '';
     send({ t: 'rt_ai', text: t.slice(-3000) });
   };
   if ($('#rtAiClose')) $('#rtAiClose').onclick = () => $('#rtAi').classList.add('hidden');
@@ -1655,7 +1655,7 @@ const digiDesk = (() => {
   }
   function renderFx() {
     $('#fxDecBtn').classList.toggle('on', st.fx);
-    $('#fxDecBtn').textContent = st.fx ? '● Приём вкл' : '○ Приём выкл';
+    $('#fxDecBtn').textContent = st.fx ? tr('fx.dec_on','● Приём вкл') : tr('fx.dec_off_btn','○ Приём выкл');
   }
   $('#fxDecBtn').onclick = () => { st.fx = !st.fx; store.set('fxOn', st.fx); renderFx(); sendFx(); marks(); };
   ['#fxLpm', '#fxIoc', '#fxAuto', '#fxAfc'].forEach(id => $(id).onchange = () => sendFx());
@@ -1670,7 +1670,7 @@ const digiDesk = (() => {
     $('#fxLpm').value = '120'; $('#fxIoc').value = '576';
     if (!st.fx) { st.fx = true; renderFx(); }
     sendFx(); marks();
-    toast(`USB ${((p[2] - 1900) / 1000).toFixed(1)} кГц (на 1,9 кГц ниже ${(p[2] / 1000).toFixed(1)}). Ждём тон старта — карты идут по расписанию DWD.`, 6000);
+    toast(tr('toast.fx_preset','USB {usb} кГц (на 1,9 кГц ниже {freq}). Ждём тон старта — карты идут по расписанию DWD.').replace('{usb}', ((p[2] - 1900) / 1000).toFixed(1)).replace('{freq}', (p[2] / 1000).toFixed(1)), 6000);
     e.target.value = '';
   };
   cv.addEventListener('click', e => {               // клик — здесь левый край карты
@@ -1703,7 +1703,7 @@ const digiDesk = (() => {
         marks(); break;
       case 'rt_rx': addText(m.text); break;
       case 'rt_info':
-        $('#rtInfo').textContent = `${m.fc} Гц · ${m.shift}/${m.baud} · ${m.pol} · ошибок ${m.err}%`;
+        $('#rtInfo').textContent = tr('rt.info','{fc} Гц · {shift}/{baud} · {pol} · ошибок {err}%').replace('{fc}', m.fc).replace('{shift}', m.shift).replace('{baud}', m.baud).replace('{pol}', m.pol).replace('{err}', m.err);
         if (m.fc !== st.fc) { st.fc = m.fc; marks(); }
         break;
       case 'rt_note': toast(m.msg, 5000); break;
@@ -1715,7 +1715,7 @@ const digiDesk = (() => {
         txProgress(st.txText.length); setTimeout(() => $('#rtTxLine').classList.add('hidden'), 1200);
         if (m.msg) toast(m.msg, 6000); break;
       case 'rt_ai': $('#rtAiBody').textContent = m.ru; $('#rtAiModel').textContent = m.model || ''; break;
-      case 'rt_ai_err': $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = 'Перевод недоступен: ' + m.msg + ' Приём и передача RTTY работают и без ИИ.'; break;
+      case 'rt_ai_err': $('#rtAi').classList.remove('hidden'); $('#rtAiBody').textContent = tr('rt.ai_err','Перевод недоступен: {msg} Приём и передача RTTY работают и без ИИ.').replace('{msg}', m.msg); break;
       case 'fax_state':
         if (m.state === 'phasing' || (m.state === 'image' && !m.rows && st.fxState !== 'image')) { st.rows = []; redraw(); }
         st.fxState = m.state; if (m.W) st.W = m.W;
@@ -1723,12 +1723,12 @@ const digiDesk = (() => {
         if (m.lpm) $('#fxLpm').value = String(m.lpm);
         if (m.center) { st.fxC = m.center; st.fxD = m.dev || 400; $('#fxCenter').value = m.center; $('#fxAfc').checked = m.afc !== false; marks(); }
         if (m.ioc) $('#fxIoc').value = String(m.ioc);
-        if (m.saved && m.saved.length) $('#fxSaved').textContent = 'Сохранено на сервере (папка fax): ' + m.saved.slice(-4).join(', ');
-        $('#fxInfo').textContent = (FX_ST[m.state] || m.state) + (m.rows ? ` · ${m.rows} строк` : '');
+        if (m.saved && m.saved.length) $('#fxSaved').textContent = tr('fx.saved_server','Сохранено на сервере (папка fax): ') + m.saved.slice(-4).join(', ');
+        $('#fxInfo').textContent = (FX_ST[m.state] || m.state) + (m.rows ? tr('rt.rows',' · {n} строк').replace('{n}', m.rows) : '');
         break;
       case 'fax_info': {
-        const sig = m.q === undefined ? '' : m.q >= 0.9 ? ` · сигнал ✓ ${m.lo}–${m.hi} Гц` : ' · сигнала факса нет (шум)';
-        $('#fxInfo').textContent = (FX_ST[m.state] || m.state) + (m.rows ? ` · ${m.rows} строк` : '') + sig;
+        const sig = m.q === undefined ? '' : m.q >= 0.9 ? tr('fx.sig_ok',' · сигнал ✓ {lo}–{hi} Гц').replace('{lo}', m.lo).replace('{hi}', m.hi) : tr('fx.sig_no',' · сигнала факса нет (шум)');
+        $('#fxInfo').textContent = (FX_ST[m.state] || m.state) + (m.rows ? tr('rt.rows',' · {n} строк').replace('{n}', m.rows) : '') + sig;
         $('#fxSlant').textContent = m.slant;
         if (m.center && (m.center !== st.fxC || m.dev !== st.fxD)) {
           st.fxC = m.center; st.fxD = m.dev || 400;
@@ -1752,8 +1752,8 @@ const digiDesk = (() => {
   }
   function pickAudio(hz) {                       // правый клик по водопаду на этой вкладке
     if (st.sub === 'nx' || st.sub === 'psk' || st.sub === 'sstv') return digi2.pick(st.sub, hz);
-    if (st.sub === 'rtty') { $('#rtFc').value = Math.round(hz); st.fc = Math.round(hz); if (!st.rt) { st.rt = true; renderRt(); } sendRt(); marks(); toast(`RTTY: центр ${st.fc} Гц`); }
-    else { $('#fxCenter').value = Math.round(hz); st.fxC = Math.round(hz); st.fxD = 400; sendFx(st.fxC); marks(); toast(`Факс: центр ${st.fxC} Гц (чёрный ${st.fxC - 400}, белый ${st.fxC + 400})`); }
+    if (st.sub === 'rtty') { $('#rtFc').value = Math.round(hz); st.fc = Math.round(hz); if (!st.rt) { st.rt = true; renderRt(); } sendRt(); marks(); toast(tr('toast.rt_pick','RTTY: центр {fc} Гц').replace('{fc}', st.fc)); }
+    else { $('#fxCenter').value = Math.round(hz); st.fxC = Math.round(hz); st.fxD = 400; sendFx(st.fxC); marks(); toast(tr('toast.fx_pick','Факс: центр {c} Гц (чёрный {b}, белый {w})').replace('{c}', st.fxC).replace('{b}', st.fxC - 400).replace('{w}', st.fxC + 400)); }
   }
   function resend() {
     st.rt = store.get('rtOn', false); st.fx = store.get('fxOn', false);
@@ -1774,94 +1774,94 @@ const HOTKEYS = (() => {
   const MODE_CYCLE = ['LSB', 'USB', 'CW-U', 'CW-L', 'AM', 'FM', 'DATA-U', 'DATA-L'];
   const SPANS = [0, 3000, 4000, 6000, 8000, 12000, 24000];
   const note = m => toast(m, 1300);
-  const onOff = v => v ? 'вкл' : 'выкл';
+  const onOff = v => v ? tr('app.on','вкл') : tr('app.off','выкл');
   const toggle = (k, name) => { const v = S[k] ? 0 : 1; setParam(k, v); renderControls({ [k]: v }); renderBadges(); note(`${name}: ${onOff(v)}`); };
-  const setMode = m => { setParam('mode', m); renderBadges(); note('Вид работы: ' + m); setTimeout(rememberBand, 300); };
+  const setMode = m => { setParam('mode', m); renderBadges(); note(tr('app.mode','Вид работы: ') + m); setTimeout(rememberBand, 300); };
   const bandIdx = () => { const f = S.freq_a || 0; const i = BANDS.findIndex(b => f >= b[1] && f <= b[2]); return i; };
   const goBand = d => {
     let i = bandIdx();
     if (i < 0) { const f = S.freq_a || 0; i = d > 0 ? BANDS.findIndex(b => b[1] > f) : BANDS.map(b => b[2] < f).lastIndexOf(true); if (i < 0) return; }
     else i = (i + d + BANDS.length) % BANDS.length;
-    $$('#bands .btn')[i].click(); note('Диапазон ' + $$('#bands .btn')[i].textContent);
+    $$('#bands .btn')[i].click(); note(tr('app.band','Диапазон ') + $$('#bands .btn')[i].textContent);
   };
   const lvlToggle = (k, name) => {
     const cur = S[k] | 0;
-    if (cur) { opts[k + 'Last'] = cur; saveOpts(); setParam(k, 0); note(name + ': выкл'); }
+    if (cur) { opts[k + 'Last'] = cur; saveOpts(); setParam(k, 0); note(name + ': ' + tr('app.off','выкл')); }
     else { const v = opts[k + 'Last'] || 5; setParam(k, v); note(`${name}: ${v}`); }
     renderControls({ [k]: S[k] });
   };
   const A = [
     // id, группа, название, клавиши по умолчанию, действие, [отпускание], [повтор при удержании]
-    ['ptt', 'Передача', 'PTT — передача (держать)', ['Space'],
+    ['ptt', tr('hk.group.tx','Передача'), tr('hk.ptt','PTT — передача (держать)'), ['Space'],
       () => { opts.pttMode === 'toggle' ? (C.pttPressed ? pttUp() : pttDown()) : pttDown(); },
       () => { if (opts.pttMode === 'hold') pttUp(); }],
-    ['stop', 'Передача', 'Стоп: снять передачу, остановить тюнер и передачу CW, отменить автоответ', ['Escape'],
+    ['stop', tr('hk.group.tx','Передача'), tr('hk.stop','Стоп: снять передачу, остановить тюнер и передачу CW, отменить автоответ'), ['Escape'],
       () => { pttUp(); if (S.tuning) act('tune_stop'); cwDesk.stop(); digiDesk.stop(); digi2.stop(); voiceCq.stop(); }],
-    ['tuner', 'Передача', 'Тюнер: настроить', ['KeyT'], () => { act('tune'); note('Тюнер: настройка'); }],
-    ['proc', 'Передача', 'Компрессор PROC', [], () => toggle('proc', 'PROC')],
-    ['vox', 'Передача', 'VOX', [], () => toggle('vox', 'VOX')],
-    ['up', 'Частота', 'Вверх на шаг', ['ArrowUp', 'ArrowRight'], () => nudge(1), null, true],
-    ['down', 'Частота', 'Вниз на шаг', ['ArrowDown', 'ArrowLeft'], () => nudge(-1), null, true],
-    ['up10', 'Частота', 'Вверх на 10 шагов', ['PageUp', 'Shift+ArrowUp', 'Shift+ArrowRight'], () => nudge(10), null, true],
-    ['down10', 'Частота', 'Вниз на 10 шагов', ['PageDown', 'Shift+ArrowDown', 'Shift+ArrowLeft'], () => nudge(-10), null, true],
-    ['step+', 'Частота', 'Шаг крупнее', ['KeyS'], () => stepMove(1)],
-    ['step-', 'Частота', 'Шаг мельче', ['Shift+KeyS'], () => stepMove(-1)],
-    ['entry', 'Частота', 'Ввод частоты с клавиатуры', ['Enter', 'NumpadEnter'], () => { const i = $('#freqInput'); i.focus(); i.select(); }],
-    ['band+', 'Частота', 'Следующий диапазон', ['BracketRight'], () => goBand(1)],
-    ['band-', 'Частота', 'Предыдущий диапазон', ['BracketLeft'], () => goBand(-1)],
-    ['lock', 'Частота', 'Блокировка LOCK', ['KeyK'], () => toggle('lock', 'LOCK')],
-    ['mode+', 'Вид работы', 'Следующий вид работы', ['KeyM'], () => { const i = MODE_CYCLE.indexOf(S.mode); setMode(MODE_CYCLE[(i + 1) % MODE_CYCLE.length]); }],
-    ['mode-', 'Вид работы', 'Предыдущий вид работы', ['Shift+KeyM'], () => { const i = MODE_CYCLE.indexOf(S.mode); setMode(MODE_CYCLE[(i - 1 + MODE_CYCLE.length) % MODE_CYCLE.length]); }],
-    ['usb', 'Вид работы', 'USB', ['KeyU'], () => setMode('USB')],
-    ['lsb', 'Вид работы', 'LSB', ['KeyL'], () => setMode('LSB')],
-    ['cw', 'Вид работы', 'CW (повторно — CW-U ⇄ CW-L)', ['KeyC'], () => setMode(S.mode === 'CW-U' ? 'CW-L' : 'CW-U')],
-    ['am', 'Вид работы', 'AM', ['KeyA'], () => setMode('AM')],
-    ['fm', 'Вид работы', 'FM (повторно — FM ⇄ FM-N)', ['KeyF'], () => setMode(S.mode === 'FM' ? 'FM-N' : 'FM')],
-    ['data', 'Вид работы', 'DATA (повторно — DATA-U ⇄ DATA-L)', ['KeyD'], () => setMode(S.mode === 'DATA-U' ? 'DATA-L' : 'DATA-U')],
-    ['swap', 'VFO', 'A ⇄ B', ['KeyV'], () => { act('swap'); note('A ⇄ B'); }],
-    ['a2b', 'VFO', 'A → B', ['KeyB'], () => { act('a_to_b'); note('A → B'); }],
-    ['split', 'VFO', 'SPLIT', ['KeyX'], () => toggle('split', 'SPLIT')],
-    ['nb', 'Приёмник', 'Подавитель импульсных помех NB', ['KeyN'], () => lvlToggle('nb', 'NB')],
-    ['nr', 'Приёмник', 'Шумоподавление DNR', ['KeyR'], () => lvlToggle('nr', 'DNR')],
-    ['dnf', 'Приёмник', 'Авто-режектор DNF', ['KeyJ'], () => toggle('dnf', 'DNF')],
-    ['att', 'Приёмник', 'Аттенюатор ATT', ['KeyO'], () => toggle('att', 'ATT')],
-    ['preamp', 'Приёмник', 'Предусилитель IPO → AMP1 → AMP2', ['KeyP'], () => {
+    ['tuner', tr('hk.group.tx','Передача'), tr('hk.tuner','Тюнер: настроить'), ['KeyT'], () => { act('tune'); note(tr('app.tuner_tuning','Тюнер: настройка')); }],
+    ['proc', tr('hk.group.tx','Передача'), tr('hk.proc','Компрессор PROC'), [], () => toggle('proc', 'PROC')],
+    ['vox', tr('hk.group.tx','Передача'), tr('hk.vox','VOX'), [], () => toggle('vox', 'VOX')],
+    ['up', tr('hk.group.freq','Частота'), tr('hk.up','Вверх на шаг'), ['ArrowUp', 'ArrowRight'], () => nudge(1), null, true],
+    ['down', tr('hk.group.freq','Частота'), tr('hk.down','Вниз на шаг'), ['ArrowDown', 'ArrowLeft'], () => nudge(-1), null, true],
+    ['up10', tr('hk.group.freq','Частота'), tr('hk.up10','Вверх на 10 шагов'), ['PageUp', 'Shift+ArrowUp', 'Shift+ArrowRight'], () => nudge(10), null, true],
+    ['down10', tr('hk.group.freq','Частота'), tr('hk.down10','Вниз на 10 шагов'), ['PageDown', 'Shift+ArrowDown', 'Shift+ArrowLeft'], () => nudge(-10), null, true],
+    ['step+', tr('hk.group.freq','Частота'), tr('hk.step_up','Шаг крупнее'), ['KeyS'], () => stepMove(1)],
+    ['step-', tr('hk.group.freq','Частота'), tr('hk.step_down','Шаг мельче'), ['Shift+KeyS'], () => stepMove(-1)],
+    ['entry', tr('hk.group.freq','Частота'), tr('hk.entry','Ввод частоты с клавиатуры'), ['Enter', 'NumpadEnter'], () => { const i = $('#freqInput'); i.focus(); i.select(); }],
+    ['band+', tr('hk.group.freq','Частота'), tr('hk.band_next','Следующий диапазон'), ['BracketRight'], () => goBand(1)],
+    ['band-', tr('hk.group.freq','Частота'), tr('hk.band_prev','Предыдущий диапазон'), ['BracketLeft'], () => goBand(-1)],
+    ['lock', tr('hk.group.freq','Частота'), tr('hk.lock','Блокировка LOCK'), ['KeyK'], () => toggle('lock', 'LOCK')],
+    ['mode+', tr('hk.group.mode','Вид работы'), tr('hk.mode_next','Следующий вид работы'), ['KeyM'], () => { const i = MODE_CYCLE.indexOf(S.mode); setMode(MODE_CYCLE[(i + 1) % MODE_CYCLE.length]); }],
+    ['mode-', tr('hk.group.mode','Вид работы'), tr('hk.mode_prev','Предыдущий вид работы'), ['Shift+KeyM'], () => { const i = MODE_CYCLE.indexOf(S.mode); setMode(MODE_CYCLE[(i - 1 + MODE_CYCLE.length) % MODE_CYCLE.length]); }],
+    ['usb', tr('hk.group.mode','Вид работы'), tr('hk.usb','USB'), ['KeyU'], () => setMode('USB')],
+    ['lsb', tr('hk.group.mode','Вид работы'), tr('hk.lsb','LSB'), ['KeyL'], () => setMode('LSB')],
+    ['cw', tr('hk.group.mode','Вид работы'), tr('hk.cw','CW (повторно — CW-U ⇄ CW-L)'), ['KeyC'], () => setMode(S.mode === 'CW-U' ? 'CW-L' : 'CW-U')],
+    ['am', tr('hk.group.mode','Вид работы'), tr('hk.am','AM'), ['KeyA'], () => setMode('AM')],
+    ['fm', tr('hk.group.mode','Вид работы'), tr('hk.fm','FM (повторно — FM ⇄ FM-N)'), ['KeyF'], () => setMode(S.mode === 'FM' ? 'FM-N' : 'FM')],
+    ['data', tr('hk.group.mode','Вид работы'), tr('hk.data','DATA (повторно — DATA-U ⇄ DATA-L)'), ['KeyD'], () => setMode(S.mode === 'DATA-U' ? 'DATA-L' : 'DATA-U')],
+    ['swap', tr('hk.group.vfo','VFO'), tr('hk.swap','A ⇄ B'), ['KeyV'], () => { act('swap'); note(tr('note.swap','A ⇄ B')); }],
+    ['a2b', tr('hk.group.vfo','VFO'), tr('hk.a2b','A → B'), ['KeyB'], () => { act('a_to_b'); note(tr('note.a2b','A → B')); }],
+    ['split', tr('hk.group.vfo','VFO'), tr('hk.split','SPLIT'), ['KeyX'], () => toggle('split', 'SPLIT')],
+    ['nb', tr('hk.group.rx','Приёмник'), tr('hk.nb','Подавитель импульсных помех NB'), ['KeyN'], () => lvlToggle('nb', 'NB')],
+    ['nr', tr('hk.group.rx','Приёмник'), tr('hk.nr','Шумоподавление DNR'), ['KeyR'], () => lvlToggle('nr', 'DNR')],
+    ['dnf', tr('hk.group.rx','Приёмник'), tr('hk.dnf','Авто-режектор DNF'), ['KeyJ'], () => toggle('dnf', 'DNF')],
+    ['att', tr('hk.group.rx','Приёмник'), tr('hk.att','Аттенюатор ATT'), ['KeyO'], () => toggle('att', 'ATT')],
+    ['preamp', tr('hk.group.rx','Приёмник'), tr('hk.preamp','Предусилитель IPO → AMP1 → AMP2'), ['KeyP'], () => {
       const max = bandType() ? 1 : 2, v = ((ctlValue('preamp') | 0) + 1) % (max + 1);
       setParam('preamp', v); S['preamp' + bandType()] = v; renderControls({ preamp: v });
-      note('Предусилитель: ' + (bandType() ? onOff(v) : ['IPO', 'AMP1', 'AMP2'][v]));
+      note(tr('app.preamp','Предусилитель: ') + (bandType() ? onOff(v) : ['IPO', 'AMP1', 'AMP2'][v]));
     }],
-    ['rec', 'Приёмник', 'Запись связи на ПК — старт/стоп', ['KeyH'], () => qsoRec.toggle()],
-    ['agc', 'Приёмник', 'АРУ: FAST → MID → SLOW → AUTO', ['KeyG'], () => {
-      const v = (Math.min(S.agc | 0, 4) % 4) + 1; setParam('agc', v); renderControls({ agc: v }); note('АРУ: ' + ['OFF', 'FAST', 'MID', 'SLOW', 'AUTO'][v]);
+    ['rec', tr('hk.group.rx','Приёмник'), tr('hk.rec','Запись связи на ПК — старт/стоп'), ['KeyH'], () => qsoRec.toggle()],
+    ['agc', tr('hk.group.rx','Приёмник'), tr('hk.agc','АРУ: FAST → MID → SLOW → AUTO'), ['KeyG'], () => {
+      const v = (Math.min(S.agc | 0, 4) % 4) + 1; setParam('agc', v); renderControls({ agc: v }); note(tr('app.agc_label','АРУ: ') + ['OFF', 'FAST', 'MID', 'SLOW', 'AUTO'][v]);
     }],
-    ['narrow', 'Приёмник', 'Узкий фильтр NAR', [], () => toggle('narrow', 'NAR')],
-    ['sq', 'Приёмник', 'Шумодав пульта (FM): выкл → по ТРХ → по уровню', ['KeyQ'], () => {
+    ['narrow', tr('hk.group.rx','Приёмник'), tr('hk.narrow','Узкий фильтр NAR'), [], () => toggle('narrow', 'NAR')],
+    ['sq', tr('hk.group.rx','Приёмник'), tr('hk.sq','Шумодав пульта (FM): выкл → по ТРХ → по уровню'), ['KeyQ'], () => {
       const L = ['off', 'radio', 'level']; opts.sqMode = L[(L.indexOf(opts.sqMode) + 1) % 3]; saveOpts(); renderSq(); pushGate();
-      note('Шумодав: ' + { off: 'выкл', radio: 'по трансиверу', level: 'по уровню' }[opts.sqMode] + (isFMmode(S.mode) ? '' : ' (работает только в FM)'));
+      note(tr('app.squelch','Шумодав: ') + { off: tr('app.off','выкл'), radio: tr('app.squelch.radio','по трансиверу'), level: tr('app.squelch.level','по уровню') }[opts.sqMode] + (isFMmode(S.mode) ? '' : tr('app.squelch.fm_only',' (работает только в FM)')));
     }],
-    ['audio', 'Звук и экран', 'Звук приёма вкл/выкл', ['KeyZ'], () => $('#btnAudio').click()],
-    ['vol+', 'Звук и экран', 'Громкость +', ['Equal', 'NumpadAdd'], () => volStep(10), null, true],
-    ['vol-', 'Звук и экран', 'Громкость −', ['Minus', 'NumpadSubtract'], () => volStep(-10), null, true],
-    ['span', 'Звук и экран', 'Обзор водопада: Авто → 3k → … → 24k', ['KeyW'], () => {
+    ['audio', tr('hk.group.av','Звук и экран'), tr('hk.audio','Звук приёма вкл/выкл'), ['KeyZ'], () => $('#btnAudio').click()],
+    ['vol+', tr('hk.group.av','Звук и экран'), tr('hk.vol_up','Громкость +'), ['Equal', 'NumpadAdd'], () => volStep(10), null, true],
+    ['vol-', tr('hk.group.av','Звук и экран'), tr('hk.vol_down','Громкость −'), ['Minus', 'NumpadSubtract'], () => volStep(-10), null, true],
+    ['span', tr('hk.group.av','Звук и экран'), tr('hk.span','Обзор водопада: Авто → 3k → … → 24k'), ['KeyW'], () => {
       const i = SPANS.indexOf(C.wfMax); C.wfMax = SPANS[(i + 1) % SPANS.length]; store.set('wfMax', C.wfMax); updateSpan(true);
-      note('Обзор: ' + (C.wfMax ? C.wfMax / 1000 + ' кГц' : 'авто'));
+      note(tr('app.span','Обзор: ') + (C.wfMax ? C.wfMax / 1000 + ' kHz' : tr('app.span.auto','авто')));
     }],
-    ['full', 'Звук и экран', 'Во весь экран', [], () => $('#btnFull').click()],
-    ['help', 'Звук и экран', 'Справка по клавишам', ['Shift+Slash', 'F1'], () => showHelp()],
-    ['cwdec', 'CW', 'Декодер Морзе вкл/выкл', ['KeyE'], () => cwDesk.toggle()],
-    ['cwai', 'CW', 'ИИ: разобрать принятое', ['KeyI'], () => send({ t: 'cw_ai_analyze' })],
-    ['cwreply', 'CW', 'ИИ: составить ответ', ['KeyY'], () => send({ t: 'cw_ai_reply' })],
-    ['cwtext', 'CW', 'Перейти к тексту для передачи', ['Backquote'], () => { $('#tabs button[data-tab="cw"]').click(); $('#cwText').focus(); }],
+    ['full', tr('hk.group.av','Звук и экран'), tr('hk.full','Во весь экран'), [], () => $('#btnFull').click()],
+    ['help', tr('hk.group.av','Звук и экран'), tr('hk.help','Справка по клавишам'), ['Shift+Slash', 'F1'], () => showHelp()],
+    ['cwdec', tr('hk.group.cw','CW'), tr('hk.cwdec','Декодер Морзе вкл/выкл'), ['KeyE'], () => cwDesk.toggle()],
+    ['cwai', tr('hk.group.cw','CW'), tr('hk.cwai','ИИ: разобрать принятое'), ['KeyI'], () => send({ t: 'cw_ai_analyze' })],
+    ['cwreply', tr('hk.group.cw','CW'), tr('hk.cwreply','ИИ: составить ответ'), ['KeyY'], () => send({ t: 'cw_ai_reply' })],
+    ['cwtext', tr('hk.group.cw','CW'), tr('hk.cwtext','Перейти к тексту для передачи'), ['Backquote'], () => { $('#tabs button[data-tab="cw"]').click(); $('#cwText').focus(); }],
   ];
-  for (let n = 1; n <= 5; n++) A.push(['cw' + n, 'CW', `Передать CW-память ${n}`, ['Shift+Digit' + n], () => { act('cw_play', n); note('CW-память ' + n); }]);
+  for (let n = 1; n <= 5; n++) A.push(['cw' + n, tr('hk.group.cw','CW'), tr('hk.cw_mem','Передать CW-память {n}').replace('{n}', n), ['Shift+Digit' + n], () => { act('cw_play', n); note(tr('note.cw_mem','CW-память ') + n); }]);
   const actions = A.map(([id, group, name, def, down, up, repeat]) => ({ id, group, name, def, down, up, repeat }));
 
   function stepMove(d) {
     const sel = $('#step'), i = clamp(sel.selectedIndex + d, 0, sel.options.length - 1);
-    sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); note('Шаг: ' + sel.options[i].text);
+    sel.selectedIndex = i; sel.dispatchEvent(new Event('change')); note(tr('app.step','Шаг: ') + sel.options[i].text);
   }
   function volStep(d) {
-    const v = $('#volume'); v.value = clamp(+v.value + d, 0, 200); v.dispatchEvent(new Event('input')); note('Громкость: ' + v.value + ' %');
+    const v = $('#volume'); v.value = clamp(+v.value + d, 0, 200); v.dispatchEvent(new Event('input')); note(tr('app.vol','Громкость: ') + v.value + tr('app.vol_pct',' %'));
   }
 
   // --- раскладка клавиш: по умолчанию + переназначения пользователя
@@ -1871,7 +1871,7 @@ const HOTKEYS = (() => {
   function rebuild() { map = new Map(); for (const a of actions) for (const k of keysOf(a)) map.set(k, a); }
   rebuild();
   const comboOf = e => (e.ctrlKey ? 'Ctrl+' : '') + (e.altKey ? 'Alt+' : '') + (e.shiftKey ? 'Shift+' : '') + e.code;
-  const NAMES = { Space: 'Пробел', Enter: 'Enter', NumpadEnter: 'Num Enter', Escape: 'Esc', ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
+  const NAMES = { Space: tr('hk.key.space','Пробел'), Enter: 'Enter', NumpadEnter: 'Num Enter', Escape: tr('hk.key.esc','Esc'), ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→',
     PageUp: 'PgUp', PageDown: 'PgDn', BracketLeft: '[', BracketRight: ']', Equal: '=', Minus: '−', NumpadAdd: 'Num +', NumpadSubtract: 'Num −',
     Slash: '/', Backslash: '\\', Backquote: '`', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Tab: 'Tab', Home: 'Home', End: 'End', Insert: 'Ins', Delete: 'Del' };
   function label(k) {
@@ -1916,8 +1916,8 @@ const HOTKEYS = (() => {
     const groups = [...new Set(actions.map(a => a.group))];
     return groups.map(g => `<div class="hk-group"><h4>${g}</h4>` + actions.filter(a => a.group === g && keysOf(a).length).map(a =>
       `<div class="hk-row"><span>${a.name}</span><span>${keysOf(a).map(k => `<kbd>${label(k)}</kbd>`).join(' ')}</span></div>`).join('') + '</div>').join('') +
-      `<div class="hk-group"><h4>Ещё</h4><div class="hk-row"><span>Набрать частоту: цифры, затем Enter (7.074 — МГц, 14200 — кГц)</span><span><kbd>0</kbd>…<kbd>9</kbd></span></div>
-       <div class="hk-row"><span>Колесо мыши над частотой — менять разряд под курсором</span><span><kbd>🖱</kbd></span></div></div>`;
+      `<div class="hk-group"><h4>${tr('hk.help.more','Ещё')}</h4><div class="hk-row"><span>${tr('hk.help.freq','Набрать частоту: цифры, затем Enter (7.074 — МГц, 14200 — кГц)')}</span><span><kbd>0</kbd>…<kbd>9</kbd></span></div>
+       <div class="hk-row"><span>${tr('hk.help.wheel','Колесо мыши над частотой — менять разряд под курсором')}</span><span><kbd>🖱</kbd></span></div></div>`;
   }
   function showHelp() { $('#helpBody').innerHTML = helpHtml(); $('#help').classList.remove('hidden'); }
   function hideHelp() { $('#help').classList.add('hidden'); }
@@ -1929,23 +1929,23 @@ const HOTKEYS = (() => {
   function renderEditor() {
     const groups = [...new Set(actions.map(a => a.group))];
     $('#hkList').innerHTML = groups.map(g => `<h4>${g}</h4>` + actions.filter(a => a.group === g).map(a =>
-      `<div class="hk-edit" data-id="${a.id}"><span>${a.name}</span><span class="hk-keys">${keysOf(a).map(k => `<kbd>${label(k)}</kbd>`).join(' ') || '<span class="muted">—</span>'}</span>
-       <button class="btn small" data-act="set">Назначить</button><button class="btn small" data-act="clear" title="Убрать клавиши">×</button></div>`).join('')).join('');
-    $('#btnKeys').title = 'Горячие клавиши (?)';
-    const pk = keysOf(actions[0]); $('#ptt').title = pk.length ? 'PTT — клавиша ' + pk.map(label).join(' / ') : 'PTT';
+      `<div class="hk-edit" data-id="${a.id}"><span>${a.name}</span><span class="hk-keys">${keysOf(a).map(k => `<kbd>${label(k)}</kbd>`).join(' ') || `<span class="muted">${tr('hk.unassigned','—')}</span>`}</span>
+       <button class="btn small" data-act="set">${tr('hk.assign','Назначить')}</button><button class="btn small" data-act="clear" title="${tr('hk.clear','Убрать клавиши')}">×</button></div>`).join('')).join('');
+    $('#btnKeys').title = tr('hk.keys.title','Горячие клавиши (?)');
+    const pk = keysOf(actions[0]); $('#ptt').title = pk.length ? tr('hk.ptt_title','PTT — клавиша ') + pk.map(label).join(' / ') : 'PTT';
   }
   $('#hkList').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     const row = b.closest('.hk-edit'), a = actions.find(x => x.id === row.dataset.id);
     if (b.dataset.act === 'clear') { custom[a.id] = []; save(); return; }
-    $('.hk-keys', row).innerHTML = '<span class="hk-wait">Нажмите клавишу… (Esc — отмена)</span>';
+    $('.hk-keys', row).innerHTML = `<span class="hk-wait">${tr('hk.wait','Нажмите клавишу… (Esc — отмена)')}</span>`;
     capture = ev => {
       if (['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(ev.code)) return;
       capture = null;
       if (ev.code === 'Escape' && !ev.shiftKey) { renderEditor(); return; }
       const k = comboOf(ev);
       const other = actions.find(x => x !== a && keysOf(x).includes(k));
-      if (other) { custom[other.id] = keysOf(other).filter(x => x !== k); toast(`«${label(k)}» снята с действия «${other.name}»`, 3000); }
+      if (other) { custom[other.id] = keysOf(other).filter(x => x !== k); toast(tr('toast.key_removed','«{key}» снята с действия «{name}»').replace('{key}', label(k)).replace('{name}', other.name), 3000); }
       custom[a.id] = [k];
       save();
     };
@@ -2041,14 +2041,14 @@ const voiceCq = (() => {
       $('.nm', row).onchange = e => { const s = st.slots.find(x => x.slot === slot); if (s && s.dur) rename(slot, e.target.value); };
     });
     const r = st.run;
-    $('#vkStatus').textContent = r ? `${r.name}: ${r.n}/${r.repeats} · ${r.phase === 'tx' ? 'передача' : 'слушаю, ещё ' + r.left + ' с'}` : '—';
+    $('#vkStatus').textContent = r ? `${r.name}: ${r.n}/${r.repeats} · ${r.phase === 'tx' ? tr('vk.status.tx','передача') : tr('vk.status.rx','слушаю, ещё ') + r.left + tr('vk.status.sec',' с')}` : tr('vk.status.idle','—');
   }
   const nameOf = (slot, row) => ($('.nm', row)?.value || '').trim() || 'CQ ' + slot;
   async function action(a, slot, row) {
     if (a === 'rec') return st.recSlot === slot ? stopRec() : startRec(slot, row);
     if (a === 'file') { st.fileSlot = slot; st.fileName = nameOf(slot, row); $('#vkFile').value = ''; $('#vkFile').click(); return; }
     if (a === 'play') return send({ t: 'vk_get', slot });
-    if (a === 'del') { if (confirm('Удалить сообщение ' + slot + '?')) send({ t: 'vk_delete', slot }); return; }
+    if (a === 'del') { if (confirm(tr('vk.del_confirm','Удалить сообщение {slot}?').replace('{slot}', slot))) send({ t: 'vk_delete', slot }); return; }
     if (a === 'go') {
       const sv = +$('#vkSig').value;
       const raw = sv ? (S_CAL.find(p => p[1] >= sv) || [130])[0] : 0;
@@ -2132,7 +2132,7 @@ const qsoRec = (() => {
   const btn = $('#btnRec');
   const mmss = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const kb = n => n > 1048576 ? (n / 1048576).toFixed(1) + ' МБ' : Math.round(n / 1024) + ' КБ';
-  function tick() { btn.textContent = st.on ? '⏺ ' + mmss(Math.floor((Date.now() - st.t0) / 1000)) : '⏺ Запись'; }
+  function tick() { btn.textContent = st.on ? '⏺ ' + mmss(Math.floor((Date.now() - st.t0) / 1000)) : tr('rec.btn','⏺ Запись'); }
   btn.onclick = () => send({ t: st.on ? 'rec_stop' : 'rec_start' });
   function on(m) {
     const was = st.on;
@@ -2140,11 +2140,11 @@ const qsoRec = (() => {
     if (m.on) st.t0 = Date.now() - m.elapsed * 1000;
     btn.classList.toggle('on', m.on);
     clearInterval(st.timer); if (m.on) st.timer = setInterval(tick, 500); tick();
-    btn.title = m.on ? 'Идёт запись: ' + m.name + ' — нажмите, чтобы остановить' : 'Записать связь (приём и передачу) в файл на ПК с сервером';
+    btn.title = m.on ? tr('rec.title_on','Идёт запись: {name} — нажмите, чтобы остановить').replace('{name}', m.name) : tr('rec.title_idle','Записать связь (приём и передачу) в файл на ПК с сервером');
     $('#recList').innerHTML = (m.files || []).map(f =>
       `<div class="row"><a href="rec/${encodeURIComponent(f.name)}?k=${encodeURIComponent(m.k)}" download="${f.name}">💾 ${f.name}</a>
        <span class="muted">${mmss(f.dur)} · ${kb(f.size)}</span></div>`).join('') || '<span class="muted">Записей пока нет</span>';
-    if (was && !m.on && m.name) toast(tr('toast.rec_saved', 'Запись сохранена: ') + m.name + ' (папка records)', 6000);
+    if (was && !m.on && m.name) toast(tr('toast.rec_saved', 'Запись сохранена: ') + m.name + ' (records)', 6000);
   }
   return { on, hello: () => send({ t: 'rec_hello' }), toggle: () => btn.click() };
 })();
@@ -2172,14 +2172,14 @@ const digi2 = (() => {
   }
   function pick(sub, hz) {
     hz = Math.round(hz);
-    if (sub === 'nx') { st.nxFc = hz; $('#nxFc').value = hz; if (!st.nx) { st.nx = true; renderBtns(); } sendNx(); toast(`NAVTEX: центр ${hz} Гц`); }
-    else if (sub === 'psk') { st.pkFc = hz; $('#pkFc').value = hz; if (!st.pk) { st.pk = true; renderBtns(); } sendPk(); toast(`PSK31: ${hz} Гц`); }
+    if (sub === 'nx') { st.nxFc = hz; $('#nxFc').value = hz; if (!st.nx) { st.nx = true; renderBtns(); } sendNx(); toast(tr('toast.nx_pick','NAVTEX: центр {hz} Гц').replace('{hz}', hz)); }
+    else if (sub === 'psk') { st.pkFc = hz; $('#pkFc').value = hz; if (!st.pk) { st.pk = true; renderBtns(); } sendPk(); toast(tr('toast.psk_pick','PSK31: {hz} Гц').replace('{hz}', hz)); }
     else toast(tr('toast.sstv_tune', 'SSTV: отдельная подстройка не нужна — сигнал занимает 1200–2300 Гц'));
     marks();
   }
   function renderBtns() {
     for (const [id, on] of [['#nxDecBtn', st.nx], ['#svDecBtn', st.sv], ['#pkDecBtn', st.pk]]) {
-      $(id).classList.toggle('on', on); $(id).textContent = on ? '● Приём вкл' : '○ Приём выкл';
+      $(id).classList.toggle('on', on); $(id).textContent = on ? tr('dg.rx_on','● Приём вкл') : tr('dg.rx_off','○ Приём выкл');
     }
   }
 
@@ -2199,13 +2199,13 @@ const digi2 = (() => {
     const p = NX.find(x => x[0] === e.target.value); if (!p || !p[2]) return;
     setParam('mode', 'USB'); setFreq(p[2] - 1700);
     st.nxFc = 1700; $('#nxFc').value = 1700; if (!st.nx) { st.nx = true; renderBtns(); }
-    sendNx(); toast(`USB ${((p[2] - 1700) / 1000).toFixed(1)} кГц. Сообщения идут по расписанию — время в списке (UTC).`, 6000);
+    sendNx(); toast(tr('toast.nx_preset','USB {freq} кГц. Сообщения идут по расписанию — время в списке (UTC).').replace('{freq}', ((p[2] - 1700) / 1000).toFixed(1)), 6000);
     e.target.value = '';
   };
   $('#nxClear').onclick = () => { $('#nxScreen').textContent = ''; $('#nxMsgs').innerHTML = ''; };
   if ($('#nxAiBtn')) $('#nxAiBtn').onclick = () => {
     const t = $('#nxScreen').textContent.trim(); if (!t) return toast(tr('toast.nothing_decode', 'Пока нечего переводить'));
-    $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = 'Перевожу…'; send({ t: 'nx_ai', text: t.slice(-3000) });
+    $('#nxAi').classList.remove('hidden'); $('#nxAiBody').textContent = tr('nx.translating','Перевожу…'); send({ t: 'nx_ai', text: t.slice(-3000) });
   };
   if ($('#nxAiClose')) $('#nxAiClose').onclick = () => $('#nxAi').classList.add('hidden');
 
@@ -2223,7 +2223,7 @@ const digi2 = (() => {
   $('#svPreset').onchange = e => {
     const p = SV.find(x => x[0] === e.target.value); if (!p || !p[2]) return;
     setParam('mode', p[3]); setFreq(p[2]); if (!st.sv) { st.sv = true; renderBtns(); } sendSv();
-    toast(`${p[3]} ${(p[2] / 1e6).toFixed(3)} МГц — ждём картинку`); e.target.value = '';
+    toast(tr('toast.sstv_preset','{mode} {mhz} МГц — ждём картинку').replace('{mode}', p[3]).replace('{mhz}', (p[2] / 1e6).toFixed(3))); e.target.value = '';
   };
   function svSize(w, h) {
     st.svW = w; st.svH = h; st.svRows = 0;
@@ -2252,7 +2252,7 @@ const digi2 = (() => {
   $('#pkPreset').onchange = e => {
     const p = PK.find(x => x[0] === e.target.value); if (!p || !p[2]) return;
     setParam('mode', 'DATA-U'); setFreq(p[2]); if (!st.pk) { st.pk = true; renderBtns(); } sendPk();
-    toast('DATA-U ' + (p[2] / 1000) + ' кГц. Правый клик по «ниточке» сигнала на водопаде — настроиться.', 6000); e.target.value = '';
+    toast(tr('toast.psk_preset','DATA-U {khz} кГц. Правый клик по «ниточке» сигнала на водопаде — настроиться.').replace('{khz}', (p[2] / 1000)), 6000); e.target.value = '';
   };
   $('#pkClear').onclick = () => { $('#pkScreen').textContent = ''; };
   const PKM = [['CQ', 'CQ CQ CQ de {MY} {MY} {MY} pse k\n'], ['DE', 'de {MY} k\n'], ['73', 'tnx fer QSO, 73 de {MY} sk\n']];
@@ -2272,30 +2272,30 @@ const digi2 = (() => {
     switch (m.t) {
       case 'nx_state': if (m.fc) { st.nxFc = m.fc; $('#nxFc').value = m.fc; } break;
       case 'nx_rx': addText($('#nxScreen'), '#nxHint', m.text); break;
-      case 'nx_info': $('#nxInfo').textContent = m.sync ? `синхронизация ✓ · ${m.fc} Гц` : `поиск сигнала · ${m.fc} Гц`; break;
+      case 'nx_info': $('#nxInfo').textContent = m.sync ? tr('nx.info_sync','синхронизация ✓ · {fc} Гц').replace('{fc}', m.fc) : tr('nx.info_search','поиск сигнала · {fc} Гц').replace('{fc}', m.fc); break;
       case 'nx_msg':
         $('#nxMsgs').insertAdjacentHTML('afterbegin', `<span class="m">${m.time} <b>${esc(m.b1)}${esc(m.b2)}${esc(m.num)}</b> ${esc(m.station || 'станция ' + m.b1)} — ${esc(m.subject || m.b2)}</span>`);
         addText($('#nxScreen'), '#nxHint', `\n──── ${m.station || m.b1}: ${m.subject || m.b2} (${m.time}) ────\n`); break;
       case 'nx_end': addText($('#nxScreen'), '#nxHint', '\n──── конец сообщения ────\n'); break;
       case 'nx_ai': if ($('#nxAiBody')) $('#nxAiBody').textContent = m.ru; if ($('#nxAiModel')) $('#nxAiModel').textContent = m.model || ''; break;
-      case 'nx_ai_err': if ($('#nxAi')) $('#nxAi').classList.remove('hidden'); if ($('#nxAiBody')) $('#nxAiBody').textContent = 'Перевод недоступен: ' + m.msg + ' Приём NAVTEX работает и без ИИ.'; break;
+      case 'nx_ai_err': if ($('#nxAi')) $('#nxAi').classList.remove('hidden'); if ($('#nxAiBody')) $('#nxAiBody').textContent = tr('nx.ai_err','Перевод недоступен: {msg} Приём NAVTEX работает и без ИИ.').replace('{msg}', m.msg); break;
       case 'sstv_state':
         if (m.modes && $('#svMode').options.length < 2) $('#svMode').insertAdjacentHTML('beforeend', m.modes.map(x => `<option>${x}</option>`).join(''));
         if (m.state === 'image' && m.w) svSize(m.w, m.h);
-        $('#svInfo').textContent = m.state === 'image' ? 'приём: ' + m.mode : 'ждёт картинку';
-        $('#svSaved').innerHTML = (m.saved || []).length ? '<b>Сохранены на ПК (папка sstv):</b>' + m.saved.slice().reverse().map(n => `<div class="muted">${esc(n)}</div>`).join('') : '';
+        $('#svInfo').textContent = m.state === 'image' ? tr('sv.rx','приём: ') + m.mode : tr('sv.wait','ждёт картинку');
+        $('#svSaved').innerHTML = (m.saved || []).length ? `<b>${tr('sv.saved_head','Сохранены на ПК (папка sstv):')}</b>` + m.saved.slice().reverse().map(n => `<div class="muted">${esc(n)}</div>`).join('') : '';
         break;
       case 'sstv_start':
-        svSize(m.w, m.h); $('#svInfo').textContent = `приём: ${m.mode} (${m.how}${m.shift ? ', расстройка ' + m.shift + ' Гц' : ''})`;
+        svSize(m.w, m.h); $('#svInfo').textContent = tr('sv.info_rx','приём: {mode} ({how}{shift})').replace('{mode}', m.mode).replace('{how}', m.how).replace('{shift}', m.shift ? tr('sv.shift',', расстройка {s} Гц').replace('{s}', m.shift) : '');
         toast(tr('toast.sstv_start', 'SSTV: началась картинка ') + m.mode); break;
       case 'sstv_done':
-        $('#svInfo').textContent = `${m.mode}: ${m.why}, ${m.rows} строк` + (m.slant ? `, наклон ${m.slant} ppm` : '');
+        $('#svInfo').textContent = tr('sv.done','{mode}: {why}, {rows} строк').replace('{mode}', m.mode).replace('{why}', m.why).replace('{rows}', m.rows) + (m.slant ? tr('sv.slant',', наклон {s} ppm').replace('{s}', m.slant) : '');
         if (m.name) { toast(tr('toast.sstv_saved', 'SSTV сохранена: ') + m.name, 5000); $('#svSaved').insertAdjacentHTML('afterbegin', `<div class="muted">${esc(m.name)}</div>`); }
         break;
       case 'psk_state': if (m.fc) { st.pkFc = Math.round(m.fc); $('#pkFc').value = st.pkFc; } break;
       case 'psk_rx': addText($('#pkScreen'), '#pkHint', m.text); break;
       case 'psk_info':
-        $('#pkInfo').textContent = `${m.fc} Гц · качество ${Math.round(m.q * 100)}%`;
+        $('#pkInfo').textContent = tr('pk.info','{fc} Гц · качество {q}%').replace('{fc}', m.fc).replace('{q}', Math.round(m.q * 100));
         if (Math.abs(m.fc - st.pkFc) >= 1) { st.pkFc = Math.round(m.fc); marks(); }
         break;
       case 'psk_tx_start': st.txText = m.text.trim(); $('#pkTxLine').classList.remove('hidden'); txProg(0); addText($('#pkScreen'), '#pkHint', '\n» ' + st.txText + '\n'); break;
@@ -2337,7 +2337,7 @@ const ft8Desk = (() => {
   // ---------------------------------------------------------------- кнопки
   function renderOn() {
     $('#ftOnBtn').classList.toggle('on', st.on);
-    $('#ftOnBtn').textContent = st.on ? '● Приём вкл' : '○ Приём выкл';
+    $('#ftOnBtn').textContent = st.on ? tr('ft.rx_on','● Приём вкл') : tr('ft.rx_off','○ Приём выкл');
   }
   const turnOn = () => { if (!st.on) { st.on = true; store.set('ftOn', true); renderOn(); send({ t: 'ft_hello', on: true }); } };
   $('#ftOnBtn').onclick = () => { st.on = !st.on; store.set('ftOn', st.on); renderOn(); send({ t: 'ft_hello', on: st.on }); };
@@ -2346,7 +2346,7 @@ const ft8Desk = (() => {
     const kHz = +e.target.value; if (!kHz) return;
     if (S.mode !== 'DATA-U') setParam('mode', 'DATA-U');
     setFreq(Math.round(kHz * 1000)); turnOn();
-    toast(`${st.mode}: DATA-U ${kHz} кГц`); e.target.value = '';
+    toast(tr('toast.ft_tune','{mode}: DATA-U {khz} кГц').replace('{mode}', st.mode).replace('{khz}', kHz)); e.target.value = '';
   };
   $('#ftCq').onclick = () => { turnOn(); send({ t: 'ft_cq' }); };
   $('#ftEnable').onclick = () => send({ t: 'ft_enable', on: !st.txEnable });
@@ -2373,8 +2373,8 @@ const ft8Desk = (() => {
     if (!files.length) return;
     let recs = [];
     for (const f of files) recs = recs.concat(parseAdif(await f.text()));
-    if (!recs.length) return toast(tr('toast.no_adif', 'В файле не нашлось связей ADIF'));
-    toast(`Загружаю ${recs.length} связей…`);
+    if (!recs.length) return toast(tr('toast.ft_no_adif', 'В файле не нашлось связей ADIF'));
+    toast(tr('toast.ft_adif','Загружаю {n} связей…').replace('{n}', recs.length));
     const N = 5000;
     for (let i = 0; i < recs.length || i === 0; i += N)
       send({ t: 'ft_import', recs: recs.slice(i, i + N), first: i === 0, last: i + N >= recs.length,
@@ -2428,7 +2428,7 @@ const ft8Desk = (() => {
   }
   function setRx(hz) {
     hz = clamp(Math.round(hz), 200, 3000); st.rxHz = hz; $('#ftRxHz').value = hz; store.set('ftRx', hz);
-    $('#ftRxLbl').textContent = hz + ' Гц';
+    $('#ftRxLbl').textContent = tr('ft.hz','{hz} Гц').replace('{hz}', hz);
     send({ t: 'ft_freq', rx: hz }); marks();
   }
   function pickWf(hz, how) {          // водопад: клик — RX, правый/Shift — TX, двойной — оба
@@ -2556,11 +2556,11 @@ const ft8Desk = (() => {
       : it.tags.includes('newband') ? '<b class="bd bd-band" title="Страна не сработана на этом диапазоне">диап.</b>' : it.tags.includes('newcall') ? '<b class="bd bd-call" title="С этим позывным связи не было">нов.</b>' : '';
     r.innerHTML = `<span>${utc}</span><span class="n">${it.snr}</span><span class="n">${it.dt.toFixed(1)}</span><span class="n">${it.f}</span>` +
       `<span class="tx"><span class="msg">${esc(it.text)}</span>${badge}<span class="cty">${esc(it.country || '')}</span></span>`;
-    r.title = (it.call ? 'Нажмите — позвать ' + it.call : '') + (it.country ? `\n${it.country}${it.cont ? ' (' + it.cont + ')' : ''}` : '') +
+    r.title = (it.call ? tr('ft.tooltip_call','Нажмите — позвать {call}').replace('{call}', it.call) : '') + (it.country ? tr('ft.tooltip_country','\n{country}{cont}').replace('{country}', it.country).replace('{cont}', it.cont ? ' (' + it.cont + ')' : '') : '') +
       (it.km != null ? `, ${it.km} км` : '') + (it.tags.includes('worked') ? '\nУже работали на этом диапазоне' : '') +
       (it.tags.includes('newgrid') ? '\nНовый квадрат' : '');
     r.onclick = () => {
-      if (!st.myCall) { toast(tr('toast.need_mycall_ft8', 'Укажите свой позывной в настройках FT8')); $('.ft-cfg').open = true; return; }
+      if (!st.myCall) { toast(tr('toast.ft_need_mycall', 'Укажите свой позывной в настройках FT8')); $('.ft-cfg').open = true; return; }
       turnOn(); setRx(it.f); send({ t: 'ft_call', item: it });
     };
     return r;
@@ -2615,17 +2615,17 @@ const ft8Desk = (() => {
     $$('#ftModeSw button').forEach(b => b.classList.toggle('on', b.dataset.v === m.mode));
     const bandsHtml = '<option value="">— выбрать —</option>' + m.bands.map(b => `<option value="${b[1]}">${b[0]} — ${b[1]} кГц</option>`).join('');
     if ($('#ftBand').dataset.mode !== m.mode) { $('#ftBand').innerHTML = bandsHtml; $('#ftBand').dataset.mode = m.mode; }
-    $('#ftEnable').textContent = m.tx_enable ? 'TX включён' : 'Включить TX';
+    $('#ftEnable').textContent = m.tx_enable ? tr('ft.tx_on','TX включён') : tr('ft.tx_off','Включить TX');
     $('#ftEnable').classList.toggle('tx-on', m.tx_enable);
     $('#ftTune').classList.toggle('tune-on', !!m.tune);
-    $('#ftTune').textContent = m.tune ? 'Настройка…' : 'Настройка';
+    $('#ftTune').textContent = m.tune ? tr('ft.tuning','Настройка…') : tr('ft.tune','Настройка');
     $('#ftAutoCq').checked = m.auto_cq; $('#ftAutoSeq').checked = m.auto_seq !== false;
     $('#ftPar').value = String(m.tx_par);
     $('#ftTxMsg').textContent = m.tx_msg || '—';
     const q = m.qso;
-    const STEP = { call: 'зовём', report: 'дали рапорт', roger: 'подтвердили (R)', rr73: 'RR73 — связь в логе', '73': '73 — связь в логе' };
-    $('#ftQso').textContent = q ? `Связь с ${q.call} ${q.grid || ''} · ${STEP[q.step] || q.step} · рапорт ${q.rst_sent || '—'} / ${q.rst_rcvd || '—'}` :
-      (st.txMsg.startsWith('CQ') && m.tx_enable ? 'Зовём CQ…' : 'Связи нет');
+    const STEP = { call: tr('ft.step.call','зовём'), report: tr('ft.step.report','дали рапорт'), roger: tr('ft.step.roger','подтвердили (R)'), rr73: tr('ft.step.rr73','RR73 — связь в логе'), '73': tr('ft.step.73','73 — связь в логе') };
+    $('#ftQso').textContent = q ? tr('ft.qso_active','Связь с {call} {grid} · {step} · рапорт {sent} / {rcvd}').replace('{call}', q.call).replace('{grid}', q.grid || '').replace('{step}', STEP[q.step] || q.step).replace('{sent}', q.rst_sent || '—').replace('{rcvd}', q.rst_rcvd || '—') :
+      (st.txMsg.startsWith('CQ') && m.tx_enable ? tr('ft.calling_cq','Зовём CQ…') : tr('ft.no_qso','Связи нет'));
     // DX позывной / локатор / рапорт — как в JTDX: подставляются из текущей связи
     const key = q ? `${q.call}|${q.grid}|${q.rst_sent}` : '';
     if (key && key !== st.qsoKey && ![$('#ftDxCall'), $('#ftDxGrid'), $('#ftRpt')].includes(document.activeElement)) {
@@ -2638,15 +2638,15 @@ const ft8Desk = (() => {
     const set = (id, v) => { const el = $('#' + id); if (document.activeElement === el) return; if (el.type === 'checkbox') el.checked = v !== false && !!v; else el.value = v ?? ''; };
     set('ftCall', m.my_call); set('ftGrid', m.my_grid); set('ftPwr', m.pwr); set('ftUdpOn', m.udp_on);
     set('ftUdpHost', m.udp_host); set('ftUdpPort', m.udp_port); set('ftWide', m.wide);
-    if (!m.lib) $('#ftQso').textContent = 'Модуль FT8 не загружен: ' + m.lib_err;
+    if (!m.lib) $('#ftQso').textContent = tr('ft.lib_missing','Модуль FT8 не загружен: ') + m.lib_err;
     set('ftPskOn', m.psk_on); set('ftPskAnt', m.psk_antenna); set('ftAlertDx', m.alert_dxcc);
     const w = m.worked || {};
-    $('#ftWorkedInfo').textContent = `${w.dxcc ?? 0} стран, ${w.calls ?? 0} позывных, ${w.qso ?? 0} связей` +
-      (w.imported ? ` (из загруженного лога ${w.imported})` : ' — загрузите свой журнал, иначе «новыми» считаются все');
-    $('#ftCtyInfo').textContent = m.cty && m.cty.n ? `Справочник стран cty.dat: ${m.cty.n} стран, версия ${m.cty.date}`
-      : 'Справочник стран cty.dat не найден — страны не определяются (программа скачает его сама при доступе в интернет)';
+    $('#ftWorkedInfo').textContent = tr('ft.worked','{dxcc} стран, {calls} позывных, {qso} связей').replace('{dxcc}', w.dxcc ?? 0).replace('{calls}', w.calls ?? 0).replace('{qso}', w.qso ?? 0) +
+      (w.imported ? tr('ft.worked_imported',' (из загруженного лога {n})').replace('{n}', w.imported) : tr('ft.worked_hint',' — загрузите свой журнал, иначе «новыми» считаются все'));
+    $('#ftCtyInfo').textContent = m.cty && m.cty.n ? tr('ft.cty','Справочник стран cty.dat: {n} стран, версия {date}').replace('{n}', m.cty.n).replace('{date}', m.cty.date)
+      : tr('ft.cty_off_long','Справочник стран cty.dat не найден — страны не определяются (программа скачает его сама при доступе в интернет)');
     if (st.myCall) $('#ftHeardMap').href = `https://pskreporter.info/pskmap.html?preset&callsign=${encodeURIComponent(st.myCall)}&timerange=1800&txrx=tx`;
-    $('#ftHeardInfo').textContent = m.psk_on ? `PSK Reporter, 30 мин · отправлено ${m.psk_sent}` : 'PSK Reporter выключен';
+    $('#ftHeardInfo').textContent = m.psk_on ? tr('ft.psk_on','PSK Reporter, 30 мин · отправлено {n}').replace('{n}', m.psk_sent) : tr('ft.psk_off','PSK Reporter выключен');
     renderCur(); marks();
   }
 
@@ -2658,7 +2658,7 @@ const ft8Desk = (() => {
         addSlot(m);
         if (!m.old) labelDecodes(m);
         if (m.clock != null) {
-          const el = $('#ftDt'); el.textContent = 'dt ' + (m.clock >= 0 ? '+' : '') + m.clock.toFixed(2) + ' с';
+          const el = $('#ftDt'); el.textContent = tr('ft.dt','dt {sign}{v} с').replace('{sign}', m.clock >= 0 ? '+' : '').replace('{v}', m.clock.toFixed(2));
           el.style.color = Math.abs(m.clock) > 0.7 ? 'var(--tx)' : Math.abs(m.clock) > 0.4 ? 'var(--warn)' : '';
         }
         break;
@@ -2667,19 +2667,19 @@ const ft8Desk = (() => {
         $('#ftTxMsg').classList.toggle('on', m.on);
         if (m.on) addMine(m.msg, m.slot);
         break;
-      case 'ft_qso': addLog(m.q); toast(`В лог: ${m.q.call} ${m.q.sent}/${m.q.rcvd}`, 4000); break;
-      case 'ft_log': $('#ftLog').innerHTML = m.items.length ? '' : '<span class="muted">Пока нет</span>'; m.items.forEach(addLog); break;
+      case 'ft_qso': addLog(m.q); toast(tr('toast.ft_logged','В лог: {call} {sent}/{rcvd}').replace('{call}', m.q.call).replace('{sent}', m.q.sent).replace('{rcvd}', m.q.rcvd), 4000); break;
+      case 'ft_log': $('#ftLog').innerHTML = m.items.length ? '' : `<span class="muted">${tr('ft.log_empty','Пока нет')}</span>`; m.items.forEach(addLog); break;
       case 'ft_note': toast(m.msg, 6000); break;
       case 'ft_alert':
-        toast(`★ Новая страна: ${m.country} — ${m.call} (${m.f} Гц)`, 8000);
+        toast(tr('toast.ft_new_dxcc','★ Новая страна: {country} — {call} ({f} Гц)').replace('{country}', m.country).replace('{call}', m.call).replace('{f}', m.f), 8000);
         if ($('#ftAlertSnd').checked) beep();
         break;
       case 'ft_heard': {
         const H = $('#ftHeard');
-        if (m.err && !m.items.length) { H.innerHTML = `<span class="muted">PSK Reporter не ответил: ${esc(m.err)}</span>`; break; }
-        if (!m.items.length) { H.innerHTML = '<span class="muted">За 30 минут вас никто не отметил</span>'; break; }
+        if (m.err && !m.items.length) { H.innerHTML = `<span class="muted">${tr('ft.heard_err','PSK Reporter не ответил: {err}').replace('{err}', esc(m.err))}</span>`; break; }
+        if (!m.items.length) { H.innerHTML = `<span class="muted">${tr('ft.heard_none','За 30 минут вас никто не отметил')}</span>`; break; }
         const ago = t => { const s = Math.max(0, Date.now() / 1000 - t); return s < 3600 ? Math.round(s / 60) + ' мин' : Math.round(s / 3600) + ' ч'; };
-        H.innerHTML = `<div class="muted">${m.n} станций, дальше всех — ${esc(m.items[0].call)} ${m.items[0].km ?? '?'} км</div>` +
+        H.innerHTML = `<div class="muted">${tr('ft.heard_head','{n} станций, дальше всех — {call} {km} км').replace('{n}', m.n).replace('{call}', esc(m.items[0].call)).replace('{km}', m.items[0].km ?? '?')}</div>` +
           m.items.map(r => `<div title="${esc(r.country || '')}">${esc(r.call.padEnd(10))} ${esc((r.grid || '').slice(0, 4).padEnd(4))} ` +
             `${String(r.km ?? '').padStart(5)} км ${r.snr != null ? String(r.snr).padStart(3) + ' дБ' : '      '} ${esc(r.band)} · ${ago(r.t)} назад</div>`).join('');
         break;
@@ -2688,7 +2688,7 @@ const ft8Desk = (() => {
   }
   function resend() { renderOn(); send({ t: 'ft_hello', on: st.on }); send({ t: 'ft_freq', rx: st.rxHz }); }
   renderOn(); setRxLabel();
-  function setRxLabel() { $('#ftRxHz').value = st.rxHz; $('#ftRxLbl').textContent = st.rxHz + ' Гц'; }
+  function setRxLabel() { $('#ftRxHz').value = st.rxHz; $('#ftRxLbl').textContent = tr('ft.hz','{hz} Гц').replace('{hz}', st.rxHz); }
   return { on, resend, setTx, pickWf, marks, onRow };
 })();
 window.ft8Desk = ft8Desk;

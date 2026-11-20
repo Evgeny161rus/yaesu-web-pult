@@ -36,26 +36,26 @@ const memEd = (() => {
     const modes = st.info?.modes || ['LSB', 'USB', 'CW-U', 'CW-L', 'FM', 'FM-N', 'AM', 'AM-N', 'DATA-U', 'DATA-L', 'DATA-FM', 'RTTY-U', 'RTTY-L', 'PSK'];
     const ctcss = st.info?.ctcss || [88.5], dcs = st.info?.dcs || [23];
     const s = st.status[ch];
-    const stIcon = s ? (s.ok ? '<span class="ok" title="Записан и проверен">✔</span>' : `<span class="bad" title="${esc(s.msg)}">⚠</span>`) : '';
+    const stIcon = s ? (s.ok ? '<span class="ok" title="' + (window.tr?tr('mem.written_ok','Записан и проверен'):'Записан и проверен') + '">✔</span>' : `<span class="bad" title="${esc(s.msg)}">⚠</span>`) : '';
     const grpSel = `<select data-f="group" style="border-left:4px solid ${c.group ? grpColor(c.group) : 'transparent'}"><option value=""></option>${opts(st.groups, c.group)}</select>`;
     return `<tr data-ch="${ch}" class="${e ? 'empty' : ''}${isDirty(ch) ? ' dirty' : ''}${st.sel.has(ch) ? ' sel' : ''}">
       <td><input type="checkbox" data-f="_sel"${st.sel.has(ch) ? ' checked' : ''}></td>
       <td class="num">${label(ch)}</td>
       <td>${grpSel}</td>
       <td><input data-f="name" class="nm" maxlength="12" value="${esc(c.name)}" placeholder="${e ? '' : '—'}"></td>
-      <td><input data-f="freq" class="fq" inputmode="decimal" value="${e ? '' : fmtMHz(c.freq)}" placeholder="пусто"></td>
+      <td><input data-f="freq" class="fq" inputmode="decimal" value="${e ? '' : fmtMHz(c.freq)}" placeholder="${(window.tr?tr('mem.empty_ph','пусто'):'пусто')}"></td>
       <td><select data-f="mode">${opts(modes.includes(c.mode) || e ? modes : [c.mode, ...modes], c.mode)}</select></td>
-      <td><select data-f="shift"${e ? ' disabled' : ''}>${opts(fm ? [0, 1, 2, 3] : [0, 3], c.split ? 3 : c.shift, v => ['симпл.', '+', '−', 'отд. TX'][v])}</select></td>
-      <td><input data-f="offset_khz" class="of" type="number" min="0" step="5" value="" placeholder="${fm && c.shift && !c.split ? 'меню' : ''}" title="Разнос, кГц. FTX-1 не хранит разнос в канале: введённый разнос запишется как отдельная частота передачи"${fm && c.shift && !c.split ? '' : ' disabled'}></td>
-      <td class="txf">${c.split ? `<input data-f="tx_freq" class="fq tx" inputmode="decimal" value="${fmtMHz(c.tx_freq)}">` : !e && c.shift ? `<span class="muted" title="Разнос берётся из меню трансивера (FM → RPT SHIFT) для этого диапазона">${c.shift === 1 ? '+' : '−'} разнос из меню</span>` : ''}</td>
-      <td><select data-f="tone_mode"${fm ? '' : ' disabled'}>${opts([0, 1, 2, 3], c.tone_mode, v => ['выкл', 'ENC', 'TSQ', 'DCS'][v])}</select></td>
+      <td><select data-f="shift"${e ? ' disabled' : ''}>${opts(fm ? [0, 1, 2, 3] : [0, 3], c.split ? 3 : c.shift, v => [(window.tr?tr('mem.shift.simplex','симпл.'):'симпл.'), '+', '−', (window.tr?tr('mem.shift.tx','отд. TX'):'отд. TX')][v])}</select></td>
+      <td><input data-f="offset_khz" class="of" type="number" min="0" step="5" value="" placeholder="${fm && c.shift && !c.split ? (window.tr?tr('mem.offset.menu','меню'):'меню') : ''}" title="${(window.tr?tr('mem.offset.title','Разнос, кГц. FTX-1 не хранит разнос в канале: введённый разнос запишется как отдельная частота передачи'):'Разнос, кГц. FTX-1 не хранит разнос в канале: введённый разнос запишется как отдельная частота передачи')}"${fm && c.shift && !c.split ? '' : ' disabled'}></td>
+      <td class="txf">${c.split ? `<input data-f="tx_freq" class="fq tx" inputmode="decimal" value="${fmtMHz(c.tx_freq)}">` : !e && c.shift ? `<span class="muted" title="${(window.tr?tr('mem.offset.from_menu','Разнос берётся из меню трансивера (FM → RPT SHIFT) для этого диапазона'):'Разнос берётся из меню трансивера (FM → RPT SHIFT) для этого диапазона')}">${c.shift === 1 ? '+' : '−'} разнос из меню</span>` : ''}</td>
+      <td><select data-f="tone_mode"${fm ? '' : ' disabled'}>${opts([0, 1, 2, 3], c.tone_mode, v => [(window.tr?tr('mem.tone.off','выкл'):'выкл'), 'ENC', 'TSQ', 'DCS'][v])}</select></td>
       <td><select data-f="ctcss"${fm && (c.tone_mode === 1 || c.tone_mode === 2) ? '' : ' disabled'}>${opts(ctcss, c.ctcss, v => (+v).toFixed(1))}</select></td>
       <td><select data-f="dcs"${fm && c.tone_mode === 3 ? '' : ' disabled'}>${opts(dcs, c.dcs, v => String(v).padStart(3, '0'))}</select></td>
       <td><input data-f="clar" class="cl" type="number" min="-9999" max="9999" step="10" value="${c.clar || ''}"></td>
       <td><input type="checkbox" data-f="rx_clar"${c.rx_clar ? ' checked' : ''}></td>
       <td><input type="checkbox" data-f="tx_clar"${c.tx_clar ? ' checked' : ''}></td>
       <td><input data-f="comment" class="cm" maxlength="200" value="${esc(c.comment)}"></td>
-      <td class="act">${stIcon}<button class="lnk" data-a="go" title="Включить этот канал на трансивере"${e ? ' disabled' : ''}>▶</button></td>
+      <td class="act">${stIcon}<button class="lnk" data-a="go" title="${(window.tr?tr('mem.go.title','Включить этот канал на трансивере'):'Включить этот канал на трансивере')}"${e ? ' disabled' : ''}>▶</button></td>
     </tr>`;
   }
   function visible(c) {
@@ -81,15 +81,15 @@ const memEd = (() => {
   function renderSide() {
     const cnt = g => Object.values(st.chans).filter(c => !c.empty && (g === '*' ? true : g === '' ? !c.group : c.group === g)).length;
     const item = (g, name, col) => `<div class="me-g${st.filterGrp === g ? ' on' : ''}" data-g="${esc(g)}">
-      <i style="background:${col}"></i><span>${esc(name)}</span><b>${cnt(g)}</b>${g && g !== '*' ? '<button class="lnk" data-a="ren" title="Переименовать">✎</button><button class="lnk" data-a="del" title="Удалить группу">✕</button>' : ''}</div>`;
-    $('#meGroups').innerHTML = item('*', 'Все каналы', 'transparent') + st.groups.map(g => item(g, g, grpColor(g))).join('') + item('', 'Без группы', '#3a4a5c');
-    $('#meSetGrp').innerHTML = '<option value="">Группа для отмеченных…</option><option value="__none">— без группы —</option>' + opts(st.groups, null);
+      <i style="background:${col}"></i><span>${esc(name)}</span><b>${cnt(g)}</b>${g && g !== '*' ? '<button class="lnk" data-a="ren" title="${(window.tr?tr('mem.grp.rename','Переименовать'):'Переименовать')}">✎</button><button class="lnk" data-a="del" title="${(window.tr?tr('mem.grp.delete','Удалить группу'):'Удалить группу')}">✕</button>' : ''}</div>`;
+    $('#meGroups').innerHTML = item('*', (window.tr?tr('mem.grp.all','Все каналы'):'Все каналы'), 'transparent') + st.groups.map(g => item(g, g, grpColor(g))).join('') + item('', (window.tr?tr('mem.grp.none','Без группы'):'Без группы'), '#3a4a5c');
+    $('#meSetGrp').innerHTML = '<option value="">' + (window.tr?tr('mem.grp.for_sel','Группа для отмеченных…'):'Группа для отмеченных…') + '</option><option value="__none">' + (window.tr?tr('mem.grp.no_group','— без группы —'):'— без группы —') + '</option>' + opts(st.groups, null);
   }
   function renderInfo() {
     const dirty = allCh().filter(isDirty);
     $('#meDirtyN').textContent = dirty.length;
-    $('#meSelInfo').textContent = `Отмечено: ${st.sel.size}`;
-    $('#meFile').textContent = st.file ? `файл «${st.file}»` : 'не сохранено в файл';
+    $('#meSelInfo').textContent = (window.tr?tr('mem.selected','Отмечено: '):'Отмечено: ') + st.sel.size;
+    $('#meFile').textContent = st.file ? ((window.tr?tr('mem.file','файл «'):'файл «') + st.file + '»') : (window.tr?tr('mem.file.none','не сохранено в файл'):'не сохранено в файл');
     $('#meStop').classList.toggle('hidden', !st.busy);
     ['#meRead', '#meWrite', '#meWriteSel'].forEach(id => $(id).disabled = st.busy);
     saveDraft();
@@ -106,7 +106,7 @@ const memEd = (() => {
       const t = String(v).replace(',', '.').trim();
       if (!t) { Object.assign(c, blank(ch), { group: c.group, comment: c.comment }); }
       else {
-        let mhz = parseFloat(t); if (!(mhz > 0)) { toast('Частота: например 145.500'); renderRow(ch); return; }
+        let mhz = parseFloat(t); if (!(mhz > 0)) { toast((window.tr?tr('mem.freq.example','Частота: например 145.500'):'Частота: например 145.500')); renderRow(ch); return; }
         if (mhz > 1000) mhz /= 1000;                       // ввели в кГц
         const hz = Math.round(mhz * 1e6);
         if (hz < 30e3 || hz > 470e6) { toast((window.tr?tr('mem.toast.range','Частота вне диапазона FTX-1 (0,03–470 МГц)'):'Частота вне диапазона FTX-1 (0,03–470 МГц)')); renderRow(ch); return; }
@@ -126,7 +126,7 @@ const memEd = (() => {
       const khz = parseFloat(String(v).replace(',', '.')) || 0;
       if (khz > 0 && c.shift) {                          // разнос в канале FTX-1 не хранится — пишем как отдельную TX
         c.tx_freq = c.freq + (c.shift === 1 ? 1 : -1) * Math.round(khz * 1000); c.split = true; c.shift = 0; c.offset_khz = 0;
-        toast(`FTX-1 хранит в канале только направление сдвига, а разнос — общий из меню. Записано как отдельная TX ${fmtMHz(c.tx_freq)}`, 7000);
+        toast((window.tr?tr('mem.toast.offset_note','FTX-1 хранит в канале только направление сдвига, а разнос — общий из меню. Записано как отдельная TX '):'FTX-1 хранит в канале только направление сдвига, а разнос — общий из меню. Записано как отдельная TX ') + fmtMHz(c.tx_freq), 7000);
       }
     } else if (['tone_mode', 'dcs', 'clar'].includes(f)) c[f] = parseInt(v, 10) || 0;
     else if (f === 'ctcss') c[f] = parseFloat(v);
@@ -143,19 +143,19 @@ const memEd = (() => {
   const selList = () => [...st.sel].sort((a, b) => a - b);
   function doRead() {
     const from = clamp(+$('#meFrom').value || 1, 1, CH_MAX), to = clamp(+$('#meTo').value || CH_MAX, from, CH_MAX);
-    if (allCh().some(isDirty) && !confirm('В таблице есть незаписанные изменения. Прочитать из трансивера и заменить ими таблицу (для читаемых номеров)?')) return;
-    st.busy = true; renderInfo(); prog(0, 1, 'Чтение…');
+    if (allCh().some(isDirty) && !confirm((window.tr?tr('mem.confirm.discard_read','В таблице есть незаписанные изменения. Прочитать из трансивера и заменить ими таблицу (для читаемых номеров)?'):'В таблице есть незаписанные изменения. Прочитать из трансивера и заменить ими таблицу (для читаемых номеров)?'))) return;
+    st.busy = true; renderInfo(); prog(0, 1, (window.tr?tr('mem.status.reading','Чтение…'):'Чтение…'));
     send({ t: 'mem_read', from, to, tones: $('#meTones').checked });
   }
   function doWrite(list) {
     const chans = list.map(ch => st.chans[ch]).filter(Boolean);
     const emptyOnRig = chans.filter(c => c.empty && st.rig[c.ch] && !st.rig[c.ch].empty);
     const toWrite = chans.filter(c => !c.empty);
-    if (!toWrite.length) { toast(emptyOnRig.length ? 'Очистить канал по CAT нельзя — только с трансивера' : 'Нечего записывать'); return; }
+    if (!toWrite.length) { toast(emptyOnRig.length ? (window.tr?tr('mem.toast.no_clear_cat','Очистить канал по CAT нельзя — только с трансивера'):'Очистить канал по CAT нельзя — только с трансивера') : (window.tr?tr('mem.toast.nothing_write','Нечего записывать'):'Нечего записывать')); return; }
     const bad = toWrite.filter(c => !c.freq);
-    if (bad.length) { toast('У каналов ' + bad.map(c => c.ch).join(', ') + ' нет частоты'); return; }
-    if (!confirm(`Записать в трансивер каналов: ${toWrite.length}?\nVFO-B на время записи будет занят, потом вернётся.` +
-      (emptyOnRig.length ? `\n\nКаналы ${emptyOnRig.map(c => c.ch).join(', ')} очищены только в таблице — в трансивере их очистите вручную.` : ''))) return;
+    if (bad.length) { toast((window.tr?tr('mem.toast.no_freq','У каналов {list} нет частоты'):'У каналов {list} нет частоты').replace('{list}', bad.map(c => c.ch).join(', '))); return; }
+    if (!confirm((window.tr?tr('mem.confirm.write','Записать в трансивер каналов: {n}?\nVFO-B на время записи будет занят, потом вернётся.'):'Записать в трансивер каналов: {n}?\nVFO-B на время записи будет занят, потом вернётся.').replace('{n}', toWrite.length) +
+      (emptyOnRig.length ? (window.tr?tr('mem.confirm.write_empty','\n\nКаналы {list} очищены только в таблице — в трансивере их очистите вручную.'):'\n\nКаналы {list} очищены только в таблице — в трансивере их очистите вручную.').replace('{list}', emptyOnRig.map(c => c.ch).join(', ')) : ''))) return;
     st.busy = true; renderInfo(); prog(0, toWrite.length, (window.tr?tr('mem.status.write','Запись: '):'Запись: '));
     send({ t: 'mem_write', chans: toWrite });
   }
@@ -167,12 +167,12 @@ const memEd = (() => {
   }
   function moveSel() {
     const list = selList().filter(ch => ch <= CH_MAX); if (!list.length) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
-    const to = parseInt(prompt(`Перенести ${list.length} отмеченных каналов начиная с номера:`, list[0]), 10);
+    const to = parseInt(prompt((window.tr?tr('mem.prompt.move','Перенести {n} отмеченных каналов начиная с номера:'):'Перенести {n} отмеченных каналов начиная с номера:').replace('{n}', list.length), list[0]), 10);
     if (!(to >= 1 && to + list.length - 1 <= CH_MAX)) return;
     const data = list.map(ch => ({ ...st.chans[ch] }));
     const targets = data.map((_, i) => to + i);
     const busy = targets.filter(t => !list.includes(t) && !st.chans[t].empty);
-    if (busy.length && !confirm(`Каналы ${busy.join(', ')} заняты — заменить?`)) return;
+    if (busy.length && !confirm((window.tr?tr('mem.confirm.busy','Каналы {list} заняты — заменить?'):'Каналы {list} заняты — заменить?').replace('{list}', busy.join(', ')))) return;
     list.forEach(ch => { st.chans[ch] = { ...blank(ch), group: '' }; });
     data.forEach((c, i) => { st.chans[targets[i]] = { ...c, ch: targets[i] }; });
     st.sel = new Set(targets); render();
@@ -190,14 +190,14 @@ const memEd = (() => {
       case 'mem_info': {
         st.info = { ...(st.info || {}), ...m, files: m.files };
         const cur = $('#meFiles').value;
-        $('#meFiles').innerHTML = '<option value="">Файлы…</option>' + (m.files || []).map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
+        $('#meFiles').innerHTML = '<option value="">' + (window.tr?tr('mem.files','Файлы…'):'Файлы…') + '</option>' + (m.files || []).map(f => `<option value="${esc(f.name)}">${esc(f.name)}</option>`).join('');
         if (m.saved) { st.file = m.saved; $('#meFiles').value = m.saved; toast((window.tr?tr('mem.msg.saved','Сохранено: '):'Сохранено: ') + '«' + m.saved + '»'); }
         else if (cur) $('#meFiles').value = cur;
         if (m.busy !== undefined && !m.busy) st.busy = false;
         render(); break;
       }
       case 'mem_progress':
-        prog(m.i, m.n, m.what === 'read' ? `Чтение канала ${m.i} из ${m.n}` : m.what === 'tones' ? 'Чтение тонов (трансивер переключается по каналам)…' : `Запись: ${m.i} из ${m.n} (канал ${m.ch})`);
+        prog(m.i, m.n, m.what === 'read' ? (window.tr?tr('mem.progress.read','Чтение канала {i} из {n}'):'Чтение канала {i} из {n}').replace('{i}', m.i).replace('{n}', m.n) : m.what === 'tones' ? (window.tr?tr('mem.progress.tones','Чтение тонов (трансивер переключается по каналам)…'):'Чтение тонов (трансивер переключается по каналам)…') : (window.tr?tr('mem.progress.write','Запись: {i} из {n} (канал {ch})'):'Запись: {i} из {n} (канал {ch})').replace('{i}', m.i).replace('{n}', m.n).replace('{ch}', m.ch));
         break;
       case 'mem_data':
         st.busy = false; prog(null);
@@ -215,12 +215,12 @@ const memEd = (() => {
           st.status[r.ch] = r;
           if (r.ok) st.rig[r.ch] = { ...st.chans[r.ch] };
         }
-        setStatus(m.msg); toast(m.msg + (m.results.some(r => !r.ok) ? ' — см. значки ⚠' : ''), 5000); render(); break;
+        setStatus(m.msg); toast(m.msg + (m.results.some(r => !r.ok) ? (window.tr?tr('mem.warn',' — см. значки ⚠'):' — см. значки ⚠') : ''), 5000); render(); break;
       case 'mem_err': st.busy = false; prog(null); toast(m.msg, 6000); setStatus(m.msg); renderInfo(); break;
       case 'mem_csv': {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob(['﻿' + m.text], { type: 'text/csv' }));
-        a.download = (st.file || 'FTX-1 память') + '.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        a.download = (st.file || (window.tr?tr('mem.csv.name','FTX-1 память'):'FTX-1 память')) + '.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
         break;
       }
       case 'mem_vfo': {
@@ -228,7 +228,7 @@ const memEd = (() => {
         if (!ch) return toast((window.tr?tr('mem.toast.nothing','Нет свободного канала'):'Нет свободного канала'));
         const c = st.chans[ch];
         Object.assign(c, { empty: false, freq: m.freq, mode: m.mode || c.mode });
-        render(); toast((window.tr?tr('mem.toast.recall','Канал '):'Канал ') + ch + ': ' + fmtMHz(m.freq) + ' ' + m.mode); break;
+        render(); toast((window.tr?tr('mem.toast.recall','Канал '):'Канал ') + ch + ': ' + fmtMHz(m.freq) + ' ' + (m.mode || '')); break;
       }
     }
   }
@@ -254,11 +254,11 @@ const memEd = (() => {
     const row = e.target.closest('.me-g'); if (!row) return;
     const g = row.dataset.g, a = e.target.closest('button')?.dataset.a;
     if (a === 'del') {
-      if (!confirm(`Удалить группу «${g}»? Каналы останутся, без группы.`)) return;
+      if (!confirm((window.tr?tr('mem.confirm.del_group','Удалить группу «{g}»? Каналы останутся, без группы.'):'Удалить группу «{g}»? Каналы останутся, без группы.').replace('{g}', g))) return;
       st.groups = st.groups.filter(x => x !== g); Object.values(st.chans).forEach(c => { if (c.group === g) c.group = ''; });
       if (st.filterGrp === g) st.filterGrp = '*';
     } else if (a === 'ren') {
-      const n = (prompt('Новое название группы:', g) || '').trim(); if (!n || n === g) return;
+      const n = (prompt((window.tr?tr('mem.prompt.rename_group','Новое название группы:'):'Новое название группы:'), g) || '').trim(); if (!n || n === g) return;
       if (st.groups.includes(n)) return toast((window.tr?tr('mem.toast.group_exists','Такая группа уже есть'):'Такая группа уже есть'));
       st.groups = st.groups.map(x => x === g ? n : x); Object.values(st.chans).forEach(c => { if (c.group === g) c.group = n; });
       if (st.filterGrp === g) st.filterGrp = n;
@@ -288,7 +288,7 @@ const memEd = (() => {
   $('#meAdd').onclick = () => {
     const n = parseInt(prompt((window.tr?tr('mem.prompt.ch','Номер нового канала (1–999):'):'Номер нового канала (1–999):'), allCh().find(x => st.chans[x].empty) || ''), 10);
     if (!(n >= CH_MIN && n <= CH_MAX)) return;
-    if (!st.chans[n].empty && !confirm(`Канал ${n} занят — заменить частотой и видом с VFO?`)) return;
+    if (!st.chans[n].empty && !confirm((window.tr?tr('mem.confirm.replace_ch','Канал {n} занят — заменить частотой и видом с VFO?'):'Канал {n} занят — заменить частотой и видом с VFO?').replace('{n}', n))) return;
     send({ t: 'mem_from_vfo', ch: n });
   };
   $('#meFromVfo').onclick = () => send({ t: 'mem_from_vfo', ch: selList()[0] || null });
@@ -296,7 +296,7 @@ const memEd = (() => {
   $('#meSort').onclick = sortSel;
   $('#meClear').onclick = () => {
     if (!st.sel.size) return toast((window.tr?tr('mem.toast.select','Отметьте каналы'):'Отметьте каналы'));
-    if (!confirm(`Очистить в таблице каналы: ${selList().join(', ')}?`)) return;
+    if (!confirm((window.tr?tr('mem.confirm.clear_sel','Очистить в таблице каналы: {list}?'):'Очистить в таблице каналы: {list}?').replace('{list}', selList().join(', ')))) return;
     st.sel.forEach(ch => { st.chans[ch] = blank(ch); }); render();
   };
   $('#meUndo').onclick = () => {
@@ -312,14 +312,14 @@ const memEd = (() => {
   $('#meSaveAs').onclick = () => { const name = (prompt((window.tr?tr('mem.prompt.saveas','Сохранить как:'):'Сохранить как:'), st.file || (window.tr?tr('vfo.my_freqs','Мои каналы'):'Мои каналы')) || '').trim(); if (name) send({ t: 'mem_save', name, ...data() }); };
   $('#meFiles').onchange = e => {
     const n = e.target.value; if (!n) return;
-    if (allCh().some(isDirty) && !confirm(`Открыть «${n}»? Таблица заменится содержимым файла (в трансивер ничего не пишется).`)) { e.target.value = ''; return; }
+    if (allCh().some(isDirty) && !confirm((window.tr?tr('mem.confirm.open_file','Открыть «{n}»? Таблица заменится содержимым файла (в трансивер ничего не пишется).'):'Открыть «{n}»? Таблица заменится содержимым файла (в трансивер ничего не пишется).').replace('{n}', n))) { e.target.value = ''; return; }
     send({ t: 'mem_load', name: n });
   };
   $('#meDelFile').onclick = () => { const n = $('#meFiles').value; if (!n) return toast((window.tr?tr('mem.toast.pick_file','Выберите файл в списке'):'Выберите файл в списке')); if (confirm((window.tr?tr('mem.confirm.del_file','Удалить файл «'):'Удалить файл «') + n + '»?')) send({ t: 'mem_delete', name: n }); };
   $('#meCsvOut').onclick = () => send({ t: 'mem_csv_out', chans: allCh().map(ch => st.chans[ch]).filter(c => !c.empty) });
   $('#meCsvIn').onchange = async e => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
-    if (!confirm('Каналы из CSV заменят каналы с теми же номерами в таблице. Продолжить?')) return;
+    if (!confirm((window.tr?tr('mem.confirm.csv_import','Каналы из CSV заменят каналы с теми же номерами в таблице. Продолжить?'):'Каналы из CSV заменят каналы с теми же номерами в таблице. Продолжить?'))) return;
     send({ t: 'mem_csv_in', text: await f.text() });
   };
   // ------------------------------------------------------------------ файлы флешки (MemList/*.dat)
@@ -327,9 +327,9 @@ const memEd = (() => {
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     let p;
     try { p = sdFile.parse(await f.arrayBuffer()); } catch (err) { return toast(err.message, 6000); }
-    if (p.kind !== 'MemList') return toast(`Это файл «${p.kind}» (настройки меню) — пока открываются только файлы каналов из папки MemList`, 7000);
-    if (!p.crcOk && !confirm('Контрольная сумма файла не сходится — файл мог быть повреждён. Всё равно открыть?')) return;
-    if (allCh().some(isDirty) && !confirm(`Открыть «${f.name}»? Таблица заменится каналами из файла (в трансивер ничего не пишется).`)) return;
+    if (p.kind !== 'MemList') return toast((window.tr?tr('mem.toast.sd_not_memlist','Это файл «{kind}» (настройки меню) — пока открываются только файлы каналов из папки MemList'):'Это файл «{kind}» (настройки меню) — пока открываются только файлы каналов из папки MemList').replace('{kind}', p.kind), 7000);
+    if (!p.crcOk && !confirm((window.tr?tr('mem.confirm.bad_crc','Контрольная сумма файла не сходится — файл мог быть повреждён. Всё равно открыть?'):'Контрольная сумма файла не сходится — файл мог быть повреждён. Всё равно открыть?'))) return;
+    if (allCh().some(isDirty) && !confirm((window.tr?tr('mem.confirm.open_sd','Открыть «{name}»? Таблица заменится каналами из файла (в трансивер ничего не пишется).'):'Открыть «{name}»? Таблица заменится каналами из файла (в трансивер ничего не пишется).').replace('{name}', f.name))) return;
     st.sd = p; st.sdName = f.name;
     for (const c of p.chans) {
       const old = st.chans[c.ch] || blank(c.ch);
@@ -338,20 +338,20 @@ const memEd = (() => {
     }
     st.file = '';
     const n = p.chans.filter(c => !c.empty).length;
-    setStatus(`Открыт файл с SD «${f.name}»: ${n} каналов`); toast(`Файл с SD: ${n} каналов`, 3000); render();
+    setStatus((window.tr?tr('mem.status.sd_open','Открыт файл с SD «{name}»: {n} каналов'):'Открыт файл с SD «{name}»: {n} каналов').replace('{name}', f.name).replace('{n}', n)); toast((window.tr?tr('mem.toast.sd_open','Файл с SD: {n} каналов'):'Файл с SD: {n} каналов').replace('{n}', n), 3000); render();
   };
   $('#meSdOut').onclick = () => {
-    if (!st.sd) return toast('Сначала откройте бэкап с флешки (💾 Открыть с SD) — новый файл собирается на его основе', 6000);
+    if (!st.sd) return toast((window.tr?tr('mem.toast.sd_need_base','Сначала откройте бэкап с флешки (💾 Открыть с SD) — новый файл собирается на его основе'):'Сначала откройте бэкап с флешки (💾 Открыть с SD) — новый файл собирается на его основе'), 6000);
     let r;
     try { r = sdFile.build(st.sd, allCh().map(ch => st.chans[ch])); } catch (err) { return toast(err.message, 6000); }
-    if (r.errors.length && !confirm(`Эти каналы не попадут в файл (останутся как в исходном):\n${r.errors.slice(0, 15).join('\n')}${r.errors.length > 15 ? '\n…' : ''}\n\nСохранить остальное?`)) return;
-    if (!r.changed.length && !confirm('Изменений относительно открытого файла нет. Всё равно сохранить копию?')) return;
+    if (r.errors.length && !confirm((window.tr?tr('mem.confirm.sd_errors','Эти каналы не попадут в файл (останутся как в исходном):\n{list}\n\nСохранить остальное?'):'Эти каналы не попадут в файл (останутся как в исходном):\n{list}\n\nСохранить остальное?').replace('{list}', r.errors.slice(0, 15).join('\n') + (r.errors.length > 15 ? '\n…' : '')))) return;
+    if (!r.changed.length && !confirm((window.tr?tr('mem.confirm.sd_no_changes','Изменений относительно открытого файла нет. Всё равно сохранить копию?'):'Изменений относительно открытого файла нет. Всё равно сохранить копию?'))) return;
     const name = sdFile.fileName(50);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([r.bytes], { type: 'application/octet-stream' }));
     a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    setStatus(`Сохранён ${name}: изменено каналов ${r.changed.length}. Положите в FTX-1\\MemList на флешке и загрузите в трансивере.`);
-    toast(`${name}: изменено ${r.changed.length} каналов → в папку FTX-1\\MemList`, 7000);
+    setStatus((window.tr?tr('mem.status.sd_saved','Сохранён {name}: изменено каналов {n}. Положите в FTX-1\\MemList на флешке и загрузите в трансивере.'):'Сохранён {name}: изменено каналов {n}. Положите в FTX-1\\MemList на флешке и загрузите в трансивере.').replace('{name}', name).replace('{n}', r.changed.length));
+    toast((window.tr?tr('mem.toast.sd_saved','{name}: изменено {n} каналов → в папку FTX-1\\MemList'):'{name}: изменено {n} каналов → в папку FTX-1\\MemList').replace('{name}', name).replace('{n}', r.changed.length), 7000);
   };
   return { on, open };
 })();

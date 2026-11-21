@@ -964,7 +964,10 @@ class Station:
         if self.rf_scope_kind == 'rtlsdr' and self.rtlsdr is not None:
             for k in ('freq_a', 'freq'):
                 if k in diff:
-                    self._rtlsdr_maybe_retune(diff[k])
+                    try:
+                        self.loop.call_soon_threadsafe(self._rtlsdr_maybe_retune, diff[k])
+                    except Exception:
+                        pass
                     break
 
     def _broadcast_hello_state(self):

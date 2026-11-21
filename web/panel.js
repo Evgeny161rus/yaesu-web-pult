@@ -25,13 +25,19 @@ function connect() {
         $('#probeModel').disabled = false;
         if (m.error) { $('#probeHint').textContent = m.error; break; }
         $('#probeHint').textContent = (window.tr?tr('panel.probe.found','Найден '):'Найден ') + m.found.name + ', ID ' + m.found.cat_id;
-        $('#radio_backend').value = m.found.id === 1051 ? 'native' : 'hamlib';
-        if (![...$('#hamlib_model').options].some(x => +x.value === m.found.id))
-          $('#hamlib_model').add(new Option(m.found.name, String(m.found.id)));
-        $('#hamlib_model').value = String(m.found.id); backendVisibility(); save();
+        const ftx1 = m.found.id === 1051 || m.found.cat_id === '0840';
+        $('#radio_backend').value = ftx1 ? 'native' : 'hamlib';
+        if (!ftx1) {
+          if (![...$('#hamlib_model').options].some(x => +x.value === m.found.id))
+            $('#hamlib_model').add(new Option(m.found.name, String(m.found.id)));
+          $('#hamlib_model').value = String(m.found.id);
+        }
+        backendVisibility(); save();
         break;
       case 'hamlib_models': {
-        const sel = $('#hamlib_model'), cur = sel.value || String(cfg.hamlib_model || 1049);
+        const sel = $('#hamlib_model');
+        let cur = sel.value || String(cfg.hamlib_model || 1049);
+        if (cur === '1051') cur = '1049'; // 1051 = FTX-1 in Hamlib 4.7+, but Q900 in 4.6.x; never use as Hamlib model
         if (m.models && m.models.length) {
           sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
           if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
@@ -72,7 +78,8 @@ function init(m) {
   cfg = m.cfg; ports = m.ports; audio = m.audio;
   $('#radio_backend').value = cfg.radio_backend || 'native';
   $('#hamlib_path').value = cfg.hamlib_path || 'rigctld';
-  $('#hamlib_model').replaceChildren(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ').replace(/ $/,': ') + (cfg.hamlib_model || 1049), String(cfg.hamlib_model || 1049)));
+  const hm = (+cfg.hamlib_model === 1051) ? 1049 : (cfg.hamlib_model || 1049);
+  $('#hamlib_model').replaceChildren(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ').replace(/ $/,': ') + hm, String(hm)));
   backendVisibility();
   if (m.first_run || cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
   $('#ver').textContent = (window.tr?tr('panel.version','версия '):'версия ') + m.version;

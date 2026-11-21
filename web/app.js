@@ -810,8 +810,10 @@ function tuneToAudio(a) {
   const w = $('#wfWrap'), cur = $('#wfCursor');
   const wfPoint = e => {
     const r = w.getBoundingClientRect(), f = clamp((e.clientX - r.left) / r.width, 0, 1);
-    if (rfView()) return { rf: true, hz: wf.rf.center + (f - 0.5) * wf.rf.span, x: e.clientX - r.left };
-    return { rf: false, hz: mirrored() ? Math.abs(f * 2 - 1) * C.span : f * C.span, x: e.clientX - r.left };
+    const scaleX = r.width / (w.clientWidth || r.width || 1); // учёт CSS transform/scale
+    const x = (e.clientX - r.left) / scaleX;
+    if (rfView()) return { rf: true, hz: wf.rf.center + (f - 0.5) * wf.rf.span, x };
+    return { rf: false, hz: mirrored() ? Math.abs(f * 2 - 1) * C.span : f * C.span, x };
   };
   w.addEventListener('pointermove', e => {
     const p = wfPoint(e);

@@ -91,6 +91,7 @@ function init(m) {
   if (m.headless) {
     $('#btnQuit').classList.add('hidden');
     $('#btnFolder').classList.add('hidden');
+    $('#footHint').classList.add('hidden');
   }
   renderUrls(m.urls);
   $('#log').innerHTML = ''; m.log.forEach(addLog);

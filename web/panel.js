@@ -32,10 +32,14 @@ function connect() {
         break;
       case 'hamlib_models': {
         const sel = $('#hamlib_model'), cur = sel.value || String(cfg.hamlib_model || 1049);
-        sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
-        if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
-        sel.value = cur;
-        $('#hamlibHint').textContent = m.error || ((window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'));
+        if (m.models && m.models.length) {
+          sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
+          if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
+          sel.value = cur;
+          $('#hamlibHint').textContent = (window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'));
+        } else if (m.error) {
+          if ($('#radio_backend').value === 'hamlib') $('#hamlibHint').textContent = m.error;
+        }
         break;
       }
       case 'admin_denied':
@@ -70,7 +74,7 @@ function init(m) {
   $('#hamlib_path').value = cfg.hamlib_path || 'rigctld';
   $('#hamlib_model').replaceChildren(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ').replace(/ $/,': ') + (cfg.hamlib_model || 1049), String(cfg.hamlib_model || 1049)));
   backendVisibility();
-  if (cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
+  if (m.first_run || cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
   $('#ver').textContent = (window.tr?tr('panel.version','версия '):'версия ') + m.version;
   fillDevices();
   for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port', 'waterfall_source']) $('#' + k).value = cfg[k] ?? '';
@@ -214,6 +218,10 @@ function backendVisibility() {
   $('#ptt_method').disabled = ham;
   $('#ptt_port').disabled = ham;
   $('#simulate').disabled = ham;
+  if (ham) {
+    const sel = $('#hamlib_model');
+    if (sel && sel.options.length <= 1) send({t:'admin_hamlib_models'});
+  }
 }
 $('#hamlibReload').onclick = () => {
   clearTimeout(saveT);

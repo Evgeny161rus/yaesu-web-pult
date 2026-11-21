@@ -39,7 +39,11 @@ function connect() {
         break;
       }
       case 'admin_denied':
-        setLamp('bad', (window.tr?tr('panel.denied','Панель доступна только на ПК с трансивером'):'Панель доступна только на ПК с трансивером'), ''); break;
+        if (m.need_pw) {
+          const pw = prompt((window.tr?tr('panel.pw_prompt','Пароль для доступа к панели'):'Пароль для доступа к панели'), '');
+          if (pw != null) { send({ t: 'admin_hello', pw }); break; }
+        }
+        setLamp('bad', (window.tr?tr('panel.denied','Панель доступна только на ПК с трансивером или по паролю'):'Панель доступна только на ПК с трансивером или по паролю'), ''); break;
       case 'admin_init': init(m); break;
       case 'admin_devices': ports = m.ports; audio = m.audio; fillDevices(); renderUrls(m.urls); applyDetectIfEmpty(m.detect); break;
       case 'admin_status': renderStatus(m.s); break;

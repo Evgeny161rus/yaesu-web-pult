@@ -1323,10 +1323,16 @@ class Station:
     async def _on_msg(self, c, m):
         t = m.get('t', '')
         if t.startswith('admin_'):
+            pw = self.cfg.get('password') or ''
             if c.local:
                 await self._admin_msg(c, m)
+            elif pw and c.authed:
+                await self._admin_msg(c, m)
+            elif t == 'admin_hello' and pw and m.get('pw') == pw:
+                c.authed = True
+                await self._admin_msg(c, m)
             else:
-                c.ws.send_json({'t': 'admin_denied'})
+                c.ws.send_json({'t': 'admin_denied', 'need_pw': bool(pw) and not c.local})
             return
         if t == 'hello':
             pw = self.cfg.get('password') or ''

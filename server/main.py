@@ -1202,7 +1202,8 @@ class Station:
             c.ws.send_json({'t': 'admin_init', 'cfg': self.cfg, 'ports': self.ports_cache, 'audio': self.audio_cache,
                             'urls': self.urls(), 'autostart': autostart_get(), 'version': VERSION,
                             'log': list(LOGBUF.lines), 'first_run': not os.path.exists(cfg_path()),
-                            'detect': detect(self.ports_cache, self.audio_cache), 'win': IS_WIN})
+                            'detect': detect(self.ports_cache, self.audio_cache), 'win': IS_WIN,
+                            'headless': bool(getattr(self, 'headless', False))})
             c.ws.send_json({'t': 'admin_status', 's': self.status()})
         elif t == 'admin_refresh':
             self.ports_cache = await asyncio.to_thread(list_ports)
@@ -1587,6 +1588,7 @@ def list_all():
 async def amain(args):
     cfg = load_cfg()
     st = Station(cfg, force_sim=args.sim)
+    st.headless = bool(getattr(args, 'headless', False))
     await st.init()
 
     app = WebServer(web_dir(), st.handle_ws, {'/api/ping': lambda: ('text/plain', b'YAESU-WEB-PULT ' + VERSION.encode())},

@@ -82,6 +82,7 @@ function init(m) {
   $('#cw_port').value = cfg.cw_port || '';
   $('#password').value = cfg.password || '';
   if (m.win) $('#autostart').checked = !!m.autostart; else $('#autostartRow').classList.add('hidden');
+  if (m.headless) $('#btnQuit').classList.add('hidden');
   renderUrls(m.urls);
   $('#log').innerHTML = ''; m.log.forEach(addLog);
   pttPortVisibility(); pwHint();
@@ -244,7 +245,7 @@ $('#btnRun').onclick = () => {
   if (lastStatus.running) send({ t: 'admin_stop' });
   else { clearTimeout(saveT); send({ t: 'admin_save', cfg: collect() }); send({ t: 'admin_start' }); $('#wizard').classList.add('hidden'); }
 };
-$('#btnPult').onclick = () => send({ t: 'admin_open_pult' });
+$('#btnPult').onclick = () => window.open(location.origin + '/', '_blank');
 $('#btnFolder').onclick = () => send({ t: 'admin_open_folder' });
 $('#btnQuit').onclick = () => {
   if (!confirm((window.tr?tr('panel.confirm.quit','Выйти из программы? Связь с трансивером будет остановлена, пульты отключатся.'):'Выйти из программы? Связь с трансивером будет остановлена, пульты отключатся.'))) return;

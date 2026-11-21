@@ -30,8 +30,12 @@ def executable_path(executable):
 
 def run_info(executable, *args):
     executable = executable_path(executable)
-    result = subprocess.run([executable, *args], capture_output=True, timeout=12,
-                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+    try:
+        result = subprocess.run([executable, *args], capture_output=True, timeout=12,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+    except FileNotFoundError:
+        hint = 'Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt' else 'Установите Hamlib или укажите путь к rigctld.exe'
+        raise RuntimeError(f'rigctld не найден ({executable}). {hint}')
     if result.returncode:
         raise RuntimeError(result.stderr.decode(errors='replace')[-1200:])
     return result.stdout.decode(errors='replace')
@@ -137,9 +141,13 @@ class HamlibRig:
             args += ['-r', self.cfg['cat_port'], '-s', str(int(self.cfg['cat_baud']))]
         if self.caps['ptt']: args += ['-P', 'RIG']
         try:
-            self.process = await asyncio.create_subprocess_exec(
-                *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+            try:
+                self.process = await asyncio.create_subprocess_exec(
+                    *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+            except FileNotFoundError:
+                hint = 'Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt' else 'Установите Hamlib или укажите путь к rigctld.exe'
+                raise RuntimeError(f'rigctld не найден ({executable}). {hint}')
             self._stderr_task = asyncio.create_task(self._drain_errors())
             for _ in range(60):
                 if self.process.returncode is not None:

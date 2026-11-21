@@ -330,6 +330,8 @@ class Station:
         self.rtlsdr = None
         self._rtlsdr_center = 0
         self._rtlsdr_retune_task = None
+        self._rtlsdr_hotswap_task = None
+        self._rtlsdr_was_live = False
         self.ptt_owner = None
         self.ptt_since = 0.0
         self.ptt_alive = 0.0
@@ -362,6 +364,7 @@ class Station:
         self.quit_event = asyncio.Event()
         asyncio.create_task(self._watchdog())
         asyncio.create_task(self._admin_loop())
+        self._rtlsdr_hotswap_task = asyncio.create_task(self._rtlsdr_hotswap_loop())
 
     # ----- запуск/остановка связи с трансивером
     async def start_radio(self):
@@ -738,17 +741,77 @@ class Station:
         if state == 'live':
             was = self.scope_state
             self.scope_state, self.scope_reason = 'live', ''
+            self._rtlsdr_was_live = True
             if span:
                 self.scope_span = int(span)
             if was != 'live':
                 log.info("RTL-SDR водопад работает: span %.0f Гц", self.scope_span)
-            self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
+                # clients may have fallen back to audio during unplug; let frontend re-sync
+                self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
+            else:
+                self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
         elif state in ('starting', 'unavailable', 'off'):
             if state == 'unavailable':
                 log.warning("RTL-SDR: %s", reason)
-            if self.scope_state != 'live':
-                self.scope_state = state
-                self.scope_reason = reason or ''
+            prev = self.scope_state
+            self.scope_state = state
+            self.scope_reason = reason or ''
+            # hot-unplug fallback: if we had a live RF waterfall, move clients to audio
+            # but keep rtlsdr worker alive so it can reconnect on reinsert.
+            if state == 'unavailable' and prev == 'live':
+                self._rtlsdr_was_live = False
+                for c in self.clients:
+                    if c.wf_source == 'rf':
+                        c.wf_source = 'audio'
+                    if c.authed and c.wf:
+                        c.ws.send_json({'t': 'wf_src', 'mode': 'audio', 'reason': reason or 'RTL-SDR недоступен'})
+                self.broadcast({'t': 'wf_scope', 'state': 'unavailable', 'reason': reason or 'RTL-SDR недоступен'})
+
+    async def _rtlsdr_hotswap_loop(self):
+        """Watch for RTL-SDR unplug/replug while service is running."""
+        import shutil
+        while not self.quit_event.is_set():
+            try:
+                await asyncio.wait_for(self.quit_event.wait(), timeout=5.0)
+                return
+            except asyncio.TimeoutError:
+                pass
+            except Exception:
+                return
+            try:
+                mode = str(self.cfg.get('waterfall_source') or 'auto').lower()
+                if mode == 'sdr':
+                    mode = 'rtlsdr'
+                if mode not in ('rtlsdr', 'auto'):
+                    continue
+                if self.sim or self.busy:
+                    continue
+                if self.rf_scope_kind == 'ft4222':
+                    continue
+                present = self._rtlsdr_available()
+                if self.rf_scope_kind == 'rtlsdr' and self.rtlsdr is not None:
+                    if self.rtlsdr.running:
+                        if not present and self.scope_state == 'unavailable':
+                            for c in self.clients:
+                                if c.wf_source == 'rf':
+                                    c.wf_source = 'audio'
+                        continue
+                    # worker died - clear and allow restart below
+                    log.info("RTL-SDR: worker остановлен, пробую переподключить")
+                    try:
+                        self.rtlsdr.stop()
+                    except Exception:
+                        pass
+                    self.rtlsdr = None
+                    self.rf_scope_kind = ''
+                    self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR отключён'
+                # not running - try to start when device appears and mode wants it
+                if present and self.running:
+                    if mode == 'rtlsdr' or (mode == 'auto' and not self._ft4222_available()):
+                        log.info("RTL-SDR: обнаружено устройство, пробую запустить (hotswap)")
+                        self._start_rtlsdr()
+            except Exception as e:
+                log.debug("RTL-SDR hotswap watch: %s", e)
 
     def _start_scope(self):
         """Open optional RF waterfall source: FT4222 scope or RTL-SDR.

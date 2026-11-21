@@ -88,6 +88,7 @@ class RtlSdrScope:
 
     def _run(self):
         consec_err = 0
+        quick_fails = 0
         while not self._stop.is_set() and self._running:
             with self._lock:
                 center = self._center
@@ -95,6 +96,8 @@ class RtlSdrScope:
             gain = self._gain
             fft_n = self._fft
             cmd = ['rtl_sdr', '-f', str(center), '-s', str(sr), '-g', str(gain), '-']
+            started = time.monotonic()
+            reported_live = False
             try:
                 self._status('starting', '', sr)
                 proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -111,7 +114,7 @@ class RtlSdrScope:
             consec_err = 0
             err_tail = ''
             try:
-                self._read_loop(proc, center, sr, fft_n)
+                reported_live = self._read_loop(proc, center, sr, fft_n)
             except Exception as e:
                 err_tail = str(e).split('\n')[0]
             finally:
@@ -139,7 +142,15 @@ class RtlSdrScope:
 
             if self._stop.is_set() or not self._running:
                 break
-            # if it exited immediately, back off
+            # quick exit without going live -> likely device missing/unplugged
+            if not reported_live and (time.monotonic() - started) < 5.0:
+                quick_fails += 1
+            else:
+                quick_fails = 0
+            if quick_fails >= 3:
+                self._status('unavailable', err_tail or 'RTL-SDR устройство недоступно', sr)
+                self._stop.wait(5.0)  # hotswap: keep trying, slower
+                continue
             self._status('starting', err_tail or 'перезапуск RTL-SDR', sr)
             self._stop.wait(1.5)
 
@@ -166,11 +177,11 @@ class RtlSdrScope:
             # if center changed, break to restart
             with self._lock:
                 if abs(self._center - center) >= 500:
-                    return
+                    return reported_live
             chunk = proc.stdout.read(16384)
             if not chunk:
                 if proc.poll() is not None:
-                    return
+                    return reported_live
                 time.sleep(0.01)
                 continue
             buf.extend(chunk)
@@ -206,3 +217,4 @@ class RtlSdrScope:
                     except Exception:
                         log.exception("rtlsdr on_frame failed")
                     avg_n = 0
+        return reported_live

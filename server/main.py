@@ -328,6 +328,8 @@ class Station:
         self.scope_dl_msg = ''
         self.rf_scope_kind = ''            # '', 'ft4222', 'rtlsdr'
         self.rtlsdr = None
+        self._rtlsdr_center = 0
+        self._rtlsdr_retune_task = None
         self.ptt_owner = None
         self.ptt_since = 0.0
         self.ptt_alive = 0.0
@@ -637,6 +639,10 @@ class Station:
             return False
         self.rtlsdr = sdr
         self.rf_scope_kind = 'rtlsdr'
+        self._rtlsdr_center = int(center)
+        if self._rtlsdr_retune_task and not self._rtlsdr_retune_task.done():
+            self._rtlsdr_retune_task.cancel()
+        self._rtlsdr_retune_task = None
         self.scope_state, self.scope_reason = 'starting', ''
         self.scope_span = sr
         log.info("RTL-SDR: запускаю на %.0f Гц, span %.0f Гц", center, sr)
@@ -653,6 +659,59 @@ class Station:
         except Exception:
             pass
         return int(self.cfg.get('rtlsdr_center_hz', 14100000) or 14100000)
+
+    def _rtlsdr_maybe_retune(self, freq_hz: int):
+        """Retune RTL-SDR only when rig drifts near edge of span; debounce restarts."""
+        if self.rf_scope_kind != 'rtlsdr' or self.rtlsdr is None:
+            return
+        try:
+            freq_hz = int(freq_hz)
+        except Exception:
+            return
+        if freq_hz <= 0:
+            return
+        span = int(self.scope_span or self.cfg.get('rtlsdr_sample_rate', 1024000) or 1024000)
+        center = int(self._rtlsdr_center or 0)
+        if center <= 0:
+            center = freq_hz
+        # Keep SDR center stable while rig is within central 70% of span.
+        margin = max(5000, int(span * 0.15))
+        delta = abs(freq_hz - center)
+        if delta <= (span // 2 - margin):
+            return
+        # Outside visible span -> retune quickly; near edge -> debounce.
+        delay = 0.15 if delta >= span // 2 else 0.6
+        if self._rtlsdr_retune_task and not self._rtlsdr_retune_task.done():
+            self._rtlsdr_retune_task.cancel()
+
+        async def _do():
+            try:
+                await asyncio.sleep(delay)
+                if self.rf_scope_kind != 'rtlsdr' or self.rtlsdr is None:
+                    return
+                f = self._rtlsdr_center_hz()
+                span2 = int(self.scope_span or self.cfg.get('rtlsdr_sample_rate', 1024000) or 1024000)
+                c2 = int(self._rtlsdr_center or 0)
+                margin2 = max(5000, int(span2 * 0.15))
+                if c2 > 0 and abs(f - c2) <= (span2 // 2 - margin2):
+                    return
+                self._rtlsdr_center = int(f)
+                self.rtlsdr.retune(int(f))
+                log.info("RTL-SDR: ретюн на %.0f Гц", f)
+            except asyncio.CancelledError:
+                return
+            except Exception as e:
+                log.warning("RTL-SDR retune: %s", e)
+
+        try:
+            self._rtlsdr_retune_task = self.loop.create_task(_do())
+        except Exception:
+            # fallback immediate
+            self._rtlsdr_center = freq_hz
+            try:
+                self.rtlsdr.retune(freq_hz)
+            except Exception:
+                pass
 
     def _on_rtlsdr_frame(self, center_hz, span_hz, levels):
         if self.rf_scope_kind != 'rtlsdr' or self.rtlsdr is None:
@@ -829,6 +888,11 @@ class Station:
 
     def _stop_scope(self, reason='', notify=True):
         # RTL-SDR
+        rt = self._rtlsdr_retune_task
+        self._rtlsdr_retune_task = None
+        if rt and not rt.done():
+            rt.cancel()
+        self._rtlsdr_center = 0
         rtlsdr, self.rtlsdr = self.rtlsdr, None
         if rtlsdr is not None:
             try:
@@ -900,10 +964,7 @@ class Station:
         if self.rf_scope_kind == 'rtlsdr' and self.rtlsdr is not None:
             for k in ('freq_a', 'freq'):
                 if k in diff:
-                    try:
-                        self.rtlsdr.retune(int(diff[k]))
-                    except Exception:
-                        pass
+                    self._rtlsdr_maybe_retune(diff[k])
                     break
 
     def _broadcast_hello_state(self):

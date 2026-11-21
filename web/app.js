@@ -659,9 +659,15 @@ function wfRow(row, binHz) {
 // Уровни относительные: та же палитра, но шкала частот абсолютная.
 function rfRow(row, center, span) {
   if (C.wfSrc !== 'rf' || !row.length) return;
+  const prev = wf.rf;
   wf.rf = { center, span };
   wf.rfSpan = span;
   wf.binHz = span / Math.max(1, row.length - 1);
+  if (prev && (Math.abs(prev.center - center) > Math.max(100, span * 0.005) || Math.abs(prev.span - span) > 100)) {
+    // center/span changed - old rows are misaligned
+    wf.avg = null;
+    if (wf.canvas.width) wf.canvas.getContext('2d').clearRect(0, 0, wf.canvas.width, wf.canvas.height);
+  }
   paintWfRow(row);
   renderWfMode();
 }
@@ -773,9 +779,20 @@ function drawOverlayRf(ctx, W, H, dpr) {
     ctx.beginPath(); ctx.moveTo(x, H * 0.28 - 6 * dpr); ctx.lineTo(x, H * 0.28); ctx.stroke();
     ctx.fillText((hz / 1e6).toFixed(digits), x + 3 * dpr, H * 0.28 - 4 * dpr);
   }
-  ctx.strokeStyle = 'rgba(255,211,77,.9)'; ctx.setLineDash([5 * dpr, 4 * dpr]);
-  ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = 'rgba(255,211,77,.95)'; ctx.fillText(fmtFreq(center), W / 2 + 4 * dpr, 14 * dpr);
+  // VFO-A marker (actual rig frequency)
+  const vfo = S.freq_a || 0;
+  if (vfo >= lo && vfo <= hi) {
+    const vx = X(vfo);
+    ctx.strokeStyle = 'rgba(255,211,77,.95)'; ctx.setLineDash([5 * dpr, 4 * dpr]);
+    ctx.beginPath(); ctx.moveTo(vx, 0); ctx.lineTo(vx, H); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,211,77,.95)'; ctx.fillText(fmtFreq(vfo), vx + 4 * dpr, 14 * dpr);
+  }
+  // SDR center (faint) only if different from VFO
+  if (Math.abs(center - vfo) > 1000) {
+    const cx = W / 2;
+    ctx.strokeStyle = 'rgba(120,180,255,.35)'; ctx.setLineDash([2 * dpr, 4 * dpr]);
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, H); ctx.stroke(); ctx.setLineDash([]);
+  }
 }
 function audioToRf(a) {
   const f = S.freq_a || 0, m = S.mode;
@@ -807,7 +824,11 @@ function tuneToAudio(a) {
     if (p.rf) { setFreq(Math.round(p.hz / 10) * 10); return; }
     if (C.tab === 'ft8') ft8Desk.pickWf(p.hz, 'both'); else tuneToAudio(p.hz);
   });
-  w.addEventListener('click', e => { if (C.tab === 'ft8') ft8Desk.pickWf(wfPoint(e).hz, e.shiftKey ? 'tx' : 'rx'); });
+  w.addEventListener('click', e => {
+    const p = wfPoint(e);
+    if (C.tab === 'ft8') { ft8Desk.pickWf(p.hz, e.shiftKey ? 'tx' : 'rx'); return; }
+    if (p.rf) { setFreq(Math.round(p.hz / 10) * 10); }
+  });
   w.addEventListener('contextmenu', e => {            // правый клик — декодер CW слушает эту частоту
     e.preventDefault();
     if (rfView()) return;                            // в режиме радио частота абсолютная

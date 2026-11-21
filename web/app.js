@@ -625,7 +625,7 @@ function sizeCanvases() {
 }
 // AM/FM: на водопад приходит уже продетектированный звук, несущей в нём нет. Чтобы картинка
 // была привычной (сигнал по центру), показываем звук зеркально: 0 Гц в середине, ±частоты по краям.
-const mirrored = () => C.tab !== 'ft8' && opts.fmCenter !== false && isAMFM(S.mode);
+const mirrored = () => C.tab !== 'ft8' && opts.fmCenter === true && isAMFM(S.mode);
 const rfView = () => !!(wf.rf && C.wfSrc === 'rf');
 const viewSpan = () => (rfView() ? wf.rf.span : C.span);
 function wfRow(row, binHz) {
@@ -934,9 +934,9 @@ $$('#spanSeg button').forEach(b => {
 function renderCenterBtn() {
   const b = $('#wfCenter'); if (!b) return;
   b.classList.toggle('hidden', rfView() || !isAMFM(S.mode));
-  b.classList.toggle('on', opts.fmCenter !== false);
+  b.classList.toggle('on', opts.fmCenter === true);
 }
-$('#wfCenter').onclick = () => { opts.fmCenter = opts.fmCenter === false; saveOpts(); renderCenterBtn(); updateSpan(true); };
+$('#wfCenter').onclick = () => { opts.fmCenter = opts.fmCenter !== true; saveOpts(); renderCenterBtn(); updateSpan(true); };
 renderCenterBtn();
 window.addEventListener('resize', sizeCanvases);
 

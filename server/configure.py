@@ -356,11 +356,49 @@ def settings_menu(cfg):
             sim = prompt("Режим симулятора (без трансивера)? (y/n)", 'y' if cfg.get('simulate') else 'n')
             cfg['simulate'] = str(sim).lower().startswith('y')
         elif ch == '10':
+            # RTL-SDR detection
+            rtlsdr_dev = False
+            try:
+                r = subprocess.run(['lsusb'], capture_output=True, text=True, timeout=5)
+                rtlsdr_dev = bool(re.search(r'0bda:(2838|2832)|RTL2838|RTL2832|RTL-SDR|Blog V4', r.stdout, re.I))
+            except Exception:
+                pass
+            if not rtlsdr_dev:
+                try:
+                    rtlsdr_dev = any(glob.glob('/sys/bus/usb/devices/*/product') and
+                                     any('rtl283' in open(p, errors='ignore').read().lower() for p in glob.glob('/sys/bus/usb/devices/*/product')))
+                except Exception:
+                    pass
+            rtlsdr_tool = bool(shutil.which('rtl_sdr') or shutil.which('rtl_test'))
+            print(f"  RTL-SDR: устройство={'найдено' if rtlsdr_dev else 'не найдено'}, rtl_sdr={'есть' if rtlsdr_tool else 'нет'}")
+            if (rtlsdr_dev or str(cfg.get('waterfall_source')) == 'rtlsdr') and not rtlsdr_tool and os.name != 'nt':
+                ans = prompt("Установить rtl-sdr/librtlsdr-dev сейчас? (y/n)", "y")
+                if str(ans).lower().startswith('y'):
+                    rc = os.system('sudo apt-get update && sudo apt-get install -y rtl-sdr librtlsdr-dev usbutils')
+                    if rc == 0:
+                        # blacklist DVB so userspace can access dongle after reboot
+                        bl = '/etc/modprobe.d/blacklist-rtl-sdr.conf'
+                        os.system(f"sudo sh -c \"cat > {bl} <<'BLK'\n# Yaesu Web Pult: allow rtl_sdr userspace access\nblacklist dvb_usb_rtl28xxu\nblacklist rtl2832\nblacklist rtl2830\nblacklist dvb_usb_v2\nBLK\"")
+                        print("RTL-SDR установлен. Blacklist DVB записан (действует после перезагрузки).")
+                        rtlsdr_tool = bool(shutil.which('rtl_sdr') or shutil.which('rtl_test'))
+                    else:
+                        print("Не удалось установить автоматически. Выполните: sudo apt-get install -y rtl-sdr librtlsdr-dev")
             v = choose("Источник водопада:", WF_SOURCES, cfg.get('waterfall_source'))
             if v is not None:
                 cfg['waterfall_source'] = v
             ad = prompt("Автозагрузка библиотек FTDI при обнаружении FT-710/FTDX10/FTDX101? (y/n)", 'y' if cfg.get('scope_auto_download', True) else 'n')
             cfg['scope_auto_download'] = str(ad).lower().startswith('y')
+            if rtlsdr_dev or cfg.get('waterfall_source') == 'rtlsdr':
+                try:
+                    sr = int(prompt("RTL-SDR sample rate (Hz)", str(cfg.get('rtlsdr_sample_rate', 1024000))))
+                    cfg['rtlsdr_sample_rate'] = sr
+                except Exception:
+                    pass
+                try:
+                    g = int(prompt("RTL-SDR gain (dB, 0-50)", str(cfg.get('rtlsdr_gain', 40))))
+                    cfg['rtlsdr_gain'] = max(0, min(50, g))
+                except Exception:
+                    pass
             print("Пути к LibFT4222/D2XX (пусто = авто-поиск в папке ftdi рядом с программой):")
             v = prompt("scope_libft4222", cfg.get('scope_libft4222') or '', allow_empty=True)
             if v is not None:

@@ -56,6 +56,31 @@ fi
 # Tray/GUI packages are harmless on headless but optional; install core deps explicitly.
 "${DEST}/.venv/bin/pip" install "numpy>=1.24" "pyserial>=3.5" "sounddevice>=0.4.6" "cryptography>=41"
 
+echo "==> RTL-SDR (опционально)"
+RTL_SDR_DETECTED=0
+if command -v lsusb >/dev/null 2>&1 && lsusb | grep -qiE '0bda:2838|0bda:2832|RTL2838|RTL2832|RTL-SDR|Blog V4'; then
+  RTL_SDR_DETECTED=1
+elif grep -qiE 'rtl2832|rtl2838' /sys/bus/usb/devices/*/product 2>/dev/null; then
+  RTL_SDR_DETECTED=1
+fi
+if [[ "${RTL_SDR_DETECTED}" -eq 1 ]]; then
+  echo "    Обнаружен RTL-SDR — устанавливаю rtl-sdr и библиотеки..."
+  apt-get install -y --no-install-recommends rtl-sdr librtlsdr-dev usbutils || true
+  # DVB-драйвер ядра перехватывает RTL2832U и мешает SDR; blacklist на следующую загрузку
+  BL="/etc/modprobe.d/blacklist-rtl-sdr.conf"
+  cat > "${BL}" <<'BLK'
+# Yaesu Web Pult: allow rtl_sdr userspace access instead of DVB-T driver
+blacklist dvb_usb_rtl28xxu
+blacklist rtl2832
+blacklist rtl2830
+blacklist dvb_usb_v2
+BLK
+  echo "    Blacklist DVB записан в ${BL} (действует после перезагрузки)."
+  # Если модуль сейчас загружен - выгрузить безопасно не всегда возможно; rtl_sdr сам делает detach.
+else
+  echo "    RTL-SDR не обнаружен (можно подключить позже; при следующем запуске установщика он будет настроен)."
+fi
+
 echo "==> Права доступа"
 # config/cert are runtime files; keep them writable by the service user.
 if [[ -f "${DEST}/config.json" ]]; then

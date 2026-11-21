@@ -18,6 +18,7 @@ import json
 import logging
 import logging.handlers
 import os
+import re
 import socket
 import ssl
 import struct
@@ -590,9 +591,21 @@ class Station:
         for p in ('/dev/swradio0', '/dev/rtlsdr0'):
             if os.path.exists(p):
                 return True
+        # Device present but tools may be missing (DVB driver may hide /dev/swradio0)
+        try:
+            r = subprocess.run(['lsusb'], capture_output=True, text=True, timeout=3)
+            if re.search(r'0bda:(2838|2832|2834)|RTL2838|RTL2832|RTL-SDR|Blog V4', r.stdout, re.I):
+                return True
+        except Exception:
+            pass
         return False
 
     def _start_rtlsdr(self):
+        import shutil
+        if not shutil.which('rtl_sdr'):
+            self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR найден, но rtl_sdr не установлен. Установите: sudo apt-get install -y rtl-sdr librtlsdr-dev'
+            log.warning("RTL-SDR: %s", self.scope_reason)
+            return False
         try:
             from rtlsdr_scope import RtlSdrScope
         except Exception as e:

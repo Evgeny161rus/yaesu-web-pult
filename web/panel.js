@@ -36,7 +36,7 @@ function connect() {
           sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
           if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
           sel.value = cur;
-          $('#hamlibHint').textContent = (window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'));
+          $('#hamlibHint').textContent = (window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.');
         } else if (m.error) {
           if ($('#radio_backend').value === 'hamlib') $('#hamlibHint').textContent = m.error;
         }

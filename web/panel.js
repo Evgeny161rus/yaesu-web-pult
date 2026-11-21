@@ -267,7 +267,7 @@ function renderStatus(s) {
     s.error ? '' : (window.tr?tr('panel.status.press_start','Нажмите «Запустить»'):'Нажмите «Запустить»'));
   else if (s.tx) setLamp('tx', (window.tr?tr('panel.status.tx','ПЕРЕДАЧА'):'ПЕРЕДАЧА'), s.ptt_owner ? (window.tr?tr('panel.status.by','с '):'с ') + s.ptt_owner : '');
   else if (s.connected) setLamp('ok', s.sim ? (window.tr?tr('panel.status.sim','Работает (симулятор)'):'Работает (симулятор)') : (window.tr?tr('panel.status.conn','Трансивер на связи'):'Трансивер на связи'),
-    [s.radio_name || (s.radio_id === '0840' ? 'FTX-1' : ''), s.backend === 'hamlib' ? 'Hamlib' : '', s.head === 2 ? 'Optima/SPA-1' : s.head === 1 ? 'Field' : '', s.s.fw ? (window.tr?tr('panel.status.fw','прошивка '):'прошивка ') + s.fw : ''].filter(Boolean).join(' · '));
+    [s.radio_name || (s.radio_id === '0840' ? 'FTX-1' : ''), s.backend === 'hamlib' ? 'Hamlib' : '', s.head === 2 ? 'Optima/SPA-1' : s.head === 1 ? 'Field' : '', s.fw ? (window.tr?tr('panel.status.fw','прошивка '):'прошивка ') + s.fw : ''].filter(Boolean).join(' · '));
   else setLamp('warn', (window.tr?tr('panel.status.noresp','Трансивер не отвечает'):'Трансивер не отвечает'), (window.tr?tr('panel.status.noresp.hint','Включён? Тот ли COM-порт и скорость CAT?'):'Включён? Тот ли COM-порт и скорость CAT?'));
   $('#stFreq').textContent = s.running && s.connected && s.freq ? `${fmtF(s.freq)}  ${s.mode || ''}` : '';
   const err = $('#stErr');

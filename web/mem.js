@@ -82,13 +82,13 @@ const memEd = (() => {
   function renderSide() {
     const cnt = g => Object.values(st.chans).filter(c => !c.empty && (g === '*' ? true : g === '' ? !c.group : c.group === g)).length;
     const item = (g, name, col) => `<div class="me-g${st.filterGrp === g ? ' on' : ''}" data-g="${esc(g)}">
-      <i style="background:${col}"></i><span>${esc(name)}</span><b>${cnt(g)}</b>${g && g !== '*' ? '<button class="lnk" data-a="ren" title="${(window.tr?tr('mem.grp.rename','Переименовать'):'Переименовать')}">✎</button><button class="lnk" data-a="del" title="${(window.tr?tr('mem.grp.delete','Удалить группу'):'Удалить группу')}">✕</button>' : ''}</div>`;
+      <i style="background:${col}"></i><span>${esc(name)}</span><b>${cnt(g)}</b>${g && g !== '*' ? `<button class="lnk" data-a="ren" title="${(window.tr?tr('mem.grp.rename','Переименовать'):'Переименовать')}">✎</button><button class="lnk" data-a="del" title="${(window.tr?tr('mem.grp.delete','Удалить группу'):'Удалить группу')}">✕</button>` : ''}</div>`;
     $('#meGroups').innerHTML = item('*', (window.tr?tr('mem.grp.all','Все каналы'):'Все каналы'), 'transparent') + st.groups.map(g => item(g, g, grpColor(g))).join('') + item('', (window.tr?tr('mem.grp.none','Без группы'):'Без группы'), '#3a4a5c');
     $('#meSetGrp').innerHTML = '<option value="">' + (window.tr?tr('mem.grp.for_sel','Группа для отмеченных…'):'Группа для отмеченных…') + '</option><option value="__none">' + (window.tr?tr('mem.grp.no_group','— без группы —'):'— без группы —') + '</option>' + opts(st.groups, null);
   }
   function renderInfo() {
     const dirty = allCh().filter(isDirty);
-    $('#meDirtyN').textContent = dirty.length;
+    const dirtyN = $('#meDirtyN'); if (dirtyN) dirtyN.textContent = dirty.length;
     $('#meSelInfo').textContent = (window.tr?tr('mem.selected','Отмечено: '):'Отмечено: ') + st.sel.size;
     $('#meFile').textContent = st.file ? ((window.tr?tr('mem.file','файл «'):'файл «') + st.file + '»') : (window.tr?tr('mem.file.none','не сохранено в файл'):'не сохранено в файл');
     $('#meStop').classList.toggle('hidden', !st.busy);

@@ -45,6 +45,7 @@
     const scope = root || document;
     if (!scope || !scope.querySelectorAll) return;
     scope.querySelectorAll('[data-i18n]').forEach(el => {
+      if (el.hasAttribute('data-i18n-dynamic')) return; // текст управляется приложением/состоянием
       const k = el.getAttribute('data-i18n');
       if (!k) return;
       const v = t(k);

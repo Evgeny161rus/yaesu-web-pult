@@ -22,16 +22,16 @@
 <div id="login" class="overlay hidden">
   <div class="dialog">
     <h2 data-i18n="login.title">Yaesu Web Pult</h2>
-    <p id="loginMsg" class="muted" data-i18n="login.msg">Введите пароль сервера</p>
+    <p id="loginMsg" data-i18n-dynamic class="muted" data-i18n="login.msg">Введите пароль сервера</p>
     <input id="loginPw" type="password" autocomplete="current-password" placeholder="Пароль" data-i18n-placeholder="login.placeholder">
     <button id="loginBtn" class="btn primary wide" data-i18n="login.btn">Войти</button>
   </div>
 </div>
 
 <header class="topbar">
-  <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" class="muted small" data-i18n="rig.nolink">нет связи</span></div>
+  <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" data-i18n-dynamic class="muted small" data-i18n="rig.nolink">нет связи</span></div>
   <div class="top-actions">
-    <button id="btnAudio" class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
+    <button id="btnAudio" data-i18n-dynamic class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
     <label class="vol" title="Громкость на этом устройстве" data-i18n-title="top.vol.title"><input id="volume" type="range" min="0" max="200" value="100"></label>
     <button id="btnKeys" class="btn chip icon" title="Горячие клавиши (?)" data-i18n="top.keys" data-i18n-title="top.keys.title">⌨</button>
@@ -250,7 +250,7 @@
     <div class="tab" id="tab-cw">
       <!-- ===== Декодер ===== -->
       <div class="cw-bar">
-        <button class="btn" id="cwDecBtn" title="Расшифровка азбуки Морзе из звука приёма" data-i18n="cw.dec_on" data-i18n-title="cw.dec_on.title">● Декодер</button>
+        <button class="btn" id="cwDecBtn" data-i18n-dynamic title="Расшифровка азбуки Морзе из звука приёма" data-i18n="cw.dec_on" data-i18n-title="cw.dec_on.title">● Декодер</button>
         <div class="seg" id="cwAlpha"><button data-v="lat" class="on">LAT</button><button data-v="cyr" data-i18n="cw.alpha.cyr">КИР</button></div>
         <label class="mini" title="Частота тона: авто — сам находит самый сильный сигнал в полосе. Правый клик по водопаду — задать вручную" data-i18n-title="cw.tone.title"><span data-i18n="cw.tone">Тон</span>
           <select id="cwFreq"><option value="0" data-i18n="cw.tone.auto">авто</option></select></label>
@@ -271,13 +271,13 @@
           <button class="btn small" id="cwAnalyze" title="Разобрать последнее принятое (клавиша I)" data-i18n="cw.analyze" data-i18n-title="cw.analyze.title">Разобрать</button>
           <button class="btn small" id="cwReply" title="Составить ответ по шаблону (клавиша Y)" data-i18n="cw.reply" data-i18n-title="cw.reply.title">📝 Ответ</button>
         </div>
-        <div id="cwAiBody" class="cw-ai-body muted small" data-i18n="cw.ai.body">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
+        <div id="cwAiBody" data-i18n-dynamic class="cw-ai-body muted small" data-i18n="cw.ai.body">Принятое после паузы разбирается автоматически: позывной, RST, имя, QTH, стандартные сокращения Q-кодов и аббревиатуры CW.</div>
       </div>
 
       <!-- ===== Передача ===== -->
       <div class="cw-tx">
         <div class="cw-proposal hidden" id="cwProposal">
-          <div><b id="cwPropTitle" data-i18n="cw.prop.title">Предложенный ответ</b> <span class="muted small" id="cwPropRu"></span></div>
+          <div><b id="cwPropTitle" data-i18n-dynamic data-i18n="cw.prop.title">Предложенный ответ</b> <span class="muted small" id="cwPropRu"></span></div>
           <div class="mono cw-prop-text" id="cwPropText"></div>
           <div class="btn-row"><button class="btn primary" id="cwPropSend" data-i18n="cw.prop.send">▶ Передать</button><button class="btn" id="cwPropEdit" data-i18n="cw.prop.edit">Изменить</button><button class="btn" id="cwPropCancel" data-i18n="cw.prop.cancel">Отменить</button><span class="cw-count mono" id="cwPropCount"></span></div>
         </div>
@@ -332,7 +332,7 @@
       <!-- ===== RTTY ===== -->
       <div id="dgRtty">
         <div class="cw-bar">
-          <button class="btn" id="rtDecBtn" data-i18n="rt.dec_off">○ Декодер выкл</button>
+          <button class="btn" id="rtDecBtn" data-i18n-dynamic data-i18n="rt.dec_off">○ Декодер выкл</button>
           <label class="mini"><span data-i18n="rt.baud">Скорость</span><select id="rtBaud"><option>45.45</option><option>50</option><option>75</option><option>100</option></select></label>
           <label class="mini"><span data-i18n="rt.shift">Сдвиг</span><select id="rtShift"><option>170</option><option>200</option><option>425</option><option>450</option><option>850</option></select></label>
           <label class="mini" title="Середина между тонами mark и space, Гц звука" data-i18n-title="rt.center.title"><span data-i18n="rt.center">Центр</span><input type="number" id="rtFc" class="num" min="500" max="2900" step="5" value="2210"></label>
@@ -362,7 +362,7 @@
       <!-- ===== WEFAX ===== -->
       <div id="dgFax" class="hidden">
         <div class="cw-bar">
-          <button class="btn" id="fxDecBtn" data-i18n="fx.dec_off">○ Приём выкл</button>
+          <button class="btn" id="fxDecBtn" data-i18n-dynamic data-i18n="fx.dec_off">○ Приём выкл</button>
           <label class="mini"><span data-i18n="fx.lpm">Строк/мин</span><select id="fxLpm"><option>60</option><option>90</option><option selected>120</option><option>240</option></select></label>
           <label class="mini"><span data-i18n="fx.ioc">IOC</span><select id="fxIoc"><option selected>576</option><option>288</option></select></label>
           <label class="chk mini" title="Начинать по тону старта и заканчивать по тону стопа" data-i18n-title="fx.auto.title"><input type="checkbox" id="fxAuto" checked> <span data-i18n="fx.auto">авто старт/стоп</span></label>
@@ -444,7 +444,7 @@
 
     <div class="tab" id="tab-ft8">
       <div class="cw-bar ft-bar">
-        <button class="btn" id="ftOnBtn" data-i18n="ft8.off">○ Приём выкл</button>
+        <button class="btn" id="ftOnBtn" data-i18n-dynamic data-i18n="ft8.off">○ Приём выкл</button>
         <div class="seg" id="ftModeSw"><button data-v="FT8" class="on">FT8</button><button data-v="FT4">FT4</button></div>
         <label class="mini"><span data-i18n="ft8.band">Диапазон</span><select id="ftBand"></select></label>
         <span class="ft-clock mono" id="ftClock">--:--:--</span>
@@ -474,12 +474,12 @@
         </div>
       </div>
       <div class="ft-side">
-      <div class="ft-status"><span class="ft-txmsg mono" id="ftTxMsg">—</span> <span class="ft-qso small" id="ftQso" data-i18n="ft8.qso">Связи нет</span></div>
+      <div class="ft-status"><span class="ft-txmsg mono" id="ftTxMsg">—</span> <span class="ft-qso small" id="ftQso" data-i18n-dynamic data-i18n="ft8.qso">Связи нет</span></div>
       <div class="ft-ctl">
         <div class="ft-box ft-btns">
-          <button class="btn" id="ftEnable" title="Разрешить передачу (Enable TX)" data-i18n-title="ft8.enable.title" data-i18n="ft8.enable">Включить TX</button>
+          <button class="btn" id="ftEnable" data-i18n-dynamic title="Разрешить передачу (Enable TX)" data-i18n-title="ft8.enable.title" data-i18n="ft8.enable">Включить TX</button>
           <button class="btn danger" id="ftHalt" title="Прекратить передачу и сбросить связь (Halt TX)" data-i18n-title="ft8.halt.title" data-i18n="ft8.halt">Стоп TX</button>
-          <button class="btn" id="ftTune" title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC" data-i18n-title="ft8.tune.title" data-i18n="ft8.tune">Настройка</button>
+          <button class="btn" id="ftTune" data-i18n-dynamic title="Несущая на частоте TX до 30 с — для тюнера и уровня ALC" data-i18n-title="ft8.tune.title" data-i18n="ft8.tune">Настройка</button>
           <button class="btn primary" id="ftCq" data-i18n="ft8.cq">CQ</button>
           <label class="chk mini" title="Автоматическое проведение связи (Auto Seq)" data-i18n-title="ft8.autoseq.title"><input type="checkbox" id="ftAutoSeq" checked> <span data-i18n="ft8.autoseq">Авто-послед.</span></label>
           <label class="chk mini" title="После каждой связи снова звать CQ" data-i18n-title="ft8.autocq.title"><input type="checkbox" id="ftAutoCq"> <span data-i18n="ft8.autocq">Авто-CQ</span></label>
@@ -503,7 +503,7 @@
           <div class="ft-log mono small" id="ftLog"><span class="muted" data-i18n="ft8.log.empty">Пока нет</span></div>
         </div>
         <div class="ft-heard">
-          <div class="ft-head"><b data-i18n="ft8.heard">Меня слышат</b> <span class="muted small" id="ftHeardInfo" data-i18n="ft8.heard.info">PSK Reporter, 30 мин</span>
+          <div class="ft-head"><b data-i18n="ft8.heard">Меня слышат</b> <span class="muted small" id="ftHeardInfo" data-i18n-dynamic data-i18n="ft8.heard.info">PSK Reporter, 30 мин</span>
             <span class="spacer"></span>
             <a class="btn small" id="ftHeardMap" target="_blank" rel="noopener" title="Карта на pskreporter.info" data-i18n-title="ft8.heard.map.title" data-i18n="ft8.heard.map">Карта</a>
             <button class="btn small" id="ftHeardBtn" title="Обновить (не чаще раза в 5 минут)" data-i18n="ft8.heard.update" data-i18n-title="ft8.heard.update.title">Обновить</button></div>
@@ -528,7 +528,7 @@
             <label class="chk mini"><input type="checkbox" id="ftAlertSnd"> <span data-i18n="ft8.alert_snd">со звуком</span></label>
           </div>
           <div class="ft-worked">
-            <b data-i18n="ft8.worked">Сработанное</b> <span class="muted small" id="ftWorkedInfo" data-i18n="ft8.worked.none">—</span>
+            <b data-i18n="ft8.worked">Сработанное</b> <span class="muted small" id="ftWorkedInfo" data-i18n-dynamic data-i18n="ft8.worked.none">—</span>
             <p class="muted small" data-i18n="ft8.worked.hint">Чтобы подсветка «новая страна / новый позывной» учитывала весь ваш журнал, загрузите его экспорт в ADIF (в HAMLOG: экспорт журнала в ADIF). Связи, проведённые в пульте, добавляются сами.</p>
             <div class="btn-row">
               <label class="btn small ft-file"><span data-i18n="ft8.import">Загрузить ADIF…</span><input type="file" id="ftAdifFile" accept=".adi,.adif,.txt" multiple hidden></label>
@@ -588,7 +588,7 @@
         <p class="muted small" id="audioStat"></p>
         <label><span data-i18n="opts.mic_label">Микрофон этого устройства</span> <select id="optMic"><option value="" data-i18n="opts.mic.default">По умолчанию</option></select></label>
         <div class="row"><button class="btn small" id="micTest" title="Включить микрофон без передачи и проверить уровень" data-i18n="opts.mic_test" data-i18n-title="opts.mic_test.hint">🎙 Проверить микрофон</button>
-          <span class="muted small" id="micTestRes" data-i18n="opts.mic_test_default">Передатчик при проверке не включается</span></div>
+          <span class="muted small" id="micTestRes" data-i18n-dynamic data-i18n="opts.mic_test_default">Передатчик при проверке не включается</span></div>
         <label><span data-i18n="opts.mic_gain">Усиление микрофона, %</span> <input id="optMicGain" type="range" min="10" max="400" value="100"><span id="optMicGainV">100</span></label>
         <details class="opt-more"><summary data-i18n="opts.mic_proc">Обработка микрофона в браузере и приглушение приёма</summary>
           <p class="muted small" data-i18n="opts.mic_proc_hint">Для эфира лучше всего всё выключено: обработка браузера рассчитана на звонки и портит голос (булькает, «съедает» слоги). Включайте эхоподавление, только если микрофон слышит колонки.</p>
@@ -622,7 +622,7 @@
 <footer class="pttbar">
   <div class="mic-meter" title="Уровень микрофона" data-i18n-title="ptt.mic_title"><i id="micLevel"></i></div>
   <button id="ptt" class="ptt" data-i18n="ptt.btn">PTT</button>
-  <div class="ptt-info"><span id="pttState" class="muted small" data-i18n="ptt.info">Микрофон — по PTT</span><span id="txTimer" class="small"></span></div>
+  <div class="ptt-info"><span id="pttState" data-i18n-dynamic class="muted small" data-i18n="ptt.info">Микрофон — по PTT</span><span id="txTimer" class="small"></span></div>
 </footer>
 
 <div id="help" class="overlay hidden">
@@ -637,7 +637,7 @@
 <div id="memEd" class="memed hidden" role="dialog" aria-label="Редактор каналов памяти" data-i18n-aria-label="me.aria">
   <div class="me-top">
     <b class="me-title" data-i18n="me.title">Каналы памяти трансивера</b>
-    <span class="muted small" id="meFile" data-i18n="me.nofile">не сохранено</span>
+    <span class="muted small" id="meFile" data-i18n-dynamic data-i18n="me.nofile">не сохранено</span>
     <span class="spacer"></span>
     <button class="btn" id="meClose" title="Закрыть (изменения сохранятся как черновик)" data-i18n-title="me.close_title">✕</button>
   </div>
@@ -649,7 +649,7 @@
       <label class="chk mini" title="Номер тона CTCSS / код DCS: трансивер на мгновение переключается на каждый канал с тоном" data-i18n-title="me.tones_title"><input type="checkbox" id="meTones" checked> <span data-i18n="me.tones">тоны</span></label>
     </div>
     <div class="me-grp">
-      <button class="btn tx-on" id="meWrite" title="Записать в трансивер изменённые каналы" data-i18n-title="me.write.title" data-i18n="me.write">⬆ Записать изменённые <span id="meDirtyN">0</span></button>
+      <button class="btn tx-on" id="meWrite" title="Записать в трансивер изменённые каналы" data-i18n-title="me.write.title"><span data-i18n="me.write">⬆ Записать изменённые</span> <span id="meDirtyN">0</span></button>
       <button class="btn" id="meWriteSel" title="Записать в трансивер отмеченные каналы" data-i18n-title="me.write_sel.title" data-i18n="me.write_sel">⬆ Отмеченные</button>
       <button class="btn danger hidden" id="meStop" data-i18n="me.stop">■ Стоп</button>
     </div>
@@ -694,7 +694,7 @@
         </table>
       </div>
       <div class="me-bottom">
-        <span class="muted small" id="meSelInfo" data-i18n="me.sel_info">Отмечено: 0</span>
+        <span class="muted small" id="meSelInfo" data-i18n-dynamic data-i18n="me.sel_info">Отмечено: 0</span>
         <select id="meSetGrp"><option value="" data-i18n="me.setgrp_opt">Группа для отмеченных…</option></select>
         <button class="btn small" id="meAdd" title="Новый канал с частотой и видом текущего VFO" data-i18n-title="me.add_title" data-i18n="me.add"> + Канал</button>
         <button class="btn small" id="meFromVfo" title="Частоту и вид текущего VFO — в первый отмеченный (или первый пустой) канал" data-i18n-title="me.from_vfo_title" data-i18n="me.from_vfo">← с VFO</button>

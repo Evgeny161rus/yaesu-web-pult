@@ -158,10 +158,15 @@
         <p class="hint" data-i18n="panel.scope.hint">Для трансиверов с аппаратным панорамным приёмником. Читает интерфейс FTDI <b>FT4222 A</b> (не CAT-порт). Библиотеки FTDI не входят в поставку: скачайте LibFT4222/D2XX с сайта FTDI и положите их в папку <code>ftdi</code> рядом с программой (или укажите пути ниже). Без библиотек/поддерживаемого трансивера пульт автоматически использует обычный звуковой водопад. На реальном оборудовании пока не проверялось.</p>
         <label class="field"><span data-i18n="panel.scope.source">Источник водопада</span>
           <select id="waterfall_source">
-            <option value="auto" data-i18n="panel.scope.src.auto">Авто — USB-scope, если настроен, иначе звук</option>
+            <option value="auto" data-i18n="panel.scope.src.auto">Авто — USB-scope/RTL-SDR, если доступен, иначе звук</option>
             <option value="scope" data-i18n="panel.scope.src.scope">Только USB-scope (иначе ошибка в журнале)</option>
-            <option value="audio" data-i18n="panel.scope.src.audio">Только звук (USB-scope не использовать)</option>
+            <option value="rtlsdr" data-i18n="panel.scope.src.rtlsdr">Только RTL-SDR (внешний USB SDR)</option>
+            <option value="audio" data-i18n="panel.scope.src.audio">Только звук (USB-scope/RTL-SDR не использовать)</option>
           </select></label>
+        <div class="row" id="rtlsdrFields">
+          <label class="field"><span data-i18n="panel.rtlsdr.sr">RTL-SDR sample rate, Гц</span><input id="rtlsdr_sample_rate" type="number" min="250000" max="3200000" step="1000" value="1024000"></label>
+          <label class="field"><span data-i18n="panel.rtlsdr.gain">RTL-SDR gain, dB</span><input id="rtlsdr_gain" type="number" min="0" max="50" step="1" value="40"></label>
+        </div>
         <label class="field"><span data-i18n="panel.scope.lib4222">LibFT4222 (путь к .dll / .so, можно пусто при авто-поиске в папке ftdi)</span><input id="scope_libft4222" type="text" data-i18n-placeholder="panel.scope.lib4222.ph" placeholder="авто: ./ftdi/LibFT4222-64.dll или ./ftdi/libft4222.so"></label>
         <label class="field"><span data-i18n="panel.scope.d2xx">D2XX (ftd2xx.dll / libftd2xx, если требуется отдельно)</span><input id="scope_d2xx" type="text" data-i18n-placeholder="panel.scope.d2xx.ph" placeholder="обычно рядом с LibFT4222; можно оставить пустым"></label>
         <label class="field"><span data-i18n="panel.scope.serial">Серийный номер SPI-интерфейса (необязательно)</span><input id="scope_serial" type="text" data-i18n-placeholder="panel.scope.serial.ph" placeholder="Пусто — открыть «FT4222 A» по описанию"></label>

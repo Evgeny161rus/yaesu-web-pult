@@ -29,7 +29,7 @@ C:\Users\bayan\Documents\yaesu-web-pult-release
 - ✅ CHANGELOG.md
 - ✅ CONTRIBUTING.md
 - ✅ START-HERE-RU.md
-- ✅ BUILD_INSTRUCTIONS.md
+- ✅ ../BUILD_INSTRUCTIONS.md
 - ✅ READY_TO_PUBLISH.md
 - ✅ docs/THEMES.md
 - ✅ docs/ARCHITECTURE.md

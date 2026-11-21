@@ -40,11 +40,8 @@ worked_import.json
 tools/hamlib/
 tools/hamlib-*.zip
 
-# FTDI scope libraries (proprietary, download separately) - keep README
-ftdi/*.dll
-ftdi/*.so
-ftdi/*.so.*
-ftdi/*.dylib
+# FTDI scope libraries (bundled for out-of-box USB scope support)
+# Keep ftdi/README.txt and platform binaries tracked in repo.
 ftdi/build/
 
 # IDE

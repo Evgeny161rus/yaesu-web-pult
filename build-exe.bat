@@ -22,17 +22,16 @@ echo.
 echo [3/3] Сборка EXE файла...
 set FTDIDATA=
 if exist ftdi set FTDIDATA=--add-data "ftdi;ftdi"
-python -m PyInstaller --noconfirm --clean --onefile --windowed --name Yaesu-Web-Pult ^
+python -m PyInstaller --noconfirm --clean --onefile --windowed --noupx --name Yaesu-Web-Pult ^
     --icon web\icon.ico ^
     --add-data "web;web" ^
     --add-data "server\menu_ftx1.json;." ^
     --add-data "cty.dat;." ^
     %FTDIDATA% ^
-    --hidden-import numpy ^
-    --hidden-import numpy.core ^
-    --hidden-import numpy.core.multiarray ^
     --hidden-import pystray._win32 ^
     --hidden-import _ftx ^
+    --hidden-import hamlib_backend ^
+    --collect-all numpy ^
     --collect-all sounddevice ^
     --version-file version_info.txt ^
     --paths server server\main.py

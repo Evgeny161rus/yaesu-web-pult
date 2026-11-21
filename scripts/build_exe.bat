@@ -1,26 +1,4 @@
 @echo off
-chcp 65001 >nul
-rem Legacy: сборка FTX1-Pult.exe (venv) — перенесено в scripts/, запуск из корня репозитория.
-cd /d "%~dp0\.."
-where python >nul 2>nul || (echo Нужен Python 3.11+ с python.org & pause & exit /b 1)
-if not exist ".venv\Scripts\python.exe" python -m venv .venv || goto :err
-".venv\Scripts\python.exe" -m pip install --upgrade pip >nul
-".venv\Scripts\python.exe" -m pip install -r requirements.txt pyinstaller setuptools || goto :err
-rem Справочник стран для FT8
-powershell -NoProfile -Command "try { Invoke-WebRequest https://www.country-files.com/cty/cty.dat -OutFile server\cty.dat -TimeoutSec 60 } catch { Set-Content server\cty.dat '' }"
-rem Модуль FT8 (нужен Microsoft C++ Build Tools)
-pushd server & "..\.venv\Scripts\python.exe" setup_ftx.py build_ext --inplace & popd
-set FTDIDATA=
-if exist ftdi set FTDIDATA=--add-data "ftdi;ftdi"
-".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --onefile --windowed --name FTX1-Pult ^
-  --icon web\icon.ico --add-data "web;web" --add-data "server\menu_ftx1.json;." --add-data "server\cty.dat;." %FTDIDATA% ^
-  --hidden-import pystray._win32 --hidden-import _ftx --hidden-import hamlib_backend --paths server server\main.py || goto :err
-echo.
-echo Готово: dist\FTX1-Pult.exe
-echo Положите его в любую папку — config.json и журнал появятся рядом.
-pause
-exit /b 0
-:err
-echo Ошибка сборки.
-pause
-exit /b 1
+rem Wrapper for backward compatibility. Canonical script: build-exe.bat
+cd /d "%~dp0.."
+call build-exe.bat

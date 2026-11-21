@@ -18,7 +18,7 @@
 - ✅ `docs/THEMES.md` — полная документация по темам
 - ✅ `docs/THEME_PREVIEWS.md` — визуальные примеры
 - ✅ `docs/DESIGN_UPDATE.md` — обзор обновлений
-- ✅ `THEMES_README.md` — краткая инструкция
+- ✅ `../THEMES_README.md` — краткая инструкция
 - ✅ `DESIGN_UPDATE_SUMMARY.md` — сводка панели управления
 
 ---
@@ -111,7 +111,7 @@ yaesu-web-pult/
 │   ├── THEME_PREVIEWS.md         ← Визуальные примеры
 │   ├── DESIGN_UPDATE.md          ← Обзор обновлений
 │   └── ARCHITECTURE.md           ← Архитектура
-├── THEMES_README.md              ← Краткая инструкция
+├── ../THEMES_README.md           ← Краткая инструкция
 └── DESIGN_UPDATE_SUMMARY.md      ← Сводка панели
 ```
 
@@ -223,7 +223,7 @@ yaesu-web-pult/
 ## 🎓 Обучающие материалы
 
 ### Для пользователей:
-- `THEMES_README.md` — быстрый старт
+- `../THEMES_README.md` — быстрый старт
 - `docs/THEME_PREVIEWS.md` — визуальные примеры
 - `docs/THEMES.md` — полная документация
 

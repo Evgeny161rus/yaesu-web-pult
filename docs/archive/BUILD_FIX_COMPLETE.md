@@ -22,7 +22,7 @@
 
 ### 2. Кроссплатформенная совместимость ✅
 
-**Создан документ:** `CROSS_PLATFORM_COMPATIBILITY.md`
+**Создан документ:** `../CROSS_PLATFORM_COMPATIBILITY.md`
 
 **Подтверждено:**
 - ✅ **Windows:** Все функции работают
@@ -138,7 +138,7 @@ fc0bb9f Final AI cleanup: Remove last AI button from RTTY
 
 ## 📚 Документация добавлена
 
-1. **CROSS_PLATFORM_COMPATIBILITY.md** - полная таблица совместимости
+1. **../CROSS_PLATFORM_COMPATIBILITY.md** - полная таблица совместимости
 2. **GITHUB_PUBLISHED.md** - инструкции по публикации
 3. **Обновлен build.yml** - исправлена сборка EXE
 

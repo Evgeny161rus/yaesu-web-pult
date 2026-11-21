@@ -625,7 +625,7 @@ function sizeCanvases() {
 }
 // AM/FM: на водопад приходит уже продетектированный звук, несущей в нём нет. Чтобы картинка
 // была привычной (сигнал по центру), показываем звук зеркально: 0 Гц в середине, ±частоты по краям.
-const mirrored = () => opts.fmCenter !== false && isAMFM(S.mode);
+const mirrored = () => C.tab !== 'ft8' && opts.fmCenter !== false && isAMFM(S.mode);
 const rfView = () => !!(wf.rf && C.wfSrc === 'rf');
 const viewSpan = () => (rfView() ? wf.rf.span : C.span);
 function wfRow(row, binHz) {

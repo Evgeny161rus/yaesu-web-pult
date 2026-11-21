@@ -205,8 +205,23 @@ class RtlSdrScope:
                 now = time.monotonic()
                 if avg_n >= 2 and (now - last_emit) >= emit_every:
                     last_emit = now
+                    # suppress DC spike (center bin + neighbors)
+                    frame_db = avg.copy()
+                    cbin = len(frame_db) // 2
+                    lo = max(0, cbin - 3)
+                    hi = min(len(frame_db), cbin + 4)
+                    nlo = max(0, lo - 3)
+                    nhi = min(len(frame_db), hi + 3)
+                    ref = []
+                    if nlo < lo:
+                        ref.extend(frame_db[nlo:lo])
+                    if hi < nhi:
+                        ref.extend(frame_db[hi:nhi])
+                    if ref:
+                        fill = float(np.median(ref))
+                        frame_db[lo:hi] = fill
                     # map db to 0..255
-                    vals = np.clip((avg - db_floor) * (255.0 / (db_ceil - db_floor)), 0, 255).astype(np.uint8)
+                    vals = np.clip((frame_db - db_floor) * (255.0 / (db_ceil - db_floor)), 0, 255).astype(np.uint8)
                     levels = vals.tobytes()
                     if not reported_live:
                         reported_live = True

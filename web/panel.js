@@ -82,7 +82,10 @@ function init(m) {
   $('#cw_port').value = cfg.cw_port || '';
   $('#password').value = cfg.password || '';
   if (m.win) $('#autostart').checked = !!m.autostart; else $('#autostartRow').classList.add('hidden');
-  if (m.headless) $('#btnQuit').classList.add('hidden');
+  if (m.headless) {
+    $('#btnQuit').classList.add('hidden');
+    $('#btnFolder').classList.add('hidden');
+  }
   renderUrls(m.urls);
   $('#log').innerHTML = ''; m.log.forEach(addLog);
   pttPortVisibility(); pwHint();

@@ -518,9 +518,10 @@ class Station:
         lib, _ = self._resolve_scope_libs()
         if lib:
             return
-        # Trigger when a scope-capable radio is detected, when explicitly forced,
-        # or when user requires scope mode (they clearly want it).
-        if not (force or mode == 'scope' or self._scope_capable_radio()):
+        # Trigger always when libs missing: user may need scope for FT-710/101/10
+        # regardless of currently detected radio. Download is best-effort; bundled
+        # libs in ftdi/ are found by _resolve_scope_libs before we get here.
+        if not force and mode == 'audio':
             return
         def run():
             try:
@@ -1168,11 +1169,11 @@ class Station:
         return u
 
     def status(self):
-        # When a scope-capable radio is detected, trigger opt-in FTDI lib download if needed.
+        # Ensure FTDI libs are present regardless of transceiver.
         try:
             if self.running and self.cfg.get('scope_auto_download') and not self.scope_live():
                 lib, _ = self._resolve_scope_libs()
-                if not lib and self._scope_capable_radio():
+                if not lib:
                     self._maybe_scope_autodownload()
         except Exception:
             pass
@@ -1630,6 +1631,13 @@ async def amain(args):
     st = Station(cfg, force_sim=args.sim)
     st.headless = bool(getattr(args, 'headless', False))
     await st.init()
+    # Ensure FTDI scope libs are present regardless of transceiver (bundled in ftdi/).
+    lib, d2xx = st._resolve_scope_libs()
+    if lib:
+        log.info("FTDI scope библиотеки: %s%s", lib, f" + {d2xx}" if d2xx else "")
+    else:
+        log.warning("FTDI scope библиотеки не найдены — пытаюсь установить/скачать автоматически")
+        st._maybe_scope_autodownload(force=True)
 
     app = WebServer(web_dir(), st.handle_ws, {'/api/ping': lambda: ('text/plain', b'YAESU-WEB-PULT ' + VERSION.encode())},
                     {'/rec/': st.rec_download})

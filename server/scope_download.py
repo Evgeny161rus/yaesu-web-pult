@@ -190,5 +190,5 @@ def download_scope_libs(base_dir, log=print):
             msg += ' (замечания: %s)' % '; '.join(errors[-2:])
         return True, msg, files
     msg = 'Не удалось автоматически скачать библиотеки FTDI. ' + '; '.join(errors[-4:])
-    msg += '. Скачайте вручную: https://ftdichip.com/software-examples/ft4222h-software-examples/ и https://ftdichip.com/drivers/d2xx-drivers/ и положите файлы в папку ftdi.'
+    msg += '. Возможно, нужен VPN. Скачайте вручную: https://ftdichip.com/software-examples/ft4222h-software-examples/ и https://ftdichip.com/drivers/d2xx-drivers/ и положите файлы в папку ftdi.'
     return False, msg, files

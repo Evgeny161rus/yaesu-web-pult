@@ -8,7 +8,7 @@ if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
   exit 1
 fi
 
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DEST="/opt/yaesu-web-pult"
 USER_NAME="yaesu"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
@@ -26,7 +26,8 @@ apt-get install -y --no-install-recommends \
   python3-dev build-essential \
   libportaudio2 portaudio19-dev libasound2-dev \
   libffi-dev libssl-dev \
-  ca-certificates curl git
+  ca-certificates curl git \
+  libhamlib-utils
 
 echo "==> Пользователь сервиса ${USER_NAME}"
 if ! id -u "${USER_NAME}" >/dev/null 2>&1; then

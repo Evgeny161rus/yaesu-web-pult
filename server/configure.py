@@ -10,8 +10,12 @@ It edits config.json used by server/main.py, can auto-detect ports/audio,
 and can probe the transceiver (CAT ID) to identify model/capabilities.
 No GUI required.
 """
+import glob
 import json
 import os
+import re
+import shutil
+import subprocess
 import sys
 
 # Paths: same layout logic as server/main.py

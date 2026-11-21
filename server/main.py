@@ -85,6 +85,11 @@ DEFAULT_CFG = {
     "scope_d2xx": "",
     "scope_serial": "",
     "scope_auto_download": True,
+    "sdr_driver": "rtlsdr",
+    "sdr_device": "",
+    "sdr_format": "",
+    "sdr_sample_rate": 1024000,
+    "sdr_gain": 40,
     "simulate": False,
     "my_call": "",
     "my_name": "",
@@ -589,43 +594,77 @@ class Station:
         lib, _ = self._resolve_scope_libs()
         return bool(lib)
 
+    def _sdr_driver(self):
+        drv = str(self.cfg.get('sdr_driver') or '').lower().strip()
+        src = str(self.cfg.get('waterfall_source') or 'auto').lower()
+        if drv in ('rtlsdr', 'rx_sdr', 'soapysdr', 'hackrf', 'airspy', 'sdrplay', 'custom', 'sdr'):
+            if drv == 'soapysdr':
+                return 'rx_sdr'
+            return drv
+        if src in ('rtlsdr', 'sdr'):
+            return 'rtlsdr'
+        return 'rtlsdr'
+
     def _rtlsdr_available(self):
+        return self._sdr_available()
+
+    def _sdr_available(self):
         import shutil
-        if shutil.which('rtl_sdr') or shutil.which('rtl_power'):
-            return True
-        for p in ('/dev/swradio0', '/dev/rtlsdr0'):
-            if os.path.exists(p):
+        drv = self._sdr_driver()
+        if drv == 'rtlsdr':
+            if shutil.which('rtl_sdr') or shutil.which('rtl_power'):
                 return True
-        # Device present but tools may be missing (DVB driver may hide /dev/swradio0)
-        try:
-            r = subprocess.run(['lsusb'], capture_output=True, text=True, timeout=3)
-            if re.search(r'0bda:(2838|2832|2834)|RTL2838|RTL2832|RTL-SDR|Blog V4', r.stdout, re.I):
+            for p in ('/dev/swradio0', '/dev/rtlsdr0'):
+                if os.path.exists(p):
+                    return True
+            try:
+                r = subprocess.run(['lsusb'], capture_output=True, text=True, timeout=3)
+                if re.search(r'0bda:(2838|2832|2834)|RTL2838|RTL2832|RTL-SDR|Blog V4', r.stdout, re.I):
+                    return True
+            except Exception:
+                pass
+            return False
+        if drv in ('rx_sdr', 'hackrf', 'airspy', 'sdrplay', 'sdr'):
+            exe = 'rx_sdr' if drv != 'hackrf' else 'hackrf_transfer'
+            if shutil.which(exe):
                 return True
-        except Exception:
-            pass
-        return False
+            # SoapySDR devices may be present even if we only check later
+            if shutil.which('SoapySDRUtil'):
+                return True
+            return False
+        return bool(shutil.which(drv))
 
     def _start_rtlsdr(self):
+        return self._start_sdr()
+
+    def _start_sdr(self):
         import shutil
-        if not shutil.which('rtl_sdr'):
-            self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR найден, но rtl_sdr не установлен. Установите: sudo apt-get install -y rtl-sdr librtlsdr-dev'
-            log.warning("RTL-SDR: %s", self.scope_reason)
+        drv = self._sdr_driver()
+        exe = 'rtl_sdr' if drv == 'rtlsdr' else ('hackrf_transfer' if drv == 'hackrf' else 'rx_sdr')
+        if not shutil.which(exe):
+            hint = 'sudo apt-get install -y rtl-sdr librtlsdr-dev' if drv == 'rtlsdr' else f'установите {exe} (SoapySDR tools / драйвер устройства)'
+            self.scope_state, self.scope_reason = 'unavailable', f'{drv}: {exe} не найден. {hint}'
+            log.warning("SDR: %s", self.scope_reason)
             return False
         try:
             from rtlsdr_scope import RtlSdrScope
         except Exception as e:
-            self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR: ' + str(e).split('\n')[0]
-            log.warning("RTL-SDR недоступен: %s", self.scope_reason)
+            self.scope_state, self.scope_reason = 'unavailable', f'SDR: {str(e).splitlines()[0]}'
+            log.warning("SDR недоступен: %s", self.scope_reason)
             return False
         center = self._rtlsdr_center_hz()
-        sr = int(self.cfg.get('rtlsdr_sample_rate', 1024000) or 1024000)
-        gain = int(self.cfg.get('rtlsdr_gain', 40) or 40)
+        sr = int(self.cfg.get('sdr_sample_rate', self.cfg.get('rtlsdr_sample_rate', 1024000)) or 1024000)
+        gain = int(self.cfg.get('sdr_gain', self.cfg.get('rtlsdr_gain', 40)) or 40)
+        device = str(self.cfg.get('sdr_device', '') or '')
+        fmt = str(self.cfg.get('sdr_format', '') or ('cu8' if drv == 'rtlsdr' else 'cf32'))
+
+        label = drv.upper()
 
         def on_frame(center_hz, span_hz, levels):
             try:
                 self.loop.call_soon_threadsafe(self._on_rtlsdr_frame, center_hz, span_hz, levels)
             except Exception as e:
-                log.error("RTL-SDR call_soon_threadsafe failed: %s", e)
+                log.error("%s call_soon_threadsafe failed: %s", label, e)
 
         def on_status(state, reason, span):
             try:
@@ -634,11 +673,11 @@ class Station:
                 pass
 
         try:
-            sdr = RtlSdrScope(on_frame=on_frame, on_status=on_status)
+            sdr = RtlSdrScope(on_frame=on_frame, on_status=on_status, driver=drv, device=device, fmt=fmt)
             sdr.start(center_hz=center, sample_rate=sr, gain=gain, fft=1024)
         except Exception as e:
             self.scope_state, self.scope_reason = 'unavailable', str(e).split('\n')[0]
-            log.warning("RTL-SDR не запустился: %s", self.scope_reason)
+            log.warning("%s не запустился: %s", label, self.scope_reason)
             return False
         self.rtlsdr = sdr
         self.rf_scope_kind = 'rtlsdr'
@@ -648,7 +687,7 @@ class Station:
         self._rtlsdr_retune_task = None
         self.scope_state, self.scope_reason = 'starting', ''
         self.scope_span = sr
-        log.info("RTL-SDR: запускаю на %.0f Гц, span %.0f Гц", center, sr)
+        log.info("%s: запускаю на %.0f Гц, span %.0f Гц (device=%s)", label, center, sr, device or 'auto')
         return True
 
     def _rtlsdr_center_hz(self):
@@ -768,7 +807,7 @@ class Station:
                 self.broadcast({'t': 'wf_scope', 'state': 'unavailable', 'reason': reason or 'RTL-SDR недоступен'})
 
     async def _rtlsdr_hotswap_loop(self):
-        """Watch for RTL-SDR unplug/replug while service is running."""
+        """Watch for external SDR unplug/replug while service is running."""
         import shutil
         while not self.quit_event.is_set():
             try:
@@ -797,18 +836,18 @@ class Station:
                                     c.wf_source = 'audio'
                         continue
                     # worker died - clear and allow restart below
-                    log.info("RTL-SDR: worker остановлен, пробую переподключить")
+                    log.info("SDR: worker остановлен, пробую переподключить")
                     try:
                         self.rtlsdr.stop()
                     except Exception:
                         pass
                     self.rtlsdr = None
                     self.rf_scope_kind = ''
-                    self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR отключён'
+                    self.scope_state, self.scope_reason = 'unavailable', 'SDR отключён'
                 # not running - try to start when device appears and mode wants it
                 if present and self.running:
                     if mode == 'rtlsdr' or (mode == 'auto' and not self._ft4222_available()):
-                        log.info("RTL-SDR: обнаружено устройство, пробую запустить (hotswap)")
+                        log.info("SDR: обнаружено устройство, пробую запустить (hotswap)")
                         self._start_rtlsdr()
             except Exception as e:
                 log.debug("RTL-SDR hotswap watch: %s", e)
@@ -1214,7 +1253,8 @@ class Station:
             new = {k: v for k, v in (m.get('cfg') or {}).items() if k in DEFAULT_CFG}
             radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'cat_port', 'cat_baud', 'ptt_method', 'ptt_port', 'audio_in_name', 'audio_out_name', 'audio_api',
                           'audio_in_index', 'audio_out_index', 'simulate',
-                          'waterfall_source', 'scope_libft4222', 'scope_d2xx', 'scope_serial', 'scope_auto_download')
+                          'waterfall_source', 'scope_libft4222', 'scope_d2xx', 'scope_serial', 'scope_auto_download',
+                          'sdr_driver', 'sdr_device', 'sdr_format', 'sdr_sample_rate', 'sdr_gain')
             need_restart = self.running and any(new.get(k, self.cfg.get(k)) != self.cfg.get(k) for k in radio_keys)
             port_change = any(new.get(k, self.cfg.get(k)) != self.cfg.get(k) for k in ('http_port', 'https_port'))
             self.cfg.update(new)

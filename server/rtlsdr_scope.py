@@ -1,22 +1,29 @@
-"""RTL-SDR RF waterfall source for Yaesu Web Pult.
+"""External SDR RF waterfall source for Yaesu Web Pult.
+
+Supports RTL-SDR (rtl_sdr, CU8) and SoapySDR-compatible receivers via rx_sdr
+(CF32/CS16/CU8) such as HackRF, Airspy, SDRplay, LimeSDR, etc.
 
 Produces the same binary \x04 frames as the FT4222 scope:
   b'\x04' + <QIH little-endian center_hz, span_hz, n> + levels[n]
-
-Levels are unsigned 8-bit dB-scaled power (0..255), like other RF spectrum frames.
-Runs rtl_sdr as a subprocess and computes FFT with numpy. No pyrtlsdr dependency.
 """
 from __future__ import annotations
-import logging, math, struct, subprocess, threading, time
+import logging, shutil, subprocess, threading, time
 import numpy as np
 
 log = logging.getLogger(__name__)
 
 
 class RtlSdrScope:
-    def __init__(self, on_frame, on_status=None):
+    """Generic subprocess-based SDR scope. Name kept for backward compat."""
+
+    def __init__(self, on_frame, on_status=None, driver='rtlsdr', device='',
+                 fmt='cu8', cmd=None):
         self.on_frame = on_frame      # on_frame(center_hz:int, span_hz:int, levels:bytes)
         self.on_status = on_status    # on_status(state:str, reason:str, span:int)
+        self.driver = (driver or 'rtlsdr').lower()
+        self.device = str(device or '')
+        self.fmt = (fmt or self._default_fmt()).lower()
+        self.cmd_template = cmd  # optional custom command list template
         self._stop = threading.Event()
         self._thread = None
         self._proc = None
@@ -26,6 +33,9 @@ class RtlSdrScope:
         self._gain = 40
         self._fft = 1024
         self._running = False
+
+    def _default_fmt(self):
+        return 'cu8' if self.driver == 'rtlsdr' else 'cf32'
 
     @property
     def running(self):
@@ -39,7 +49,7 @@ class RtlSdrScope:
         self._gain = int(gain)
         self._fft = max(256, min(4096, int(fft)))
         self._running = True
-        self._thread = threading.Thread(target=self._run, name='rtlsdr-scope', daemon=True)
+        self._thread = threading.Thread(target=self._run, name=f'{self.driver}-scope', daemon=True)
         self._thread.start()
 
     def retune(self, center_hz: int):
@@ -48,7 +58,6 @@ class RtlSdrScope:
             if abs(center_hz - self._center) < 500:
                 return False
             self._center = center_hz
-        # restart process to retune
         self._kill_proc()
         return True
 
@@ -84,7 +93,40 @@ class RtlSdrScope:
             try:
                 cb(state, reason, span)
             except Exception:
-                log.exception("rtlsdr on_status failed")
+                log.exception("sdr on_status failed")
+
+    def _build_cmd(self, center, sr, gain):
+        if self.cmd_template:
+            # template tokens: {freq} {sr} {gain} {device}
+            cmd = [str(x).format(freq=center, sr=sr, gain=gain, device=self.device) for x in self.cmd_template]
+            return cmd
+        if self.driver == 'rtlsdr':
+            cmd = ['rtl_sdr', '-f', str(center), '-s', str(sr), '-g', str(gain)]
+            if self.device:
+                cmd += ['-d', str(self.device)]
+            cmd += ['-']
+            return cmd
+        if self.driver in ('rx_sdr', 'soapysdr', 'sdr'):
+            # rx_sdr (SoapySDR tools) - supports many SDRs
+            fmt = {'cu8': 'CU8', 'cs16': 'CS16', 'cf32': 'CF32'}.get(self.fmt, 'CF32')
+            cmd = ['rx_sdr', '-f', str(center), '-s', str(sr), '-F', fmt, '-g', str(gain)]
+            if self.device:
+                cmd += ['-d', str(self.device)]
+            cmd += ['-']
+            return cmd
+        if self.driver == 'hackrf':
+            # hackrf_transfer outputs signed 8-bit IQ by default
+            cmd = ['hackrf_transfer', '-r', '-', '-f', str(center), '-s', str(sr),
+                   '-a', '1', '-l', str(gain), '-g', str(gain)]
+            if self.device:
+                cmd += ['-d', str(self.device)]
+            return cmd
+        # fallback: treat as rtl_sdr-compatible
+        cmd = [self.driver, '-f', str(center), '-s', str(sr), '-g', str(gain), '-']
+        return cmd
+
+    def _driver_label(self):
+        return self.driver or 'sdr'
 
     def _run(self):
         consec_err = 0
@@ -95,13 +137,13 @@ class RtlSdrScope:
             sr = self._sr
             gain = self._gain
             fft_n = self._fft
-            cmd = ['rtl_sdr', '-f', str(center), '-s', str(sr), '-g', str(gain), '-']
+            cmd = self._build_cmd(center, sr, gain)
             started = time.monotonic()
             reported_live = False
             try:
                 self._status('starting', '', sr)
                 proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                        bufsize=fft_n * 8)
+                                        bufsize=fft_n * 16)
                 self._proc = proc
             except Exception as e:
                 consec_err += 1
@@ -129,7 +171,6 @@ class RtlSdrScope:
                         pass
                 try:
                     stderr = proc.stderr.read().decode('utf-8', errors='replace') if proc.stderr else ''
-                    # keep last meaningful line
                     for ln in reversed(stderr.splitlines()):
                         ln = ln.strip()
                         if ln and 'Reading samples' not in ln and 'Allocating' not in ln:
@@ -142,39 +183,58 @@ class RtlSdrScope:
 
             if self._stop.is_set() or not self._running:
                 break
-            # quick exit without going live -> likely device missing/unplugged
             if not reported_live and (time.monotonic() - started) < 5.0:
                 quick_fails += 1
             else:
                 quick_fails = 0
             if quick_fails >= 3:
-                self._status('unavailable', err_tail or 'RTL-SDR устройство недоступно', sr)
-                self._stop.wait(5.0)  # hotswap: keep trying, slower
+                self._status('unavailable', err_tail or f'{self._driver_label()} устройство недоступно', sr)
+                self._stop.wait(5.0)
                 continue
-            self._status('starting', err_tail or 'перезапуск RTL-SDR', sr)
+            self._status('starting', err_tail or f'перезапуск {self._driver_label()}', sr)
             self._stop.wait(1.5)
 
         self._running = False
         self._status('off', '', 0)
 
+    def _bytes_per_sample(self):
+        return {'cu8': 2, 'cs8': 2, 'cs16': 4, 'cf32': 8}.get(self.fmt, 2)
+
+    def _parse_iq(self, raw, n_samples):
+        fmt = self.fmt
+        if fmt == 'cu8':
+            iq = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
+            iq = (iq - 127.5) / 127.5
+            return iq[0::2] + 1j * iq[1::2]
+        if fmt == 'cs8':
+            iq = np.frombuffer(raw, dtype=np.int8).astype(np.float32) / 127.5
+            return iq[0::2] + 1j * iq[1::2]
+        if fmt == 'cs16':
+            iq = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+            return iq[0::2] + 1j * iq[1::2]
+        if fmt == 'cf32':
+            iq = np.frombuffer(raw, dtype=np.complex64)
+            return iq.astype(np.complex64, copy=False)
+        # default cu8
+        iq = np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
+        iq = (iq - 127.5) / 127.5
+        return iq[0::2] + 1j * iq[1::2]
+
     def _read_loop(self, proc, center, sr, fft_n):
-        # cu8: I,Q,I,Q... unsigned bytes, convert to complex float
-        bytes_per_frame = fft_n * 2
-        need = bytes_per_frame * 4  # accumulate 4 FFTs per emitted frame
+        bps = self._bytes_per_sample()
+        bytes_per_frame = fft_n * bps
         buf = bytearray()
         avg = None
         avg_n = 0
-        emit_every = 0.08  # ~12.5 fps
+        emit_every = 0.08
         last_emit = 0.0
         window = np.hanning(fft_n).astype(np.float32)
-        # floor/scale for dB -> 0..255
         db_floor = -100.0
         db_ceil = -20.0
         span = sr
         reported_live = False
 
         while not self._stop.is_set() and self._running:
-            # if center changed, break to restart
             with self._lock:
                 if abs(self._center - center) >= 500:
                     return reported_live
@@ -188,12 +248,10 @@ class RtlSdrScope:
             while len(buf) >= bytes_per_frame:
                 frame_bytes = bytes(buf[:bytes_per_frame])
                 del buf[:bytes_per_frame]
-                iq = np.frombuffer(frame_bytes, dtype=np.uint8).astype(np.float32)
-                iq = (iq - 127.5) / 127.5
-                c = iq[0::2] + 1j * iq[1::2]
+                c = self._parse_iq(frame_bytes, fft_n)
                 if len(c) < fft_n:
                     break
-                c = c[:fft_n] * window
+                c = np.asarray(c[:fft_n], dtype=np.complex64) * window
                 spec = np.fft.fftshift(np.fft.fft(c))
                 pwr = (np.abs(spec) ** 2) / (fft_n * fft_n + 1e-12)
                 db = 10.0 * np.log10(pwr + 1e-20)
@@ -205,7 +263,6 @@ class RtlSdrScope:
                 now = time.monotonic()
                 if avg_n >= 2 and (now - last_emit) >= emit_every:
                     last_emit = now
-                    # suppress DC spike (center bin + neighbors)
                     frame_db = avg.copy()
                     cbin = len(frame_db) // 2
                     lo = max(0, cbin - 3)
@@ -218,18 +275,20 @@ class RtlSdrScope:
                     if hi < nhi:
                         ref.extend(frame_db[hi:nhi])
                     if ref:
-                        fill = float(np.median(ref))
-                        frame_db[lo:hi] = fill
-                    # map db to 0..255
+                        frame_db[lo:hi] = float(np.median(ref))
                     vals = np.clip((frame_db - db_floor) * (255.0 / (db_ceil - db_floor)), 0, 255).astype(np.uint8)
                     levels = vals.tobytes()
                     if not reported_live:
                         reported_live = True
-                        log.info("RTL-SDR: первый кадр, center=%s span=%s bins=%s", center, span, len(levels))
+                        log.info("%s: первый кадр, center=%s span=%s bins=%s", self._driver_label(), center, span, len(levels))
                         self._status('live', '', span)
                     try:
                         self.on_frame(int(center), int(span), levels)
                     except Exception:
-                        log.exception("rtlsdr on_frame failed")
+                        log.exception("sdr on_frame failed")
                     avg_n = 0
         return reported_live
+
+
+# Backward compat
+ExtSdrScope = RtlSdrScope

@@ -46,10 +46,11 @@ PTT_METHODS = [
 ]
 CW_METHODS = [("cat", "Команда CAT"), ("dtr", "Линия DTR"), ("rts", "Линия RTS")]
 WF_SOURCES = [
-    ("auto", "Авто: USB-scope/RTL-SDR если доступен, иначе звук"),
+    ("auto", "Авто: USB-scope/SDR если доступен, иначе звук"),
     ("audio", "Только звук"),
     ("scope", "Только USB-scope (ошибка в лог, если недоступен)"),
     ("rtlsdr", "RTL-SDR (внешний USB SDR приёмник)"),
+    ("sdr", "Внешний SDR (rx_sdr/SoapySDR: HackRF, Airspy, SDRplay, и др.)"),
 ]
 
 
@@ -356,7 +357,7 @@ def settings_menu(cfg):
             sim = prompt("Режим симулятора (без трансивера)? (y/n)", 'y' if cfg.get('simulate') else 'n')
             cfg['simulate'] = str(sim).lower().startswith('y')
         elif ch == '10':
-            # RTL-SDR detection
+            # SDR detection
             rtlsdr_dev = False
             try:
                 r = subprocess.run(['lsusb'], capture_output=True, text=True, timeout=5)
@@ -365,22 +366,20 @@ def settings_menu(cfg):
                 pass
             if not rtlsdr_dev:
                 try:
-                    rtlsdr_dev = any(glob.glob('/sys/bus/usb/devices/*/product') and
-                                     any('rtl283' in open(p, errors='ignore').read().lower() for p in glob.glob('/sys/bus/usb/devices/*/product')))
+                    rtlsdr_dev = any('rtl283' in open(p, errors='ignore').read().lower() for p in glob.glob('/sys/bus/usb/devices/*/product'))
                 except Exception:
                     pass
-            rtlsdr_tool = bool(shutil.which('rtl_sdr') or shutil.which('rtl_test'))
-            print(f"  RTL-SDR: устройство={'найдено' if rtlsdr_dev else 'не найдено'}, rtl_sdr={'есть' if rtlsdr_tool else 'нет'}")
-            if (rtlsdr_dev or str(cfg.get('waterfall_source')) == 'rtlsdr') and not rtlsdr_tool and os.name != 'nt':
+            tools_found = {n: bool(shutil.which(n)) for n in ('rtl_sdr', 'rx_sdr', 'hackrf_transfer', 'SoapySDRUtil')}
+            print(f"  RTL-SDR: устройство={'найдено' if rtlsdr_dev else 'не найдено'}, rtl_sdr={'есть' if tools_found['rtl_sdr'] else 'нет'}")
+            print(f"  SoapySDR/rx_sdr={'есть' if tools_found['rx_sdr'] else 'нет'}, hackrf_transfer={'есть' if tools_found['hackrf_transfer'] else 'нет'}")
+            if (rtlsdr_dev or str(cfg.get('waterfall_source')) == 'rtlsdr') and not tools_found['rtl_sdr'] and os.name != 'nt':
                 ans = prompt("Установить rtl-sdr/librtlsdr-dev сейчас? (y/n)", "y")
                 if str(ans).lower().startswith('y'):
                     rc = os.system('sudo apt-get update && sudo apt-get install -y rtl-sdr librtlsdr-dev usbutils')
                     if rc == 0:
-                        # blacklist DVB so userspace can access dongle after reboot
                         bl = '/etc/modprobe.d/blacklist-rtl-sdr.conf'
                         os.system(f"sudo sh -c \"cat > {bl} <<'BLK'\n# Yaesu Web Pult: allow rtl_sdr userspace access\nblacklist dvb_usb_rtl28xxu\nblacklist rtl2832\nblacklist rtl2830\nblacklist dvb_usb_v2\nBLK\"")
                         print("RTL-SDR установлен. Blacklist DVB записан (действует после перезагрузки).")
-                        rtlsdr_tool = bool(shutil.which('rtl_sdr') or shutil.which('rtl_test'))
                     else:
                         print("Не удалось установить автоматически. Выполните: sudo apt-get install -y rtl-sdr librtlsdr-dev")
             v = choose("Источник водопада:", WF_SOURCES, cfg.get('waterfall_source'))
@@ -388,15 +387,22 @@ def settings_menu(cfg):
                 cfg['waterfall_source'] = v
             ad = prompt("Автозагрузка библиотек FTDI при обнаружении FT-710/FTDX10/FTDX101? (y/n)", 'y' if cfg.get('scope_auto_download', True) else 'n')
             cfg['scope_auto_download'] = str(ad).lower().startswith('y')
-            if rtlsdr_dev or cfg.get('waterfall_source') == 'rtlsdr':
+            if cfg.get('waterfall_source') in ('rtlsdr', 'sdr', 'auto'):
+                drv = choose("SDR драйвер:", [("rtlsdr","RTL-SDR (rtl_sdr)"),("rx_sdr","rx_sdr / SoapySDR (HackRF/Airspy/SDRplay/...)"),("hackrf","hackrf_transfer")], cfg.get('sdr_driver','rtlsdr'))
+                if drv is not None:
+                    cfg['sdr_driver'] = drv
+                v = prompt("SDR device (пусто=auto, для rx_sdr напр. driver=hackrf,serial=...)", cfg.get('sdr_device',''), allow_empty=True)
+                if v is not None: cfg['sdr_device'] = v.strip()
                 try:
-                    sr = int(prompt("RTL-SDR sample rate (Hz)", str(cfg.get('rtlsdr_sample_rate', 1024000))))
-                    cfg['rtlsdr_sample_rate'] = sr
+                    sr = int(prompt("SDR sample rate (Hz)", str(cfg.get('sdr_sample_rate', cfg.get('rtlsdr_sample_rate', 1024000)))))
+                    cfg['sdr_sample_rate'] = sr
+                    cfg['rtlsdr_sample_rate'] = sr  # backward compat
                 except Exception:
                     pass
                 try:
-                    g = int(prompt("RTL-SDR gain (dB, 0-50)", str(cfg.get('rtlsdr_gain', 40))))
-                    cfg['rtlsdr_gain'] = max(0, min(50, g))
+                    g = int(prompt("SDR gain (dB, 0-50)", str(cfg.get('sdr_gain', cfg.get('rtlsdr_gain', 40)))))
+                    cfg['sdr_gain'] = max(0, min(50, g))
+                    cfg['rtlsdr_gain'] = cfg['sdr_gain']
                 except Exception:
                     pass
             print("Пути к LibFT4222/D2XX (пусто = авто-поиск в папке ftdi рядом с программой):")

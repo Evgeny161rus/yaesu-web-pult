@@ -75,8 +75,10 @@ function init(m) {
   fillDevices();
   for (const k of ['cat_baud', 'ptt_method', 'max_tx_seconds', 'http_port', 'https_port', 'waterfall_source']) $('#' + k).value = cfg[k] ?? '';
   for (const k of ['scope_libft4222', 'scope_d2xx', 'scope_serial']) $('#' + k).value = cfg[k] || '';
-  $('#rtlsdr_sample_rate').value = cfg.rtlsdr_sample_rate ?? 1024000;
-  $('#rtlsdr_gain').value = cfg.rtlsdr_gain ?? 40;
+  $('#sdr_driver').value = cfg.sdr_driver ?? 'rtlsdr';
+  $('#sdr_device').value = cfg.sdr_device ?? '';
+  $('#rtlsdr_sample_rate').value = cfg.sdr_sample_rate ?? cfg.rtlsdr_sample_rate ?? 1024000;
+  $('#rtlsdr_gain').value = cfg.sdr_gain ?? cfg.rtlsdr_gain ?? 40;
   for (const k of ['simulate', 'auto_connect', 'open_panel', 'open_pult', 'scope_auto_download']) $('#' + k).checked = !!cfg[k];
   $('#cw_method').value = cfg.cw_method || 'cat';
   $('#cw_port').value = cfg.cw_port || '';
@@ -185,6 +187,10 @@ function collect() {
     scope_d2xx: $('#scope_d2xx').value.trim(),
     scope_serial: $('#scope_serial').value.trim(),
     scope_auto_download: $('#scope_auto_download').checked,
+    sdr_driver: $('#sdr_driver').value || 'rtlsdr',
+    sdr_device: $('#sdr_device').value.trim(),
+    sdr_sample_rate: Math.max(250000, Math.min(3200000, +$('#rtlsdr_sample_rate').value || 1024000)),
+    sdr_gain: Math.max(0, Math.min(50, +$('#rtlsdr_gain').value || 40)),
     rtlsdr_sample_rate: Math.max(250000, Math.min(3200000, +$('#rtlsdr_sample_rate').value || 1024000)),
     rtlsdr_gain: Math.max(0, Math.min(50, +$('#rtlsdr_gain').value || 40)),
   };

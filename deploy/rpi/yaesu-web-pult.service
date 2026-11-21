@@ -1,0 +1,28 @@
+[Unit]
+Description=Yaesu Web Pult (headless remote control for Yaesu transceivers)
+Documentation=https://github.com/Evgeny161rus/yaesu-web-pult
+Wants=network-online.target sound.target
+After=network-online.target sound.target
+
+[Service]
+Type=simple
+# Dedicated non-root user created by deploy/install-rpi.sh
+User=yaesu
+Group=yaesu
+# dialout: access to /dev/ttyUSB* (CAT). audio: optional, for ALSA/USB sound devices.
+SupplementaryGroups=dialout audio
+WorkingDirectory=/opt/yaesu-web-pult
+ExecStart=/opt/yaesu-web-pult/.venv/bin/python server/main.py --headless --console
+Restart=on-failure
+RestartSec=5
+# Give the USB/serial/audio stack time to settle after boot
+ExecStartPre=/bin/sleep 2
+# Log to journald (view with: journalctl -u yaesu-web-pult -f)
+StandardOutput=journal
+StandardError=journal
+# Do not let a stuck native library (e.g. FTDI scope) take the service down silently forever
+TimeoutStopSec=15
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target

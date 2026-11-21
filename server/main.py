@@ -325,6 +325,8 @@ class Station:
         self.scope_good = 0
         self.scope_dl = None              # background download thread (ftdi libs)
         self.scope_dl_msg = ''
+        self.rf_scope_kind = ''            # '', 'ft4222', 'rtlsdr'
+        self.rtlsdr = None
         self.ptt_owner = None
         self.ptt_since = 0.0
         self.ptt_alive = 0.0
@@ -479,7 +481,9 @@ class Station:
                 'downloading': dl, 'dl_msg': self.scope_dl_msg}
 
     def scope_live(self):
-        return self.scope_state == 'live' and self.scope is not None
+        if self.scope_state == 'live' and self.scope is not None:
+            return True
+        return self.scope_state == 'live' and self.rf_scope_kind == 'rtlsdr' and self.rtlsdr is not None
 
     _SCOPE_RADIO_IDS = {'0800', '0761', '0681', '0682'}  # FT-710, FTDX10, FTDX101D/MP
 
@@ -575,24 +579,144 @@ class Station:
                     break
         return lib, d2xx
 
-    def _start_scope(self):
-        """Open the optional FT4222 scope interface; never disturb CAT/audio.
+    def _ft4222_available(self):
+        lib, _ = self._resolve_scope_libs()
+        return bool(lib)
 
-        ``waterfall_source`` is ``auto`` (try when libraries/device available, else audio),
-        ``scope`` (require it and log failures) or ``audio`` (never try).
+    def _rtlsdr_available(self):
+        import shutil
+        if shutil.which('rtl_sdr') or shutil.which('rtl_power'):
+            return True
+        for p in ('/dev/swradio0', '/dev/rtlsdr0'):
+            if os.path.exists(p):
+                return True
+        return False
+
+    def _start_rtlsdr(self):
+        try:
+            from rtlsdr_scope import RtlSdrScope
+        except Exception as e:
+            self.scope_state, self.scope_reason = 'unavailable', 'RTL-SDR: ' + str(e).split('\n')[0]
+            log.warning("RTL-SDR недоступен: %s", self.scope_reason)
+            return False
+        center = self._rtlsdr_center_hz()
+        sr = int(self.cfg.get('rtlsdr_sample_rate', 1024000) or 1024000)
+        gain = int(self.cfg.get('rtlsdr_gain', 40) or 40)
+
+        def on_frame(center_hz, span_hz, levels):
+            try:
+                self.loop.call_soon_threadsafe(self._on_rtlsdr_frame, center_hz, span_hz, levels)
+            except Exception as e:
+                log.error("RTL-SDR call_soon_threadsafe failed: %s", e)
+
+        def on_status(state, reason, span):
+            try:
+                self.loop.call_soon_threadsafe(self._on_rtlsdr_status, state, reason, span)
+            except RuntimeError:
+                pass
+
+        try:
+            sdr = RtlSdrScope(on_frame=on_frame, on_status=on_status)
+            sdr.start(center_hz=center, sample_rate=sr, gain=gain, fft=1024)
+        except Exception as e:
+            self.scope_state, self.scope_reason = 'unavailable', str(e).split('\n')[0]
+            log.warning("RTL-SDR не запустился: %s", self.scope_reason)
+            return False
+        self.rtlsdr = sdr
+        self.rf_scope_kind = 'rtlsdr'
+        self.scope_state, self.scope_reason = 'starting', ''
+        self.scope_span = sr
+        log.info("RTL-SDR: запускаю на %.0f Гц, span %.0f Гц", center, sr)
+        return True
+
+    def _rtlsdr_center_hz(self):
+        # Follow current VFO-A frequency when available
+        try:
+            f = 0
+            if self.rig and getattr(self.rig, 'state', None):
+                f = int(self.rig.state.get('freq_a') or self.rig.state.get('freq') or 0)
+            if f > 0:
+                return f
+        except Exception:
+            pass
+        return int(self.cfg.get('rtlsdr_center_hz', 14100000) or 14100000)
+
+    def _on_rtlsdr_frame(self, center_hz, span_hz, levels):
+        if self.rf_scope_kind != 'rtlsdr' or self.rtlsdr is None:
+            log.warning("RTL-SDR frame dropped: kind=%s rtlsdr=%s", self.rf_scope_kind, bool(self.rtlsdr))
+            return
+        self.scope_span = int(span_hz)
+        self.scope_last_good = time.monotonic()
+        if self.scope_state != 'live':
+            self.scope_state, self.scope_reason = 'live', ''
+            log.info("RTL-SDR водопад работает: %d точек, обзор %.0f Гц", len(levels), span_hz)
+            self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
+        now = time.monotonic()
+        if now - self.scope_last_sent >= 0.05:
+            self.scope_last_sent = now
+            n = len(levels)
+            pkt = b'\x04' + struct.pack('<QIH', int(center_hz), int(span_hz), n) + levels
+            for c in self.clients:
+                if c.authed and c.wf and c.wf_source == 'rf':
+                    c.ws.send_bin(pkt)
+
+    def _on_rtlsdr_status(self, state, reason, span):
+        if self.rf_scope_kind != 'rtlsdr':
+            return
+        if state == 'live':
+            was = self.scope_state
+            self.scope_state, self.scope_reason = 'live', ''
+            if span:
+                self.scope_span = int(span)
+            if was != 'live':
+                log.info("RTL-SDR водопад работает: span %.0f Гц", self.scope_span)
+            self.broadcast({'t': 'wf_scope', 'state': 'live', 'reason': '', 'span': self.scope_span})
+        elif state in ('starting', 'unavailable', 'off'):
+            if state == 'unavailable':
+                log.warning("RTL-SDR: %s", reason)
+            if self.scope_state != 'live':
+                self.scope_state = state
+                self.scope_reason = reason or ''
+
+    def _start_scope(self):
+        """Open optional RF waterfall source: FT4222 scope or RTL-SDR.
+
+        ``waterfall_source``: auto|scope|rtlsdr|audio.
         Any failure leaves the audio waterfall untouched.
         """
         self._stop_scope('', notify=False)
         mode = str(self.cfg.get('waterfall_source') or 'auto').lower()
-        if mode not in ('auto', 'scope'):
-            mode = 'audio'
-        if mode == 'audio' or self.sim or (self.rig is not None and is_hamlib(self.rig)):
+        if mode not in ('auto', 'scope', 'rtlsdr', 'sdr', 'audio'):
+            mode = 'auto'
+        if mode == 'sdr':
+            mode = 'rtlsdr'
+        if mode == 'audio' or self.sim:
             self.scope_state, self.scope_reason = 'off', ''
+            return
+
+        # RTL-SDR path (external SDR)
+        if mode == 'rtlsdr' or (mode == 'auto' and self._rtlsdr_available() and not self._ft4222_available()):
+            if self._start_rtlsdr():
+                return
+            if mode == 'rtlsdr':
+                return
+            # auto fell through -> try ft4222 below only if available
+
+        # FT4222 path (Yaesu USB scope)
+        if self.rig is not None and is_hamlib(self.rig):
+            if mode in ('scope',):
+                self.scope_state, self.scope_reason = 'unavailable', 'USB-scope недоступен в режиме Hamlib'
+            else:
+                self.scope_state, self.scope_reason = 'off', ''
             return
         explicit = bool(str(self.cfg.get('scope_libft4222') or '').strip())
         lib, d2xx = self._resolve_scope_libs()
         serial = str(self.cfg.get('scope_serial') or '').strip()
         if not lib:
+            # auto: if no ft4222 libs but rtlsdr exists, try it
+            if mode == 'auto' and self._rtlsdr_available():
+                if self._start_rtlsdr():
+                    return
             self.scope_state = 'unavailable'
             self.scope_reason = 'библиотека LibFT4222 не найдена (положите в папку ftdi рядом с программой или укажите путь в настройках)'
             self._maybe_scope_autodownload()
@@ -612,6 +736,8 @@ class Station:
                 log.warning("Широкий водопад недоступен: %s", self.scope_reason)
             else:
                 log.info("USB-scope не используется: %s", self.scope_reason)
+            if mode == 'auto' and self._rtlsdr_available():
+                self._start_rtlsdr()
             return
         self.scope = transport
         self.scope_stop = threading.Event()
@@ -689,6 +815,14 @@ class Station:
                         c.ws.send_bin(pkt)
 
     def _stop_scope(self, reason='', notify=True):
+        # RTL-SDR
+        rtlsdr, self.rtlsdr = self.rtlsdr, None
+        if rtlsdr is not None:
+            try:
+                rtlsdr.stop()
+            except Exception:
+                pass
+        # FT4222
         transport, self.scope = self.scope, None
         stop, self.scope_stop = self.scope_stop, None
         thread, self.scope_thread = self.scope_thread, None
@@ -701,6 +835,7 @@ class Station:
                 transport.close()
             except Exception:
                 pass
+        self.rf_scope_kind = ''
         self.scope_frame = None
         self.scope_span = 0
         was = self.scope_state
@@ -749,6 +884,14 @@ class Station:
         self.broadcast({'t': 'state', 's': diff})
         if 'connected' in diff or 'tx' in diff:
             self.push_status()
+        if self.rf_scope_kind == 'rtlsdr' and self.rtlsdr is not None:
+            for k in ('freq_a', 'freq'):
+                if k in diff:
+                    try:
+                        self.rtlsdr.retune(int(diff[k]))
+                    except Exception:
+                        pass
+                    break
 
     def _broadcast_hello_state(self):
         if self.rig:

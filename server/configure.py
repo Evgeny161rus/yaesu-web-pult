@@ -46,9 +46,10 @@ PTT_METHODS = [
 ]
 CW_METHODS = [("cat", "Команда CAT"), ("dtr", "Линия DTR"), ("rts", "Линия RTS")]
 WF_SOURCES = [
-    ("auto", "Авто: USB-scope если доступен, иначе звук"),
+    ("auto", "Авто: USB-scope/RTL-SDR если доступен, иначе звук"),
     ("audio", "Только звук"),
     ("scope", "Только USB-scope (ошибка в лог, если недоступен)"),
+    ("rtlsdr", "RTL-SDR (внешний USB SDR приёмник)"),
 ]
 
 

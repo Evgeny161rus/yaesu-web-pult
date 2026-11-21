@@ -115,6 +115,10 @@ def load_cfg():
         old = cfg.pop('audio_device', None)
         if old and not cfg.get('audio_in_name') and old != 'USB Audio CODEC':
             cfg['audio_in_name'] = old
+        # 1051 = FTX-1 in Hamlib 4.7+, but Q900 in 4.6.x - never use as Hamlib model.
+        if int(cfg.get('hamlib_model', 0)) == 1051:
+            cfg['hamlib_model'] = 1049
+            log.warning("config: hamlib_model 1051 заменён на 1049 (FTX-1 использует native backend)")
     except FileNotFoundError:
         pass
     except Exception as e:

@@ -30,9 +30,9 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 - **Other Yaesu Models**: Basic support via Hamlib
 
 ### 📊 Waterfall & Spectrum
-- **3 Methods**: Audio DSP (all models), Scope data (FT-710/FTDX10), Hamlib + audio
-- **Auto/Manual Span**: Auto (by filter width) or 3-24 kHz
-- **Double-click Tuning**: Click on signal to tune
+- **Sources**: Audio DSP (all models), FT4222 USB-scope (FT-710/FTDX10/FTDX101, experimental), external **RTL-SDR** (`rtl_sdr`) around current VFO
+- **Auto/Manual Span**: Auto (by filter width) or 3-24 kHz for audio; RTL-SDR uses configurable sample rate (default ~1.024 MHz)
+- **Click/Double-click Tuning**: Click on signal to tune (RF mode) / double-click in audio mode
 - **Filter Display**: Visual representation of bandwidth, IF SHIFT, notch
 
 ### 📡 Digital Modes

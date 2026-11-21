@@ -70,7 +70,9 @@ def parse_caps(text):
 
 
 class RigError(RuntimeError):
-    pass
+    def __init__(self, msg, code=None):
+        super().__init__(msg)
+        self.code = code
 
 
 class HamlibRig:
@@ -109,7 +111,7 @@ class HamlibRig:
                     if line.startswith('RPRT '):
                         code = int(line.split()[1])
                         if code:
-                            raise RigError(f'{command.split()[0]}: Hamlib error {code}')
+                            raise RigError(f'{command.split()[0]}: Hamlib error {code}', code=code)
                         return values
                     if ': ' in line:
                         key, val = line.split(': ', 1)
@@ -158,7 +160,16 @@ class HamlibRig:
                 except OSError:
                     await asyncio.sleep(.1)
             else: raise TimeoutError('rigctld не запустился за 6 секунд')
-            if self.caps['ptt']: await self.request('set_ptt 0')
+            if self.caps['ptt']:
+                try:
+                    await self.request('set_ptt 0')
+                except RigError as e:
+                    if e.code in (-11, -4, -9):
+                        log.warning("PTT недоступен при старте Hamlib: %s", e)
+                        self.caps['ptt'] = False
+                        self.caps['get_ptt'] = False
+                    else:
+                        raise
             await self._poll()
             self._set({'connected': True, 'radio_name': self.caps['name'], 'radio_caps': self.caps,
                        'backend': 'hamlib', 'backend_error': ''})
@@ -175,8 +186,13 @@ class HamlibRig:
             self._set({'mode': MODE_TO_UI.get(values['Mode'], values['Mode']),
                        'bandwidth_hz': int(values['Passband'])})
         if self.caps.get('get_ptt'):
-            values = await self.request('get_ptt')
-            self._set({'tx': int(values['PTT']) != 0})
+            try:
+                values = await self.request('get_ptt')
+                self._set({'tx': int(values['PTT']) != 0})
+            except RigError as e:
+                log.warning("get_ptt недоступен: %s", e)
+                self.caps['get_ptt'] = False
+                self._set({'radio_caps': dict(self.caps)})
         levels = [k for k in self.caps.get('keys', []) if k in LEVELS]
         if levels:
             key = levels[self._level_index % len(levels)]
@@ -228,8 +244,17 @@ class HamlibRig:
                 self._wake.clear()
                 if self._ptt_pending is not None:
                     on, self._ptt_pending = self._ptt_pending, None
-                    await self.request('set_ptt ' + str(int(on)))
-                    self._set({'tx': on})
+                    try:
+                        await self.request('set_ptt ' + str(int(on)))
+                        self._set({'tx': on, 'backend_error': ''})
+                    except RigError as e:
+                        if e.code in (-11, -4, -9):
+                            self.caps['ptt'] = False
+                            self.caps['get_ptt'] = False
+                            self._set({'radio_caps': dict(self.caps), 'tx': False,
+                                       'backend_error': f'PTT недоступен через Hamlib ({e})'})
+                        else:
+                            self._set({'tx': False, 'backend_error': str(e)})
                 if self._pending:
                     key = next(iter(self._pending))
                     command = self._pending.pop(key)

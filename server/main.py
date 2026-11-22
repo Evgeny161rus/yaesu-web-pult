@@ -1737,7 +1737,9 @@ async def amain(args):
 def selftest(path):
     """Проверка собранного exe: все библиотеки и файлы пульта на месте."""
     rep, ok = [], True
-    for mod in ('numpy', 'serial', 'serial.tools.list_ports', 'sounddevice', 'cryptography', 'pystray', 'PIL'):
+    for mod in ('numpy', 'serial', 'serial.tools.list_ports', 'sounddevice', 'cryptography', 'pystray', 'PIL',
+                'radio_backends', 'hamlib_backend', 'ptt_serial', 'rtlsdr_scope',
+                'ft710_scope', 'ft4222_transport', 'scope_download'):
         try:
             __import__(mod)
             rep.append('OK   import ' + mod)

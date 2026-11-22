@@ -25,6 +25,7 @@ def valid_origin(origin, host, secure):
     except ValueError:
         return False
 
+
 mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('application/manifest+json', '.webmanifest')
 mimetypes.add_type('image/svg+xml', '.svg')

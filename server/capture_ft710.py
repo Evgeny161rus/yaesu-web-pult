@@ -19,7 +19,7 @@ def capture(transport, output, reads, clock=time.monotonic):
             for index in range(reads):
                 data = transport.read(4096)
                 stream.write(json.dumps({'index': index,
-                                         'elapsed_ms': round((clock()-started)*1000),
+                                         'elapsed_ms': round((clock() - started) * 1000),
                                          'hex': data.hex()}) + '\n')
 
 

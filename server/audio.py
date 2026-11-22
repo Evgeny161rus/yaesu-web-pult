@@ -196,7 +196,7 @@ def list_devices(refresh=False):
     return res
 
 
-import re as _re
+import re as _re  # noqa: E402  (ленивый импорт, чтобы не тянуть re при запуске)
 
 # Имена, под которыми Windows показывает USB-звук трансивера
 CODEC_HINTS = ('usb audio codec', 'usb audio device')

@@ -554,6 +554,7 @@ class Station:
         # libs in ftdi/ are found by _resolve_scope_libs before we get here.
         if not force and mode == 'audio':
             return
+
         def run():
             try:
                 from scope_download import download_scope_libs
@@ -1328,11 +1329,13 @@ class Station:
             if self.scope_dl and self.scope_dl.is_alive():
                 c.ws.send_json({'t': 'admin_scope_download', 'ok': False, 'msg': 'Загрузка уже выполняется…'})
                 return
+
             def run():
                 try:
                     from scope_download import download_scope_libs
                     ok, msg, _ = download_scope_libs(BASE, log=log.info)
                     self.scope_dl_msg = msg
+
                     def done():
                         c.ws.send_json({'t': 'admin_scope_download', 'ok': ok, 'msg': msg})
                         if ok and self.running:

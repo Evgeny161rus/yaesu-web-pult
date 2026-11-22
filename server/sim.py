@@ -180,6 +180,7 @@ class SimRadio:
                 from cw import text_units
                 dur = sum(u for _, u in text_units(text)) * 1.2 / max(4, int(self.s.get('KS', '020')))
                 self.s['TX'] = '1'
+
                 def done(txt=text):
                     if self.s['TX'] != '0':
                         self.s['TX'] = '0'
@@ -330,7 +331,9 @@ class SimDigi:
             img[np.abs(d - r) < 1.2] = 0.2
         img[:4], img[-4:], img[:, :4], img[:, -4:] = 0, 0, 0, 0
         # «звуковые» станции: слышны, когда трансивер настроен точно (±300 Гц) — для проверки декодеров
-        import navtex, psk31, sstv
+        import navtex
+        import psk31
+        import sstv
         nx = navtex.navtex_synth('ZCZC AE12\nNOVOROSSIYSK RADIO\nWEATHER FORECAST BLACK SEA 0600 UTC:\n'
                                  'WIND SW 10-15 M/S, SEA 2 M, VIS 5-10 NM.\nNNNN\n', fc=1700, amp=0.1)
         ps = psk31.psk31_tx('   CQ CQ CQ de UA6LUQ UA6LUQ pse k\n', fc=1000, amp=0.1, pre=48)
@@ -338,7 +341,9 @@ class SimDigi:
         pic = np.stack([xx * 255 // 320, yy, ((xx // 40 + yy // 40) % 2) * 255], -1).astype(np.uint8)
         pic[100:130, :, :] = 255
         sv = sstv.sstv_synth(pic, 'Robot 36', amp=0.1)
-        gap = lambda s_: np.zeros(int(s_ * SR), np.float32)
+
+        def gap(s_):
+            return np.zeros(int(s_ * SR), np.float32)
         self.audio_st = [(516300, np.concatenate([nx, gap(15)])),
                          (14070000, np.concatenate([ps, gap(8)])),
                          (14230000, np.concatenate([sv, gap(20)]))]
@@ -382,7 +387,8 @@ class SimFt8:
         self.lock = threading.Lock()
         self.last_k = None
         try:
-            import _ftx, ft8
+            import _ftx
+            import ft8
             self._ftx, self._ft8 = _ftx, ft8
         except Exception:
             self._ftx = None

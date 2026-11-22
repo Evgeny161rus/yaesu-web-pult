@@ -22,7 +22,7 @@ IS_WIN = sys.platform == 'win32'
 def local_ips() -> List[str]:
     """Получить список локальных IP-адресов (не loopback)."""
     ips = set()
-    
+
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('10.255.255.255', 1))
@@ -30,32 +30,32 @@ def local_ips() -> List[str]:
         s.close()
     except Exception:
         pass
-    
+
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ips.add(info[4][0])
     except Exception:
         pass
-    
+
     return sorted(i for i in ips if not i.startswith(('127.', '169.254.')))
 
 
 def ensure_cert(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
     """
     Создать самоподписанный сертификат для HTTPS, если его нет.
-    
+
     Args:
         base_dir: Директория для сохранения сертификата
-    
+
     Returns:
         Кортеж (путь к cert.pem, путь к key.pem) или (None, None) если не удалось
     """
     crt = os.path.join(base_dir, 'cert.pem')
     key = os.path.join(base_dir, 'key.pem')
-    
+
     if os.path.exists(crt) and os.path.exists(key):
         return crt, key
-    
+
     try:
         from cryptography import x509
         from cryptography.x509.oid import NameOID
@@ -67,16 +67,16 @@ def ensure_cert(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
             "(микрофон с телефона работать не будет)"
         )
         return None, None
-    
+
     # Генерация ключа
     k = rsa.generate_private_key(
         public_exponent=RSA_PUBLIC_EXPONENT,
         key_size=RSA_KEY_SIZE
     )
-    
+
     # Создание сертификата
     name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, 'FTX-1 Remote')])
-    
+
     # Альтернативные имена
     alt = [
         x509.DNSName('localhost'),
@@ -84,7 +84,7 @@ def ensure_cert(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
     ]
     for ip in local_ips() + ['127.0.0.1']:
         alt.append(x509.IPAddress(ipaddress.ip_address(ip)))
-    
+
     now = datetime.datetime.now(datetime.timezone.utc)
     cert = (
         x509.CertificateBuilder()
@@ -97,18 +97,18 @@ def ensure_cert(base_dir: str) -> Tuple[Optional[str], Optional[str]]:
         .add_extension(x509.SubjectAlternativeName(alt), critical=False)
         .sign(k, hashes.SHA256())
     )
-    
+
     # Сохранение
     with open(crt, 'wb') as f:
         f.write(cert.public_bytes(serialization.Encoding.PEM))
-    
+
     with open(key, 'wb') as f:
         f.write(k.private_bytes(
             serialization.Encoding.PEM,
             serialization.PrivateFormat.TraditionalOpenSSL,
             serialization.NoEncryption()
         ))
-    
+
     return crt, key
 
 
@@ -124,13 +124,13 @@ RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 def autostart_get() -> Optional[bool]:
     """
     Проверить статус автозапуска (только Windows).
-    
+
     Returns:
         True если включен, False если выключен, None если не Windows
     """
     if not IS_WIN:
         return None
-    
+
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
@@ -143,17 +143,17 @@ def autostart_get() -> Optional[bool]:
 def autostart_set(on: bool, launch_cmd: str) -> Optional[bool]:
     """
     Установить автозапуск (только Windows).
-    
+
     Args:
         on: Включить или выключить
         launch_cmd: Команда запуска
-    
+
     Returns:
         Новый статус или None если не Windows
     """
     if not IS_WIN:
         return None
-    
+
     import winreg
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
         if on:
@@ -163,18 +163,18 @@ def autostart_set(on: bool, launch_cmd: str) -> Optional[bool]:
                 winreg.DeleteValue(k, 'FTX1Pult')
             except OSError:
                 pass
-    
+
     return autostart_get()
 
 
 def launch_command(base_dir: str, background: bool = True) -> str:
     """
     Получить команду для запуска программы.
-    
+
     Args:
         base_dir: Базовая директория проекта
         background: Запускать в фоне
-    
+
     Returns:
         Команда запуска
     """
@@ -186,5 +186,5 @@ def launch_command(base_dir: str, background: bool = True) -> str:
             exe = exe[:-10] + 'pythonw.exe'
         pyw_file = os.path.join(base_dir, 'FTX1-Pult.pyw')
         cmd = f'"{exe}" "{pyw_file}"'
-    
+
     return cmd + (' --background' if background else '')

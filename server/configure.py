@@ -277,8 +277,8 @@ def show_status(cfg):
         print(f"  Hamlib аргументы: {cfg.get('hamlib_extra')}")
     print(f"  CAT порт:        {cfg.get('cat_port') or '(не выбран)'}")
     print(f"  CAT скорость:    {cfg.get('cat_baud')}")
-    print(f"  PTT метод:       {cfg.get('ptt_method')}" + (f"  порт: {cfg.get('ptt_port')}" if cfg.get('ptt_method') in ('RTS','DTR') else ""))
-    print(f"  CW метод:        {cfg.get('cw_method')}" + (f"  порт: {cfg.get('cw_port')}" if cfg.get('cw_method') in ('rts','dtr','RTS','DTR') else ""))
+    print(f"  PTT метод:       {cfg.get('ptt_method')}" + (f"  порт: {cfg.get('ptt_port')}" if cfg.get('ptt_method') in ('RTS', 'DTR') else ""))
+    print(f"  CW метод:        {cfg.get('cw_method')}" + (f"  порт: {cfg.get('cw_port')}" if cfg.get('cw_method') in ('rts', 'dtr', 'RTS', 'DTR') else ""))
     print(f"  Аудио приём:     {cfg.get('audio_in_name') or '(авто)'}")
     print(f"  Аудио передача:  {cfg.get('audio_out_name') or cfg.get('audio_in_name') or '(авто)'}")
     print(f"  Автоподключение: {'да' if cfg.get('auto_connect') else 'нет'}")
@@ -297,7 +297,7 @@ def auto_detect_menu(cfg):
         print("  COM/tty порты не найдены.")
     else:
         for p in ports:
-            print(f"  Порт: {p['device']} — {p.get('desc','')}{' ['+p['kind']+']' if p.get('kind') else ''}")
+            print(f"  Порт: {p['device']} — {p.get('desc', '')}{' [' + p['kind'] + ']' if p.get('kind') else ''}")
     if d.get('cat_port'):
         print(f"  → Предложен CAT: {d['cat_port']}")
     if d.get('ptt_port'):
@@ -459,10 +459,10 @@ def settings_menu(cfg):
             ad = prompt("Автозагрузка библиотек FTDI при обнаружении FT-710/FTDX10/FTDX101? (y/n)", 'y' if cfg.get('scope_auto_download', True) else 'n')
             cfg['scope_auto_download'] = str(ad).lower().startswith('y')
             if cfg.get('waterfall_source') in ('rtlsdr', 'sdr', 'auto'):
-                drv = choose("SDR драйвер:", [("rtlsdr","RTL-SDR (rtl_sdr)"),("rx_sdr","rx_sdr / SoapySDR (HackRF/Airspy/SDRplay/...)"),("hackrf","hackrf_transfer")], cfg.get('sdr_driver','rtlsdr'))
+                drv = choose("SDR драйвер:", [("rtlsdr", "RTL-SDR (rtl_sdr)"), ("rx_sdr", "rx_sdr / SoapySDR (HackRF/Airspy/SDRplay/...)"), ("hackrf", "hackrf_transfer")], cfg.get('sdr_driver', 'rtlsdr'))
                 if drv is not None:
                     cfg['sdr_driver'] = drv
-                v = prompt("SDR device (пусто=auto, для rx_sdr напр. driver=hackrf,serial=...)", cfg.get('sdr_device',''), allow_empty=True)
+                v = prompt("SDR device (пусто=auto, для rx_sdr напр. driver=hackrf,serial=...)", cfg.get('sdr_device', ''), allow_empty=True)
                 if v is not None: cfg['sdr_device'] = v.strip()
                 try:
                     sr = int(prompt("SDR sample rate (Hz)", str(cfg.get('sdr_sample_rate', cfg.get('rtlsdr_sample_rate', 1024000)))))

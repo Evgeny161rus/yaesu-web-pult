@@ -220,6 +220,7 @@ class DigiDesk:
     async def send_psk(self, c, text):
         text = (text or '')[:2000]
         mode = self._rig_state().get('mode') or ''
+
         def fail(key, msg, **params):
             if c:
                 ev = {'t': 'psk_tx_done', 'ok': False, 'msg': msg}

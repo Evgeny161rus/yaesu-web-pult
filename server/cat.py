@@ -507,7 +507,8 @@ class Rig:
     def set_param(self, key, v):
         st = self.state
         band = band_type(st.get('freq_a', 0))
-        clamp = lambda x, lo, hi: max(lo, min(hi, int(round(float(x)))))
+        def clamp(x, lo, hi):
+            return max(lo, min(hi, int(round(float(x)))))
         cmds = []
         if key in ('freq_a', 'freq_b'):
             # Не копим очередь из сотен команд FA при быстром вращении ручки: в очереди одна метка,

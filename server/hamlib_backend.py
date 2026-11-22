@@ -147,6 +147,8 @@ class HamlibRig:
                 msg = f'{command.split()[0]}: таймаут ответа rigctld'
                 if tail:
                     msg += f' ({tail})'
+                else:
+                    msg += ' (проверьте CAT-порт, скорость, кабель и питание трансивера)'
                 raise RigError(msg) from e
 
     async def _drain_errors(self):

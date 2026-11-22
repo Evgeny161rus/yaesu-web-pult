@@ -507,6 +507,7 @@ class Rig:
     def set_param(self, key, v):
         st = self.state
         band = band_type(st.get('freq_a', 0))
+
         def clamp(x, lo, hi):
             return max(lo, min(hi, int(round(float(x)))))
         cmds = []

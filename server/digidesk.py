@@ -134,7 +134,8 @@ class DigiDesk:
             return name
         except Exception as e:
             log.warning("Не удалось сохранить факс: %s", e)
-            self.bc({'t': 'fax_note', 'msg': 'Не удалось сохранить картинку: %s' % e, 'msg_key': 'fax.note.save_err', 'msg_params': {'err': str(e)}}, 'fax_on')
+            self.bc({'t': 'fax_note', 'msg': 'Не удалось сохранить картинку: %s' % e,
+                     'msg_key': 'fax.note.save_err', 'msg_params': {'err': str(e)}}, 'fax_on')
             return None
 
     # ------------------------------------------------------------------ SSTV
@@ -207,7 +208,9 @@ class DigiDesk:
         if self.st.ptt_owner is not None or self.st.ft.busy or self.st.cw.sender.busy or self.st.vk.task:
             return self._tx_fail(c, 'digi.tx.busy_other', 'Передатчик занят (голос или CW)')
         if not mode.startswith('DATA'):
-            return self._tx_fail(c, 'digi.tx.need_data', 'Для RTTY через звук переключите трансивер в режим DATA-L или DATA-U (сейчас %s)' % (mode or '?'), mode=(mode or '?'))
+            return self._tx_fail(c, 'digi.tx.need_data',
+                                 ('Для RTTY через звук переключите трансивер в режим DATA-L или DATA-U '
+                                  '(сейчас %s)') % (mode or '?'), mode=(mode or '?'))
         # Любительский стандарт: mark — верхняя частота в эфире. В DATA-U это верхний тон звука.
         rev = (mode == 'DATA-U') != bool(reverse)
         r = self.rtty
@@ -236,7 +239,9 @@ class DigiDesk:
         if self.tx_busy or self.st.ptt_owner is not None or self.st.ft.busy or self.st.cw.sender.busy or self.st.vk.task:
             return fail('digi.tx.busy', 'Передатчик занят')
         if mode != 'DATA-U':
-            return fail('digi.tx.need_data_u', 'Для PSK31 переключите трансивер в режим DATA-U (сейчас %s)' % (mode or '?'), mode=(mode or '?'))
+            return fail('digi.tx.need_data_u',
+                        ('Для PSK31 переключите трансивер в режим DATA-U (сейчас %s)') % (mode or '?'),
+                        mode=(mode or '?'))
         x = psk31_tx(text, fc=self.psk.fc, amp=0.5)
         if len(x) / SR > self.cfg.get('max_tx_seconds', 180):
             return fail('digi.tx.too_long_short', 'Слишком длинный текст')
@@ -323,8 +328,11 @@ class DigiDesk:
             if fc:
                 self.bc(self.rt_state(), 'rt_on')
             else:
-                c.ws.send_json({'t': 'rt_note', 'msg': 'Не нашёл RTTY-сигнал со сдвигом %d Гц — проверьте сдвиг или кликните по сигналу на водопаде' % self.rtty.shift,
-                                'msg_key': 'rt.note.autotune_fail', 'msg_params': {'shift': int(self.rtty.shift)}})
+                c.ws.send_json({'t': 'rt_note',
+                                'msg': ('Не нашёл RTTY-сигнал со сдвигом %d Гц — проверьте сдвиг или '
+                                        'кликните по сигналу на водопаде') % self.rtty.shift,
+                                'msg_key': 'rt.note.autotune_fail',
+                                'msg_params': {'shift': int(self.rtty.shift)}})
         elif t == 'rt_send':
             await self.send(c, m.get('text', ''), bool(m.get('reverse')))
         elif t == 'rt_stop':

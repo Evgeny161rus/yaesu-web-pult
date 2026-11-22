@@ -277,15 +277,19 @@ def show_status(cfg):
         print(f"  Hamlib аргументы: {cfg.get('hamlib_extra')}")
     print(f"  CAT порт:        {cfg.get('cat_port') or '(не выбран)'}")
     print(f"  CAT скорость:    {cfg.get('cat_baud')}")
-    print(f"  PTT метод:       {cfg.get('ptt_method')}" + (f"  порт: {cfg.get('ptt_port')}" if cfg.get('ptt_method') in ('RTS', 'DTR') else ""))
-    print(f"  CW метод:        {cfg.get('cw_method')}" + (f"  порт: {cfg.get('cw_port')}" if cfg.get('cw_method') in ('rts', 'dtr', 'RTS', 'DTR') else ""))
+    print(f"  PTT метод:       {cfg.get('ptt_method')}"
+          + (f"  порт: {cfg.get('ptt_port')}" if cfg.get('ptt_method') in ('RTS', 'DTR') else ""))
+    print(f"  CW метод:        {cfg.get('cw_method')}"
+          + (f"  порт: {cfg.get('cw_port')}" if cfg.get('cw_method') in ('rts', 'dtr', 'RTS', 'DTR') else ""))
     print(f"  Аудио приём:     {cfg.get('audio_in_name') or '(авто)'}")
     print(f"  Аудио передача:  {cfg.get('audio_out_name') or cfg.get('audio_in_name') or '(авто)'}")
     print(f"  Автоподключение: {'да' if cfg.get('auto_connect') else 'нет'}")
     print(f"  Симулятор:       {'да' if cfg.get('simulate') else 'нет'}")
     print(f"  Пароль (LAN):    {'задан' if cfg.get('password') else '(нет — вход по сети невозможен)'}")
     print(f"  HTTP/HTTPS:      {cfg.get('http_port')} / {cfg.get('https_port')}")
-    print(f"  Водопад:         {cfg.get('waterfall_source')}  scope_lib={cfg.get('scope_libft4222') or '(авто/нет)'}  auto_dl={'да' if cfg.get('scope_auto_download') else 'нет'}")
+    print(f"  Водопад:         {cfg.get('waterfall_source')}  "
+          f"scope_lib={cfg.get('scope_libft4222') or '(авто/нет)'}  "
+          f"auto_dl={'да' if cfg.get('scope_auto_download') else 'нет'}")
 
 
 def auto_detect_menu(cfg):
@@ -328,7 +332,8 @@ def probe_menu(cfg):
     info, err = probe_radio(port, baud)
     if err:
         print(f"Не удалось определить: {err}")
-        print("Подсказка: проверьте, что трансивер включён, выбран верный порт/скорость (CAT RATE в меню), кабель подключён, порт не занят.")
+        print("Подсказка: проверьте, что трансивер включён, выбран верный порт/скорость "
+              "(CAT RATE в меню), кабель подключён, порт не занят.")
         return
     cid = info.get('cat_id') or ''
     name = info.get('name') or '?'
@@ -437,35 +442,48 @@ def settings_menu(cfg):
                 pass
             if not rtlsdr_dev:
                 try:
-                    rtlsdr_dev = any('rtl283' in open(p, errors='ignore').read().lower() for p in glob.glob('/sys/bus/usb/devices/*/product'))
+                    rtlsdr_dev = any('rtl283' in open(p, errors='ignore').read().lower()
+                                     for p in glob.glob('/sys/bus/usb/devices/*/product'))
                 except Exception:
                     pass
             tools_found = {n: bool(shutil.which(n)) for n in ('rtl_sdr', 'rx_sdr', 'hackrf_transfer', 'SoapySDRUtil')}
-            print(f"  RTL-SDR: устройство={'найдено' if rtlsdr_dev else 'не найдено'}, rtl_sdr={'есть' if tools_found['rtl_sdr'] else 'нет'}")
-            print(f"  SoapySDR/rx_sdr={'есть' if tools_found['rx_sdr'] else 'нет'}, hackrf_transfer={'есть' if tools_found['hackrf_transfer'] else 'нет'}")
+            print(f"  RTL-SDR: устройство={'найдено' if rtlsdr_dev else 'не найдено'}, "
+                  f"rtl_sdr={'есть' if tools_found['rtl_sdr'] else 'нет'}")
+            print(f"  SoapySDR/rx_sdr={'есть' if tools_found['rx_sdr'] else 'нет'}, "
+                  f"hackrf_transfer={'есть' if tools_found['hackrf_transfer'] else 'нет'}")
             if (rtlsdr_dev or str(cfg.get('waterfall_source')) == 'rtlsdr') and not tools_found['rtl_sdr'] and os.name != 'nt':
                 ans = prompt("Установить rtl-sdr/librtlsdr-dev сейчас? (y/n)", "y")
                 if str(ans).lower().startswith('y'):
                     rc = os.system('sudo apt-get update && sudo apt-get install -y rtl-sdr librtlsdr-dev usbutils')
                     if rc == 0:
                         bl = '/etc/modprobe.d/blacklist-rtl-sdr.conf'
-                        os.system(f"sudo sh -c \"cat > {bl} <<'BLK'\n# Yaesu Web Pult: allow rtl_sdr userspace access\nblacklist dvb_usb_rtl28xxu\nblacklist rtl2832\nblacklist rtl2830\nblacklist dvb_usb_v2\nBLK\"")
+                        os.system(f"sudo sh -c \"cat > {bl} <<'BLK'\n"
+                                  f"# Yaesu Web Pult: allow rtl_sdr userspace access\n"
+                                  f"blacklist dvb_usb_rtl28xxu\nblacklist rtl2832\n"
+                                  f"blacklist rtl2830\nblacklist dvb_usb_v2\nBLK\"")
                         print("RTL-SDR установлен. Blacklist DVB записан (действует после перезагрузки).")
                     else:
                         print("Не удалось установить автоматически. Выполните: sudo apt-get install -y rtl-sdr librtlsdr-dev")
             v = choose("Источник водопада:", WF_SOURCES, cfg.get('waterfall_source'))
             if v is not None:
                 cfg['waterfall_source'] = v
-            ad = prompt("Автозагрузка библиотек FTDI при обнаружении FT-710/FTDX10/FTDX101? (y/n)", 'y' if cfg.get('scope_auto_download', True) else 'n')
+            ad = prompt("Автозагрузка библиотек FTDI при обнаружении FT-710/FTDX10/FTDX101? (y/n)",
+                        'y' if cfg.get('scope_auto_download', True) else 'n')
             cfg['scope_auto_download'] = str(ad).lower().startswith('y')
             if cfg.get('waterfall_source') in ('rtlsdr', 'sdr', 'auto'):
-                drv = choose("SDR драйвер:", [("rtlsdr", "RTL-SDR (rtl_sdr)"), ("rx_sdr", "rx_sdr / SoapySDR (HackRF/Airspy/SDRplay/...)"), ("hackrf", "hackrf_transfer")], cfg.get('sdr_driver', 'rtlsdr'))
+                drv = choose("SDR драйвер:", [("rtlsdr", "RTL-SDR (rtl_sdr)"),
+                                              ("rx_sdr", "rx_sdr / SoapySDR (HackRF/Airspy/SDRplay/...)"),
+                                              ("hackrf", "hackrf_transfer")],
+                             cfg.get('sdr_driver', 'rtlsdr'))
                 if drv is not None:
                     cfg['sdr_driver'] = drv
-                v = prompt("SDR device (пусто=auto, для rx_sdr напр. driver=hackrf,serial=...)", cfg.get('sdr_device', ''), allow_empty=True)
+                v = prompt("SDR device (пусто=auto, для rx_sdr напр. driver=hackrf,serial=...)",
+                           cfg.get('sdr_device', ''), allow_empty=True)
                 if v is not None: cfg['sdr_device'] = v.strip()
                 try:
-                    sr = int(prompt("SDR sample rate (Hz)", str(cfg.get('sdr_sample_rate', cfg.get('rtlsdr_sample_rate', 1024000)))))
+                    sr = int(prompt("SDR sample rate (Hz)",
+                                    str(cfg.get('sdr_sample_rate',
+                                                cfg.get('rtlsdr_sample_rate', 1024000)))))
                     cfg['sdr_sample_rate'] = sr
                     cfg['rtlsdr_sample_rate'] = sr  # backward compat
                 except Exception:
@@ -483,7 +501,8 @@ def settings_menu(cfg):
             v = prompt("scope_d2xx", cfg.get('scope_d2xx') or '', allow_empty=True)
             if v is not None:
                 cfg['scope_d2xx'] = v.strip()
-            v = prompt("scope_serial (SPI-интерфейс, не CAT; пусто = 'FT4222 A')", cfg.get('scope_serial') or '', allow_empty=True)
+            v = prompt("scope_serial (SPI-интерфейс, не CAT; пусто = 'FT4222 A')",
+                       cfg.get('scope_serial') or '', allow_empty=True)
             if v is not None:
                 cfg['scope_serial'] = v.strip()
         elif ch == '11':

@@ -178,13 +178,17 @@ def download_scope_libs(base_dir, log=print):
 
     # Determine overall success: need at least LibFT4222 for the current platform
     lib_name = 'LibFT4222-64.dll' if system == 'windows' else 'libft4222.so'
-    have_lib = any(os.path.basename(p).lower().startswith('libft4222') or os.path.basename(p).lower().startswith('libft4222') for p in files) \
-        or os.path.isfile(os.path.join(out_dir, lib_name)) or os.path.isfile(os.path.join(out_dir, 'LibFT4222.dll'))
+    have_lib = (any(os.path.basename(p).lower().startswith('libft4222')
+                    or os.path.basename(p).lower().startswith('libftd2xx') for p in files)
+                or os.path.isfile(os.path.join(out_dir, lib_name))
+                or os.path.isfile(os.path.join(out_dir, 'LibFT4222.dll')))
     if have_lib:
         msg = 'Файлы загружены в %s' % out_dir
         if errors:
             msg += ' (замечания: %s)' % '; '.join(errors[-2:])
         return True, msg, files
     msg = 'Не удалось автоматически скачать библиотеки FTDI. ' + '; '.join(errors[-4:])
-    msg += '. Возможно, нужен VPN. Скачайте вручную: https://ftdichip.com/software-examples/ft4222h-software-examples/ и https://ftdichip.com/drivers/d2xx-drivers/ и положите файлы в папку ftdi.'
+    msg += ('. Возможно, нужен VPN. Скачайте вручную: '
+            'https://ftdichip.com/software-examples/ft4222h-software-examples/ и '
+            'https://ftdichip.com/drivers/d2xx-drivers/ и положите файлы в папку ftdi.')
     return False, msg, files

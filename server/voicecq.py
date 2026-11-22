@@ -121,9 +121,14 @@ class VoiceCq:
             return c.ws.send_json({'t': 'vk_note', 'msg': msg, 'msg_key': key, 'msg_params': params})
         x = self._load(slot)
         if x is None:
-            return c.ws.send_json({'t': 'vk_note', 'msg': 'Ячейка %d пустая — сначала запишите сообщение' % slot, 'msg_key': 'vk.err.empty_slot', 'msg_params': {'slot': slot}})
+            return c.ws.send_json({'t': 'vk_note',
+                                   'msg': 'Ячейка %d пустая — сначала запишите сообщение' % slot,
+                                   'msg_key': 'vk.err.empty_slot',
+                                   'msg_params': {'slot': slot}})
         if len(x) / SR > self.st.cfg.get('max_tx_seconds', 180) - 2:
-            return c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение длиннее ограничения передачи', 'msg_key': 'vk.err.too_long'})
+            return c.ws.send_json({'t': 'vk_note',
+                                   'msg': 'Сообщение длиннее ограничения передачи',
+                                   'msg_key': 'vk.err.too_long'})
         pause = float(min(max(pause, 2), 600))
         repeats = int(min(max(repeats, 1), 100))
         self.task = asyncio.create_task(self._loop(x, slot, pause, repeats, int(sig or 0)))
@@ -237,9 +242,11 @@ class VoiceCq:
             try:
                 await asyncio.to_thread(self._save, slot, m.get('name', ''), m.get('pcm', ''))
                 self.bc(self.state())
-                c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение %d сохранено' % slot, 'msg_key': 'vk.note.saved', 'msg_params': {'slot': slot}})
+                c.ws.send_json({'t': 'vk_note', 'msg': 'Сообщение %d сохранено' % slot,
+                                'msg_key': 'vk.note.saved', 'msg_params': {'slot': slot}})
             except Exception as e:
-                c.ws.send_json({'t': 'vk_note', 'msg': 'Не сохранилось: %s' % e, 'msg_key': 'vk.err.save', 'msg_params': {'err': str(e)}})
+                c.ws.send_json({'t': 'vk_note', 'msg': 'Не сохранилось: %s' % e,
+                                'msg_key': 'vk.err.save', 'msg_params': {'err': str(e)}})
         elif t == 'vk_delete':
             try:
                 os.remove(self._path(slot))

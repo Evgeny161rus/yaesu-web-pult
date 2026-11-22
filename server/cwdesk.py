@@ -90,7 +90,8 @@ class CwDesk:
         p = self.proposal
         if not p:
             return None
-        return {'text': p['text'], 'ru': p['ru'], 'model': p.get('model', ''), 'left': max(0, round(p['deadline'] - time.monotonic(), 1)), 'auto': p['auto']}
+        return {'text': p['text'], 'ru': p['ru'], 'model': p.get('model', ''),
+                'left': max(0, round(p['deadline'] - time.monotonic(), 1)), 'auto': p['auto']}
 
     # ------------------------------------------------------------------ decoder
     def update_decoder(self):

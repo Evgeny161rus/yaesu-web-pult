@@ -932,7 +932,8 @@ class Station:
                 if self._start_rtlsdr():
                     return
             self.scope_state = 'unavailable'
-            self.scope_reason = 'библиотека LibFT4222 не найдена (положите в папку ftdi рядом с программой или укажите путь в настройках)'
+            self.scope_reason = ('библиотека LibFT4222 не найдена '
+                                 '(положите в папку ftdi рядом с программой или укажите путь в настройках)')
             self._maybe_scope_autodownload()
             if self.scope_dl and self.scope_dl.is_alive():
                 self.scope_reason = 'скачиваю библиотеки FTDI для USB-scope…'
@@ -1135,16 +1136,23 @@ class Station:
             return
         if on:
             if is_hamlib(self.rig) and (not self.rig.state.get('connected') or not self.rig.caps.get('ptt')):
-                client.ws.send_json({'t': 'note', 'msg': 'PTT недоступен: проверьте соединение и возможности модели', 'msg_key': 'note.ptt_unavail'})
+                client.ws.send_json({'t': 'note',
+                                     'msg': 'PTT недоступен: проверьте соединение и возможности модели',
+                                     'msg_key': 'note.ptt_unavail'})
                 return
             if self.vk.task:                             # PTT вручную — автовызов прекращаем, работаем сами
                 self.vk.stop('нажата PTT', key='vk.note.stopped_ptt')
                 self.vk.busy = False
             if self.digi.tx_busy or self.cw.sender.busy or self.ft.busy:
-                client.ws.send_json({'t': 'note', 'msg': 'Идёт передача RTTY/CW/FT8 — дождитесь окончания', 'msg_key': 'note.tx_busy_digital'})
+                client.ws.send_json({'t': 'note',
+                                     'msg': 'Идёт передача RTTY/CW/FT8 — дождитесь окончания',
+                                     'msg_key': 'note.tx_busy_digital'})
                 return
             if self.ptt_owner not in (None, client):
-                client.ws.send_json({'t': 'note', 'msg': 'Передача занята другим клиентом (%s)' % self.ptt_owner.name, 'msg_key': 'note.tx_busy_other', 'msg_params': {'who': self.ptt_owner.name}})
+                client.ws.send_json({'t': 'note',
+                                     'msg': 'Передача занята другим клиентом (%s)' % self.ptt_owner.name,
+                                     'msg_key': 'note.tx_busy_other',
+                                     'msg_params': {'who': self.ptt_owner.name}})
                 return
             if self.ptt_owner is None:
                 self.audio.tx.clear()
@@ -1170,11 +1178,17 @@ class Station:
                     now = time.monotonic()
                     if now - self.ptt_alive > 1.5:
                         log.warning("PTT снят: нет подтверждений от клиента %s", self.ptt_owner.name)
-                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: потеря связи', 'msg_key': 'note.ptt_lost'})
+                        self.ptt_owner.ws.send_json({'t': 'note',
+                                                     'msg': 'Передача снята: потеря связи',
+                                                     'msg_key': 'note.ptt_lost'})
                         self.set_ptt(None, False)
                     elif now - self.ptt_since > self.cfg['max_tx_seconds']:
                         log.warning("PTT снят: превышено время передачи")
-                        self.ptt_owner.ws.send_json({'t': 'note', 'msg': 'Передача снята: превышено время (%d с)' % self.cfg['max_tx_seconds'], 'msg_key': 'note.ptt_timeout', 'msg_params': {'sec': int(self.cfg['max_tx_seconds'])}})
+                        self.ptt_owner.ws.send_json({'t': 'note',
+                                                     'msg': ('Передача снята: превышено время '
+                                                             '(%d с)') % self.cfg['max_tx_seconds'],
+                                                     'msg_key': 'note.ptt_timeout',
+                                                     'msg_params': {'sec': int(self.cfg['max_tx_seconds'])}})
                         self.set_ptt(None, False)
                 await self.cw.tick()
                 if self.scope_state == 'live' and time.monotonic() - self.scope_last_good > 6:
@@ -1292,7 +1306,9 @@ class Station:
                             'detect': detect(self.ports_cache, self.audio_cache), 'urls': self.urls()})
         elif t == 'admin_save':
             new = {k: v for k, v in (m.get('cfg') or {}).items() if k in DEFAULT_CFG}
-            radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'hamlib_extra', 'cat_port', 'cat_baud', 'ptt_method', 'ptt_port', 'audio_in_name', 'audio_out_name', 'audio_api',
+            radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'hamlib_extra',
+                          'cat_port', 'cat_baud', 'ptt_method', 'ptt_port',
+                          'audio_in_name', 'audio_out_name', 'audio_api',
                           'audio_in_index', 'audio_out_index', 'simulate',
                           'waterfall_source', 'scope_libft4222', 'scope_d2xx', 'scope_serial', 'scope_auto_download',
                           'sdr_driver', 'sdr_device', 'sdr_format', 'sdr_sample_rate', 'sdr_gain')
@@ -1345,7 +1361,8 @@ class Station:
                     msg = str(e).split('\n')[0]
                     self.scope_dl_msg = msg
                     try:
-                        self.loop.call_soon_threadsafe(lambda: c.ws.send_json({'t': 'admin_scope_download', 'ok': False, 'msg': msg}))
+                        self.loop.call_soon_threadsafe(
+                            lambda: c.ws.send_json({'t': 'admin_scope_download', 'ok': False, 'msg': msg}))
                     except RuntimeError:
                         pass
             self.scope_dl = threading.Thread(target=run, name='ftdi-dl', daemon=True)
@@ -1362,7 +1379,9 @@ class Station:
     # ----- клиент пульта
     async def handle_ws(self, ws):
         ip = ws.peer[0] if ws.peer else ''
-        local = ip in ('127.0.0.1', '::1', '::ffff:127.0.0.1') and getattr(ws, 'local_ui', False) and not os.environ.get('FTX_TEST_REMOTE')
+        local = (ip in ('127.0.0.1', '::1', '::ffff:127.0.0.1')
+                 and getattr(ws, 'local_ui', False)
+                 and not os.environ.get('FTX_TEST_REMOTE'))
         c = Client(ws, local)
         self.clients.add(c)
         try:
@@ -1434,11 +1453,14 @@ class Station:
                 c.ws.send_json({'t': 'state', 's': (getattr(self.rig, 'state', None) or {'connected': False}), 'full': True})
                 if self.rig:
                     self.rig.refresh()                     # свежие значения из трансивера, а не из памяти
-                c.ws.send_json({'t': 'audio_status', 'err': self.audio_err if self.running else 'Связь с трансивером остановлена'})
+                c.ws.send_json({'t': 'audio_status',
+                                'err': self.audio_err if self.running else 'Связь с трансивером остановлена'})
                 if self.wf.bandwidth:
                     c.ws.send_json({'t': 'bw', 'hz': self.wf.bandwidth})
                 if not self.running:
-                    c.ws.send_json({'t': 'note', 'msg': 'Сервер запущен, но связь с трансивером остановлена — нажмите «Запустить» в панели управления'})
+                    c.ws.send_json({'t': 'note',
+                                    'msg': ('Сервер запущен, но связь с трансивером остановлена — '
+                                            'нажмите «Запустить» в панели управления')})
                 self._ptt_info()
                 log.info("Подключился пульт %s", c.name)
                 self.push_status()

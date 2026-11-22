@@ -35,7 +35,8 @@ def run_info(executable, *args):
         result = subprocess.run([executable, *args], capture_output=True, timeout=12,
                                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     except FileNotFoundError:
-        hint = 'Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt' else 'Установите Hamlib или укажите путь к rigctld.exe'
+        hint = ('Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt'
+                else 'Установите Hamlib или укажите путь к rigctld.exe')
         raise RuntimeError(f'rigctld не найден ({executable}). {hint}')
     if result.returncode:
         raise RuntimeError(result.stderr.decode(errors='replace')[-1200:])
@@ -208,7 +209,8 @@ class HamlibRig:
                     *args, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE,
                     creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             except FileNotFoundError:
-                hint = 'Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt' else 'Установите Hamlib или укажите путь к rigctld.exe'
+                hint = ('Установите Hamlib: sudo apt-get install -y libhamlib-utils' if os.name != 'nt'
+                        else 'Установите Hamlib или укажите путь к rigctld.exe')
                 raise RuntimeError(f'rigctld не найден ({executable}). {hint}')
             self._stderr_task = asyncio.create_task(self._drain_errors())
             for _ in range(60):

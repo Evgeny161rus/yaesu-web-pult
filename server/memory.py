@@ -220,7 +220,8 @@ class MemoryDesk:
                             'msg_key': 'mem.msg.read', 'msg_params': {'n': len(chans), 'used': used}})
         except Exception as e:
             log.exception("Память: чтение")
-            c.ws.send_json({'t': 'mem_err', 'msg': 'Ошибка чтения: %s' % e, 'msg_key': 'mem.err.read', 'msg_params': {'err': str(e)}})
+            c.ws.send_json({'t': 'mem_err', 'msg': 'Ошибка чтения: %s' % e,
+                            'msg_key': 'mem.err.read', 'msg_params': {'err': str(e)}})
         finally:
             self.task = None
 
@@ -302,10 +303,14 @@ class MemoryDesk:
                     c.ws.send_json({'t': 'mem_err', 'msg': why})
                     break
                 if ch['empty']:
-                    results.append({'ch': ch['ch'], 'ok': False, 'msg': 'очистить канал по CAT нельзя — только с трансивера', 'msg_key': 'mem.err.cant_clear'})
+                    results.append({'ch': ch['ch'], 'ok': False,
+                                    'msg': 'очистить канал по CAT нельзя — только с трансивера',
+                                    'msg_key': 'mem.err.cant_clear'})
                     continue
                 if not 30_000 <= ch['freq'] <= 470_000_000:
-                    results.append({'ch': ch['ch'], 'ok': False, 'msg': 'частота вне диапазона трансивера', 'msg_key': 'mem.err.freq_range'})
+                    results.append({'ch': ch['ch'], 'ok': False,
+                                    'msg': 'частота вне диапазона трансивера',
+                                    'msg_key': 'mem.err.freq_range'})
                     continue
                 try:
                     ok, problems, got = await self.write_channel(ch)
@@ -321,7 +326,8 @@ class MemoryDesk:
                             'msg_key': 'mem.msg.written', 'msg_params': {'ok': good, 'n': len(chans)}})
         except Exception as e:
             log.exception("Память: запись")
-            c.ws.send_json({'t': 'mem_err', 'msg': 'Ошибка записи: %s' % e, 'msg_key': 'mem.err.write', 'msg_params': {'err': str(e)}})
+            c.ws.send_json({'t': 'mem_err', 'msg': 'Ошибка записи: %s' % e,
+                            'msg_key': 'mem.err.write', 'msg_params': {'err': str(e)}})
         finally:
             self.task = None
             self.rig.refresh(0.3)
@@ -354,8 +360,10 @@ class MemoryDesk:
                 continue
             tx = c['tx_freq'] if c.get('split') else c['freq'] if not c['shift'] else 0   # ± — разнос из меню трансивера
             w.writerow([c['ch'], c['group'], c['name'], '%.6f' % (c['freq'] / 1e6), c['mode'],
-                        'Split' if c.get('split') else ['Simplex', '+', '-'][c['shift']], c['offset_khz'] or '', '%.6f' % (tx / 1e6) if tx else '',
-                        ['Off', 'Tone', 'TSQL', 'DCS'][c['tone_mode']], c['ctcss'], '%03d' % c['dcs'], c['clar'],
+                        'Split' if c.get('split') else ['Simplex', '+', '-'][c['shift']],
+                        c['offset_khz'] or '', '%.6f' % (tx / 1e6) if tx else '',
+                        ['Off', 'Tone', 'TSQL', 'DCS'][c['tone_mode']], c['ctcss'],
+                        '%03d' % c['dcs'], c['clar'],
                         int(c['rx_clar']), int(c['tx_clar']), c['comment']])
         return f.getvalue()
 
@@ -414,7 +422,9 @@ class MemoryDesk:
                 return c.ws.send_json({'t': 'mem_err', 'msg': 'Уже идёт чтение или запись', 'msg_key': 'mem.err.busy'})
             why = self.busy_reason()
             if why:
-                return c.ws.send_json({'t': 'mem_err', 'msg': why, 'msg_key': 'mem.err.rig_busy', 'msg_params': {'reason': why}})
+                return c.ws.send_json({'t': 'mem_err', 'msg': why,
+                                       'msg_key': 'mem.err.rig_busy',
+                                       'msg_params': {'reason': why}})
             a = max(CH_MIN, min(CH_MAX, int(m.get('from', CH_MIN))))
             b = max(a, min(CH_MAX, int(m.get('to', CH_MAX))))
             rng = list(range(a, b + 1)) + (list(PMS) if m.get('pms') else [])
@@ -425,7 +435,9 @@ class MemoryDesk:
                 return c.ws.send_json({'t': 'mem_err', 'msg': 'Уже идёт чтение или запись', 'msg_key': 'mem.err.busy'})
             why = self.busy_reason()
             if why:
-                return c.ws.send_json({'t': 'mem_err', 'msg': why, 'msg_key': 'mem.err.rig_busy', 'msg_params': {'reason': why}})
+                return c.ws.send_json({'t': 'mem_err', 'msg': why,
+                                       'msg_key': 'mem.err.rig_busy',
+                                       'msg_params': {'reason': why}})
             chans = [clean(x) for x in (m.get('chans') or [])]
             chans = [x for x in chans if CH_MIN <= x['ch'] <= CH_MAX or x['ch'] in PMS]
             self.stop_flag = False
@@ -457,9 +469,12 @@ class MemoryDesk:
                 with open(path, encoding='utf-8') as f:
                     data = json.load(f)
                 c.ws.send_json({'t': 'mem_data', 'chans': [clean(x) for x in data.get('chans', [])],
-                                'groups': data.get('groups', []), 'file': name, 'msg': 'Открыт файл «%s»' % name, 'msg_key': 'mem.msg.opened', 'msg_params': {'name': name}})
+                                'groups': data.get('groups', []), 'file': name,
+                                'msg': 'Открыт файл «%s»' % name,
+                                'msg_key': 'mem.msg.opened', 'msg_params': {'name': name}})
             except (OSError, ValueError) as e:
-                c.ws.send_json({'t': 'mem_err', 'msg': 'Не открылся файл: %s' % e, 'msg_key': 'mem.err.open', 'msg_params': {'err': str(e)}})
+                c.ws.send_json({'t': 'mem_err', 'msg': 'Не открылся файл: %s' % e,
+                                'msg_key': 'mem.err.open', 'msg_params': {'err': str(e)}})
         elif t == 'mem_delete':
             path, name = self._path(m.get('name'))
             try:
@@ -472,4 +487,5 @@ class MemoryDesk:
         elif t == 'mem_csv_in':
             chans = self.from_csv(str(m.get('text') or ''))
             c.ws.send_json({'t': 'mem_data', 'chans': chans, 'imported': True,
-                            'msg': 'Из CSV взято каналов: %d' % len(chans), 'msg_key': 'mem.msg.csv_in', 'msg_params': {'n': len(chans)}})
+                            'msg': 'Из CSV взято каналов: %d' % len(chans),
+                            'msg_key': 'mem.msg.csv_in', 'msg_params': {'n': len(chans)}})

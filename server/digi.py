@@ -581,8 +581,10 @@ class FaxDecoder:
             self.pos += ((cur - target) % self.W) / self.W * self.spl()
         self.rows = []
         self._set_state('image')
-        self.on_event({'t': 'fax_note', 'msg': 'Фазирование: %d строк, наклон %+d ppm' % (len(self.phase_px), round(self.slant)),
-                        'msg_key': 'fax.note.phasing', 'msg_params': {'lines': len(self.phase_px), 'slant': round(self.slant)}})
+        self.on_event({'t': 'fax_note',
+                       'msg': 'Фазирование: %d строк, наклон %+d ppm' % (len(self.phase_px), round(self.slant)),
+                       'msg_key': 'fax.note.phasing',
+                       'msg_params': {'lines': len(self.phase_px), 'slant': round(self.slant)}})
 
 
 def fax_synth(img, lpm=120, ioc=576, fs=SR, start=True, phasing=20, stop=True, dev=400, center=1900, amp=0.3):

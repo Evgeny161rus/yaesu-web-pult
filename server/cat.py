@@ -404,7 +404,7 @@ class Rig:
                             if not fut.done():
                                 fut.set_result(res)
                         continue
-                    if cmd.startswith('@'):           # частота: только последнее значение (ручка крутится быстрее, чем отвечает трансивер)
+                    if cmd.startswith('@'):           # частота: только последнее значение
                         key = cmd[1:-1]
                         val = self._freq_pend.pop(key, None)
                         if val is None:
@@ -664,7 +664,8 @@ class Rig:
             'atas_tune': ['AC123;'], 'atas_up': ['AC121;'], 'atas_down': ['AC122;'], 'atas_stop': ['AC120;'],
             'zero_in': ['ZI0;'], 'spot_on': ['CS1;'], 'spot_off': ['CS0;'],
             'scan_up': ['SC01;'], 'scan_down': ['SC02;'], 'scan_stop': ['SC00;'],
-            'vfo_mode': ['VM000;'], 'mem_mode': ['MC0%05d;' % int(self.state.get('mem_ch') or 1)], 'qmb_store': ['QI;'], 'qmb_recall': ['QR;'],
+            'vfo_mode': ['VM000;'], 'mem_mode': ['MC0%05d;' % int(self.state.get('mem_ch') or 1)],
+            'qmb_store': ['QI;'], 'qmb_recall': ['QR;'],
             'clar_clear': ['CF001+0000;'],
         }.get(name)
         if name == 'band' and arg is not None:

@@ -335,7 +335,9 @@ class Ft8Desk:
         if w < 2400:
             rig.set_param('width', 18)
             log.info("FT8: полоса DATA-U %d Гц -> 3000 Гц", w)
-            self.bc({'t': 'ft_note', 'msg': 'Полоса приёма DATA-U была %d Гц — расширил до 3000 Гц для FT8' % w, 'msg_key': 'ft.note.wide', 'msg_params': {'w': w}})
+            self.bc({'t': 'ft_note',
+                     'msg': 'Полоса приёма DATA-U была %d Гц — расширил до 3000 Гц для FT8' % w,
+                     'msg_key': 'ft.note.wide', 'msg_params': {'w': w}})
 
     async def _decode_slot(self, t0, k):
         m = MODES[self.mode]
@@ -483,7 +485,9 @@ class Ft8Desk:
             self.tries += 1
             limit = int(self.cfg.get('ft_tries', 6))
             if self.tries > limit and q:
-                self.bc({'t': 'ft_note', 'msg': '%s не ответил — связь прервана' % q['call'], 'msg_key': 'ft.note.no_reply', 'msg_params': {'call': q['call']}})
+                self.bc({'t': 'ft_note',
+                         'msg': '%s не ответил — связь прервана' % q['call'],
+                         'msg_key': 'ft.note.no_reply', 'msg_params': {'call': q['call']}})
                 self.qso = None
                 if self.auto_cq:
                     self.start_cq()
@@ -585,7 +589,9 @@ class Ft8Desk:
             return ('ft.err.busy', 'Передатчик занят (голос, CW, RTTY или автовызов)', {})
         mode = st.rig.state.get('mode') or ''
         if mode != 'DATA-U':
-            return ('ft.err.need_data_u', 'Для FT8 переключите трансивер в DATA-U (сейчас %s)' % (mode or '?'), {'mode': mode or '?'})
+            return ('ft.err.need_data_u',
+                    'Для FT8 переключите трансивер в DATA-U (сейчас %s)' % (mode or '?'),
+                    {'mode': mode or '?'})
         return None
 
     async def _transmit(self, t_slot, msg):
@@ -598,7 +604,10 @@ class Ft8Desk:
             return
         tones = _ftx.encode(msg, MODES[self.mode]['ft4'])
         if tones is None:
-            self.bc({'t': 'ft_note', 'msg': 'Сообщение «%s» не кодируется в %s' % (msg, self.mode), 'msg_key': 'ft.note.encode_err', 'msg_params': {'msg': msg, 'mode': self.mode}})
+            self.bc({'t': 'ft_note',
+                     'msg': 'Сообщение «%s» не кодируется в %s' % (msg, self.mode),
+                     'msg_key': 'ft.note.encode_err',
+                     'msg_params': {'msg': msg, 'mode': self.mode}})
             self.tx_enable = False
             return
         x = gfsk(list(tones), self.tx_hz, self.mode, amp=float(self.cfg.get('ft_tx_level', 0.5)))
@@ -699,7 +708,10 @@ class Ft8Desk:
                 c.ws.send_json({'t': 'ft_dec', 'slot': d['slot'], 'items': d['items'], 'mode': self.mode, 'old': True})
             c.ws.send_json({'t': 'ft_log', 'items': self.qsos[-30:]})
             if not _ftx:
-                c.ws.send_json({'t': 'ft_note', 'msg': 'Модуль FT8 не загрузился: %s' % _ftx_err, 'msg_key': 'ft.note.no_lib', 'msg_params': {'err': str(_ftx_err)}})
+                c.ws.send_json({'t': 'ft_note',
+                                'msg': 'Модуль FT8 не загрузился: %s' % _ftx_err,
+                                'msg_key': 'ft.note.no_lib',
+                                'msg_params': {'err': str(_ftx_err)}})
             return
         if t == 'ft_off':
             c.ft_on = False
@@ -744,13 +756,19 @@ class Ft8Desk:
                 total, new = await asyncio.to_thread(self.wk.import_recs, self._imp, bool(m.get('replace')))
                 self._imp = []
                 st = self.wk.stats()
-                c.ws.send_json({'t': 'ft_note', 'msg': 'Лог загружен: %d связей, новых %d. Сработано стран: %d, позывных: %d' % (total, new, st['dxcc'], st['calls']),
-                                'msg_key': 'ft.note.imported', 'msg_params': {'total': total, 'new': new, 'dxcc': st['dxcc'], 'calls': st['calls']}})
+                c.ws.send_json({'t': 'ft_note',
+                                'msg': ('Лог загружен: %d связей, новых %d. Сработано стран: %d, '
+                                        'позывных: %d') % (total, new, st['dxcc'], st['calls']),
+                                'msg_key': 'ft.note.imported',
+                                'msg_params': {'total': total, 'new': new,
+                                               'dxcc': st['dxcc'], 'calls': st['calls']}})
             else:
                 return
         elif t == 'ft_import_clear':
             self.wk.clear_import()
-            c.ws.send_json({'t': 'ft_note', 'msg': 'Загруженные логи удалены — остался только лог FT8 пульта', 'msg_key': 'ft.note.import_cleared'})
+            c.ws.send_json({'t': 'ft_note',
+                            'msg': 'Загруженные логи удалены — остался только лог FT8 пульта',
+                            'msg_key': 'ft.note.import_cleared'})
         elif t == 'ft_auto_seq':
             self.auto_seq = bool(m.get('on'))
         elif t == 'ft_dx':

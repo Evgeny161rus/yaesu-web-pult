@@ -96,12 +96,18 @@ class SimRadio:
         self.s['CT0'] = '0'
         # память: канал -> поля как в MR (режим тона в кодировке MR: 1 TSQ, 2 ENC, 3 DCS)
         self.mem = {
-            1: {'f': 145500000, 'md': '4', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Lybit 2m'},
-            2: {'f': 145650000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'R1 GELEND'},
-            3: {'f': 433500000, 'md': '4', 'ctm': 3, 'tone': 12, 'dcs': 5, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'DCS 70CM'},
-            5: {'f': 7074000, 'md': 'C', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'FT8 40M'},
-            7: {'f': 14230000, 'md': '2', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0, 'clar': 50, 'rx': 1, 'tx': 0, 'name': 'SSTV 20M'},
-            100: {'f': 145625000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2, 'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Rep Kerch'},
+            1: {'f': 145500000, 'md': '4', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0,
+                'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Lybit 2m'},
+            2: {'f': 145650000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2,
+                'clar': 0, 'rx': 0, 'tx': 0, 'name': 'R1 GELEND'},
+            3: {'f': 433500000, 'md': '4', 'ctm': 3, 'tone': 12, 'dcs': 5, 'sh': 0,
+                'clar': 0, 'rx': 0, 'tx': 0, 'name': 'DCS 70CM'},
+            5: {'f': 7074000, 'md': 'C', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0,
+                'clar': 0, 'rx': 0, 'tx': 0, 'name': 'FT8 40M'},
+            7: {'f': 14230000, 'md': '2', 'ctm': 0, 'tone': 12, 'dcs': 0, 'sh': 0,
+                'clar': 50, 'rx': 1, 'tx': 0, 'name': 'SSTV 20M'},
+            100: {'f': 145625000, 'md': '4', 'ctm': 1, 'tone': 8, 'dcs': 0, 'sh': 2,
+                  'clar': 0, 'rx': 0, 'tx': 0, 'name': 'Rep Kerch'},
         }
         self.cursor = {'0': 1, '1': 1}
         self.vm = 0
@@ -120,7 +126,8 @@ class SimRadio:
         if cmd == 'ID':
             return 'ID0840;'
         if cmd.startswith('VE') and len(cmd) == 3:
-            return {'VE0': 'VE00110;', 'VE1': 'VE10107;', 'VE2': 'VE20103;', 'VE3': 'VE30104;', 'VE4': 'VE40102;'}.get(cmd, '?;')
+            return {'VE0': 'VE00110;', 'VE1': 'VE10107;', 'VE2': 'VE20103;',
+                    'VE3': 'VE30104;', 'VE4': 'VE40102;'}.get(cmd, '?;')
         if re.match(r'^MD0.$', cmd) and len(cmd) == 4:      # как у Yaesu: смена вида — полоса по умолчанию
             self.s['SH0'] = '000'
         if cmd == 'RI0':

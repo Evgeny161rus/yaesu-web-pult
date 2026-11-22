@@ -446,7 +446,9 @@ class Station:
     async def stop_radio(self):
         self.spectrum.clear()
         self._stop_scope('', notify=False)
+        self.last_error = ''
         if not self.running:
+            self.push_status()
             return
         self.cw.stop()
         self.digi.stop()
@@ -1266,12 +1268,15 @@ class Station:
             port_change = any(new.get(k, self.cfg.get(k)) != self.cfg.get(k) for k in ('http_port', 'https_port'))
             self.cfg.update(new)
             save_cfg(self.cfg)
+            self.last_error = ''
             log.info("Настройки сохранены")
             c.ws.send_json({'t': 'admin_saved', 'cfg': self.cfg, 'port_change': port_change})
             if need_restart:
                 log.info("Перезапуск связи с новыми настройками")
                 await self.stop_radio()
                 await self.start_radio()
+            else:
+                self.push_status()
         elif t == 'admin_start':
             if not os.path.exists(cfg_path()):
                 save_cfg(self.cfg)

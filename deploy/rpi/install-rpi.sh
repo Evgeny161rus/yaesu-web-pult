@@ -45,9 +45,17 @@ if command -v rsync >/dev/null 2>&1; then
     --exclude 'config.json' --exclude 'cert.pem' --exclude 'key.pem' \
     "${SRC_DIR}/" "${DEST}/"
 else
-  cp -a "${SRC_DIR}/." "${DEST}/"
-  rm -rf "${DEST}/.git" "${DEST}/.venv" "${DEST}/dist" "${DEST}/build" || true
+  # Fallback without rsync: exclude runtime files so an update never
+  # overwrites the live config/certificates.
+  tar -C "${SRC_DIR}" \
+    --exclude='.git' --exclude='.venv' --exclude='__pycache__' --exclude='*.pyc' \
+    --exclude='dist' --exclude='build' --exclude='*.spec' \
+    --exclude='config.json' --exclude='cert.pem' --exclude='key.pem' \
+    -cf - . | tar -C "${DEST}" -xf -
 fi
+# Stale .pyc from a previous copy can shadow updated sources on the Pi.
+find "${DEST}" -type d -name '__pycache__' -prune -exec rm -rf {} + 2>/dev/null || true
+find "${DEST}" -type f -name '*.pyc' -delete 2>/dev/null || true
 
 echo "==> Виртуальное окружение Python"
 if [[ ! -x "${DEST}/.venv/bin/python" ]]; then

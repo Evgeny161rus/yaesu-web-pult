@@ -65,6 +65,13 @@ fi
 # Tray/GUI packages are harmless on headless but optional; install core deps explicitly.
 "${DEST}/.venv/bin/pip" install "numpy>=1.24" "pyserial>=3.5" "sounddevice>=0.4.6" "cryptography>=41"
 
+echo "==> Модуль FT8 (_ftx)"
+if ( cd "${DEST}/server" && "${DEST}/.venv/bin/python" setup_ftx.py build_ext --inplace ); then
+  echo "    _ftx собран"
+else
+  echo "    Предупреждение: _ftx не собрался (нужны build-essential и python3-dev). FT8/FT4 будут недоступны."
+fi
+
 echo "==> RTL-SDR (опционально)"
 RTL_SDR_DETECTED=0
 if command -v lsusb >/dev/null 2>&1 && lsusb | grep -qiE '0bda:2838|0bda:2832|RTL2838|RTL2832|RTL-SDR|Blog V4'; then

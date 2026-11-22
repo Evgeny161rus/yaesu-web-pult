@@ -199,13 +199,26 @@ class HamlibRig:
             self._stderr_task = asyncio.create_task(self._drain_errors())
             for _ in range(60):
                 if self.process.returncode is not None:
-                    raise RuntimeError('rigctld: ' + '\n'.join(self.errors[-5:]))
+                    if self._stderr_task:
+                        try:
+                            await asyncio.wait_for(asyncio.shield(self._stderr_task), 1)
+                        except Exception:
+                            pass
+                    msg = '\n'.join(self.errors[-5:]).strip()
+                    raise RuntimeError('rigctld: ' + (msg or f'exit {self.process.returncode}'))
                 try:
                     self.reader, self.writer = await asyncio.open_connection('127.0.0.1', port)
                     break
                 except OSError:
                     await asyncio.sleep(.1)
-            else: raise TimeoutError('rigctld не запустился за 6 секунд')
+            else:
+                if self.process.returncode is not None and self._stderr_task:
+                    try:
+                        await asyncio.wait_for(asyncio.shield(self._stderr_task), 1)
+                    except Exception:
+                        pass
+                msg = '\n'.join(self.errors[-5:]).strip()
+                raise TimeoutError('rigctld не запустился за 6 секунд' + ((': ' + msg) if msg else ''))
             if self.caps['cat_ptt'] and not self._serial_ptt:
                 try:
                     await self.request('set_ptt 0')

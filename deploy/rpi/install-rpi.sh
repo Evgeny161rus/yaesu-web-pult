@@ -99,13 +99,52 @@ install -m 0644 "${DEST}/deploy/yaesu-web-pult.service" /etc/systemd/system/yaes
 systemctl daemon-reload
 systemctl enable yaesu-web-pult.service
 
+# --- Пароль для веб-панели ---
+echo
+echo "==> Пароль для веб-панели"
+CFG="${DEST}/config.json"
+PW_SET=""
+if [ -t 0 ]; then
+  echo "    Задайте пароль для входа в панель по сети (https://<IP-Pi>:8443/)."
+  echo "    Пусто — удалённый доступ будет запрещён, панель только с самой Pi."
+  read -r -s -p "    Пароль: " PW1; echo
+  if [ -n "${PW1}" ]; then
+    read -r -s -p "    Повторите пароль: " PW2; echo
+    if [ "${PW1}" != "${PW2}" ]; then
+      echo "    Пароли не совпадают — пароль не изменён. Можно задать позже: sudo nano ${CFG}"
+    else
+      PW_SET="1"
+    fi
+  fi
+else
+  echo "    Неинтерактивный режим: пароль не запрошен. Задайте позже: sudo nano ${CFG}"
+fi
+if [ -n "${PW_SET}" ]; then
+  CFG="${CFG}" PWPASS="${PW1}" "${DEST}/.venv/bin/python" - <<'PY'
+import json, os
+cfg = os.environ.get('CFG', '/opt/yaesu-web-pult/config.json')
+pw = os.environ.get('PWPASS', '')
+try:
+    with open(cfg, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+except Exception:
+    data = {}
+data['password'] = pw
+with open(cfg, 'w', encoding='utf-8') as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+    f.write('\n')
+print('    Пароль сохранён в config.json')
+PY
+  chown "${USER_NAME}:${USER_NAME}" "${CFG}" 2>/dev/null || true
+fi
+
 echo
 echo "Готово. Дальнейшие шаги:"
 echo "  1. Настройте параметры (рекомендуется интерактивно по SSH, с автоопределением порта/звука и опросом трансивера):"
 echo "       sudo -u yaesu ${DEST}/.venv/bin/python ${DEST}/server/configure.py"
 echo "     или вручную: sudo nano ${DEST}/config.json"
 echo "     (CAT-порт: обычно /dev/ttyUSB0 или путь из /dev/serial/by-id/...; cat_baud как в меню трансивера;"
-echo "      задайте password для доступа по сети; audio_in_name/audio_out_name — имя USB Audio CODEC при необходимости.)"
+echo "      пароль можно изменить в config.json или через configure.py; audio_in_name/audio_out_name — имя USB Audio CODEC при необходимости.)"
 echo "  2. Запуск:   sudo systemctl start yaesu-web-pult"
 echo "  3. Журнал:   sudo journalctl -u yaesu-web-pult -f"
 echo "  4. Статус:   sudo systemctl status yaesu-web-pult"

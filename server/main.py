@@ -872,8 +872,13 @@ class Station:
             mode = 'auto'
         if mode == 'sdr':
             mode = 'rtlsdr'
-        if mode == 'audio' or self.sim:
+        if mode == 'audio':
             self.scope_state, self.scope_reason = 'off', ''
+            return
+        # RTL-SDR is an external receiver and can work even in simulator mode.
+        # FT4222 scope needs real Yaesu USB hardware, so keep it off in sim.
+        if self.sim and mode in ('auto', 'scope'):
+            self.scope_state, self.scope_reason = 'off', 'в симуляторе доступен только внешний SDR-водопад (RTL-SDR/SoapySDR)'
             return
 
         # RTL-SDR path (external SDR)

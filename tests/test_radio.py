@@ -8,7 +8,7 @@ from types import SimpleNamespace
 import tempfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'server'))
-from hamlib_backend import HamlibRig, RigError, list_models, parse_caps
+from hamlib_backend import HamlibRig, RigError, list_models, parse_caps, parse_models
 from yaesu_detect import parse_id
 from yaesu_detect import probe
 from webserver import valid_origin
@@ -30,6 +30,28 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(caps['keys'], ['af', 'freq_a'])
         self.assertIn('DATA-U', caps['modes'])
         self.assertFalse(caps['ptt'])
+
+    def test_models_all_manufacturers(self):
+        text = (
+            ' Rig #  Mfg                    Model                   Version         Status      Macro\n'
+            '     1  Hamlib                 Dummy                   20240709.0      Stable      RIG_MODEL_DUMMY\n'
+            '     4  FLRig                                          20250107.0      Stable      RIG_MODEL_FLRIG\n'
+            '  1001  Yaesu                  FT-847                  20230512.0      Stable      RIG_MODEL_FT847\n'
+            '  1049  Yaesu                  FT-710                  20250107.0      Stable      RIG_MODEL_FT710\n'
+            '  3070  Icom                   IC-7300                 20241015.0      Stable      RIG_MODEL_IC7300\n'
+        )
+        models = parse_models(text)
+        by_id = {m['id']: m for m in models}
+        self.assertEqual(by_id[1001]['mfg'], 'Yaesu')
+        self.assertEqual(by_id[1001]['name'], 'FT-847')
+        self.assertEqual(by_id[3070]['mfg'], 'Icom')
+        self.assertEqual(by_id[3070]['status'], 'Stable')
+        # FLRig has an empty model column and must not shift the status column.
+        self.assertEqual(by_id[4]['name'], 'FLRig')
+        self.assertEqual(by_id[4]['status'], 'Stable')
+
+    def test_rig_error_keeps_code(self):
+        self.assertEqual(RigError('boom', code=-11).code, -11)
 
     def test_origin(self):
         self.assertTrue(valid_origin('http://localhost:8080', 'localhost:8080', False))

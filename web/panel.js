@@ -2,6 +2,7 @@
 /* Панель управления сервером FTX-1 Пульт (открывается только на ПК с трансивером). */
 const $ = s => document.querySelector(s);
 let ws, cfg = {}, ports = [], audio = [], quitting = false, saveT, lastStatus = {};
+let hamlibAll = [];                       // все модели из установленного Hamlib
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -27,27 +28,23 @@ function connect() {
         $('#probeHint').textContent = (window.tr?tr('panel.probe.found','Найден '):'Найден ') + m.found.name + ', ID ' + m.found.cat_id;
         const ftx1 = m.found.id === 1051 || m.found.cat_id === '0840';
         $('#radio_backend').value = ftx1 ? 'native' : 'hamlib';
-        if (!ftx1) {
-          if (![...$('#hamlib_model').options].some(x => +x.value === m.found.id))
-            $('#hamlib_model').add(new Option(m.found.name, String(m.found.id)));
-          $('#hamlib_model').value = String(m.found.id);
-        }
+        if (!ftx1) selectHamlibModel(m.found.id, m.found.name);
         backendVisibility(); save();
         break;
-      case 'hamlib_models': {
-        const sel = $('#hamlib_model');
-        let cur = sel.value || String(cfg.hamlib_model || 1049);
-        if (cur === '1051') cur = '1049'; // 1051 = FTX-1 in Hamlib 4.7+, but Q900 in 4.6.x; never use as Hamlib model
+      case 'hamlib_models':
         if (m.models && m.models.length) {
-          sel.replaceChildren(...m.models.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
-          if (![...sel.options].some(x => x.value === cur)) sel.add(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur + (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)'), cur));
-          sel.value = cur;
-          $('#hamlibHint').textContent = (window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' + (window.tr?tr('panel.hamlib.dummy','Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.'):'Dummy — проверка без аппаратуры. PTT через CAT; EX-меню и цифровые модули FTX-1 отключены.');
-        } else if (m.error) {
-          if ($('#radio_backend').value === 'hamlib') $('#hamlibHint').textContent = m.error;
+          hamlibAll = m.models;
+          fillHamlibManufacturers();
+          renderHamlibModels();
+          $('#hamlibHint').textContent = (window.tr?tr('panel.hamlib.models','Моделей: '):'Моделей: ') + m.models.length + '. ' +
+            (window.tr?tr('panel.hamlib.dummy','Модели всех производителей из вашего Hamlib. Dummy — проверка без аппаратуры.'):'Модели всех производителей из вашего Hamlib. Dummy — проверка без аппаратуры.');
+        } else {
+          hamlibAll = [];
+          $('#hamlib_model').replaceChildren();
+          $('#hamlib_mfg').replaceChildren(new Option((window.tr?tr('panel.hamlib.all','Все производители'):'Все производители'), ''));
+          if (m.error && $('#radio_backend').value === 'hamlib') $('#hamlibHint').textContent = m.error;
         }
         break;
-      }
       case 'admin_denied':
         if (m.need_pw) {
           const pw = prompt((window.tr?tr('panel.pw_prompt','Пароль для доступа к панели'):'Пароль для доступа к панели'), '');
@@ -73,13 +70,54 @@ function connect() {
   };
 }
 
+// ------------------------------------------------------------ Hamlib модели
+function hamlibMfg() {
+  return [...new Set(hamlibAll.map(x => x.mfg).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+}
+function fillHamlibManufacturers() {
+  const sel = $('#hamlib_mfg');
+  const selected = hamlibAll.find(x => String(x.id) === String($('#hamlib_model').value || cfg.hamlib_model));
+  let cur = sel.value || (selected && selected.mfg) || '';
+  sel.replaceChildren(new Option((window.tr?tr('panel.hamlib.all','Все производители'):'Все производители'), ''));
+  for (const name of hamlibMfg()) sel.add(new Option(name, name));
+  if (cur && ![...sel.options].some(x => x.value === cur)) sel.add(new Option(cur, cur));
+  sel.value = cur;
+}
+function renderHamlibModels() {
+  const sel = $('#hamlib_model');
+  let cur = sel.value || String(cfg.hamlib_model || 1049);
+  if (cur === '1051') cur = '1049'; // 1051 = FTX-1 in Hamlib 4.7+, but Q900 in 4.6.x; never use as Hamlib model
+  const mfg = $('#hamlib_mfg').value;
+  const list = hamlibAll.filter(x => !mfg || x.mfg === mfg);
+  // Changing the manufacturer filter jumps to its first model instead of
+  // keeping a model that belongs to another manufacturer.
+  if (mfg && list.length && !list.some(x => String(x.id) === cur)) cur = String(list[0].id);
+  sel.replaceChildren(...list.map(x => new Option(`${x.name} · ${x.status}`, String(x.id))));
+  if (![...sel.options].some(x => x.value === cur)) {
+    const found = hamlibAll.find(x => String(x.id) === cur);
+    sel.add(new Option((found ? found.name : (window.tr?tr('panel.model.notfound','Модель '):'Модель ') + cur) +
+      (found ? '' : (window.tr?tr('panel.model.notfound2',' (не найдена)'):' (не найдена)')), cur));
+  }
+  sel.value = cur;
+}
+function selectHamlibModel(id, name) {
+  const sel = $('#hamlib_model');
+  if (![...sel.options].some(x => x.value === String(id))) sel.add(new Option(name || String(id), String(id)));
+  sel.value = String(id);
+  const found = hamlibAll.find(x => String(x.id) === String(id));
+  if (found && $('#hamlib_mfg').value && $('#hamlib_mfg').value !== found.mfg) $('#hamlib_mfg').value = found.mfg;
+}
+
 // ------------------------------------------------------------ инициализация
 function init(m) {
   cfg = m.cfg; ports = m.ports; audio = m.audio;
   $('#radio_backend').value = cfg.radio_backend || 'native';
   $('#hamlib_path').value = cfg.hamlib_path || 'rigctld';
+  $('#hamlib_extra').value = cfg.hamlib_extra || '';
   const hm = (+cfg.hamlib_model === 1051) ? 1049 : (cfg.hamlib_model || 1049);
   $('#hamlib_model').replaceChildren(new Option((window.tr?tr('panel.model.notfound','Модель '):'Модель ').replace(/ $/,': ') + hm, String(hm)));
+  fillHamlibManufacturers();
   backendVisibility();
   if (m.first_run || cfg.radio_backend === 'hamlib') send({t:'admin_hamlib_models'});
   $('#ver').textContent = (window.tr?tr('panel.version','версия '):'версия ') + m.version;
@@ -155,39 +193,54 @@ function fillAudio() {
     e.in = e.in || d.in > 0; e.out = e.out || d.out > 0;
     cores.set(k, e);
   }
-  const both = [...cores.values()].filter(e => e.in && e.out);
-  both.sort((a, b) => isCodec(b.name) - isCodec(a.name));
-  const cur = cfg.audio_in_name ? coreName(cfg.audio_in_name) : '';
-  let h = opt('', (window.tr?tr('panel.audio.auto','Автоматически (USB Audio CODEC/Device)'):'Автоматически (USB Audio CODEC/Device)'), !cur), found = !cur;
-  for (const e of both) {
-    const sel = !!cur && e.name.toLowerCase() === cur.toLowerCase();
-    if (sel) found = true;
-    h += opt(e.name, (isCodec(e.name) ? '★ ' : '') + e.name + (isCodec(e.name) ? (window.tr?tr('panel.audio.transceiver',' — трансивер'):' — трансивер') : ''), sel);
+  const inputs = [...cores.values()].filter(e => e.in);
+  const outputs = [...cores.values()].filter(e => e.out);
+  inputs.sort((a, b) => isCodec(b.name) - isCodec(a.name));
+  outputs.sort((a, b) => isCodec(b.name) - isCodec(a.name));
+  const curIn = cfg.audio_in_name ? coreName(cfg.audio_in_name) : '';
+  const curOut = cfg.audio_out_name ? coreName(cfg.audio_out_name) : '';
+  const auto = (window.tr?tr('panel.audio.auto','Автоматически (USB Audio CODEC/Device)'):'Автоматически (USB Audio CODEC/Device)');
+  let hIn = opt('', auto, !curIn), hOut = opt('', auto, !curOut);
+  let foundIn = !curIn, foundOut = !curOut;
+  for (const e of inputs) {
+    const sel = !!curIn && e.name.toLowerCase() === curIn.toLowerCase();
+    if (sel) foundIn = true;
+    hIn += opt(e.name, (isCodec(e.name) ? '★ ' : '') + e.name + (isCodec(e.name) ? (window.tr?tr('panel.audio.transceiver',' — трансивер'):' — трансивер') : ''), sel);
   }
-  if (!found) h += opt(cur, cur + (window.tr?tr('panel.audio.notfound',' (не найдено)'):' (не найдено)'), true);
-  $('#audio_dev').innerHTML = h;
+  for (const e of outputs) {
+    const sel = !!curOut && e.name.toLowerCase() === curOut.toLowerCase();
+    if (sel) foundOut = true;
+    hOut += opt(e.name, (isCodec(e.name) ? '★ ' : '') + e.name + (isCodec(e.name) ? (window.tr?tr('panel.audio.transceiver',' — трансивер'):' — трансивер') : ''), sel);
+  }
+  if (!foundIn) hIn += opt(curIn, curIn + (window.tr?tr('panel.audio.notfound',' (не найдено)'):' (не найдено)'), true);
+  if (!foundOut) hOut += opt(curOut, curOut + (window.tr?tr('panel.audio.notfound',' (не найдено)'):' (не найдено)'), true);
+  $('#audio_in_dev').innerHTML = hIn;
+  $('#audio_out_dev').innerHTML = hOut;
   $('#audio_api').value = cfg.audio_api || '';
   if ($('#audio_api').value !== (cfg.audio_api || '')) $('#audio_api').value = '';
   audioHint();
 }
 function audioHint(st) {
-  const d = $('#audio_dev').value;
+  const din = $('#audio_in_dev').value, dout = $('#audio_out_dev').value;
   let t = '';
-  if (d && !isCodec(d)) t = (window.tr?tr('panel.audio.hint.notusb','⚠ Выбрано не USB-устройство трансивера.'):'⚠ Выбрано не USB-устройство трансивера.');
+  if ((din && !isCodec(din)) || (dout && !isCodec(dout)))
+    t = (window.tr?tr('panel.audio.hint.notusb','⚠ Выбрано не USB-устройство трансивера.'):'⚠ Выбрано не USB-устройство трансивера.');
   else if (!audio.some(x => isCodec(x.name))) t = (window.tr?tr('panel.audio.hint.nousb','⚠ USB-звук трансивера не виден: проверьте кабель и нажмите ↻.'):'⚠ USB-звук трансивера не виден: проверьте кабель и нажмите ↻.');
   else if (st && st.audio_api_used) t = (window.tr?tr('panel.audio.hint.used','Сейчас звук идёт через '):'Сейчас звук идёт через ') + st.audio_api_used.replace('Windows ', '') + '.';
   $('#audioHint').textContent = t;
 }
-$('#audio_dev').addEventListener('change', () => audioHint());
+$('#audio_in_dev').addEventListener('change', () => audioHint());
+$('#audio_out_dev').addEventListener('change', () => audioHint());
 
 // ------------------------------------------------------------ сохранение
 function collect() {
-  const dev = $('#audio_dev').value;
+  const devIn = $('#audio_in_dev').value, devOut = $('#audio_out_dev').value;
   return {
     radio_backend: $('#radio_backend').value, hamlib_path: $('#hamlib_path').value.trim() || 'rigctld',
     hamlib_model: Number($('#hamlib_model').value || 1049),
+    hamlib_extra: $('#hamlib_extra').value.trim(),
     cat_port: $('#cat_port').value, cat_baud: +$('#cat_baud').value,
-    audio_in_name: dev, audio_out_name: dev, audio_api: $('#audio_api').value, audio_in_index: null, audio_out_index: null,
+    audio_in_name: devIn, audio_out_name: devOut, audio_api: $('#audio_api').value, audio_in_index: null, audio_out_index: null,
     ptt_method: $('#ptt_method').value, ptt_port: $('#ptt_port').value,
     simulate: $('#simulate').checked, password: $('#password').value,
     auto_connect: $('#auto_connect').checked, open_panel: $('#open_panel').checked, open_pult: $('#open_pult').checked,
@@ -223,14 +276,16 @@ function pttPortVisibility() {
 function backendVisibility() {
   const ham = $('#radio_backend').value === 'hamlib';
   $('#hamlibFields').classList.toggle('hidden', !ham);
-  $('#ptt_method').disabled = ham;
-  $('#ptt_port').disabled = ham;
+  // PTT RTS/DTR works in both backends (CAT/Hamlib or a separate interface line).
+  $('#ptt_method').disabled = false;
+  $('#ptt_port').disabled = false;
   $('#simulate').disabled = ham;
   if (ham) {
     const sel = $('#hamlib_model');
     if (sel && sel.options.length <= 1) send({t:'admin_hamlib_models'});
   }
 }
+$('#hamlib_mfg').addEventListener('change', () => { renderHamlibModels(); save(); });
 $('#hamlibReload').onclick = () => {
   clearTimeout(saveT);
   send({t:'admin_save',cfg:collect()});
@@ -301,7 +356,8 @@ function renderStatus(s) {
   err.classList.toggle('hidden', !err.textContent);
   $('#cCat').className = s.running ? (s.connected ? 'ok' : 'warn') : '';
   $('#cAudio').className = s.running ? (s.audio_ok ? 'ok' : 'bad') : '';
-  if (s.audio_api_used !== undefined && document.activeElement !== $('#audio_dev')) audioHint(s);
+  if (s.audio_api_used !== undefined && !$('#audio_in_dev').contains(document.activeElement) &&
+      !$('#audio_out_dev').contains(document.activeElement)) audioHint(s);
   $('#cTx').className = s.tx ? 'bad' : (s.running ? 'ok' : '');
   $('#cTxT').textContent = s.tx ? (window.tr?tr('panel.tx.on','Передача'):'Передача') : (window.tr?tr('panel.tx.off','Приём'):'Приём');
   $('#cCl').className = s.clients.length ? 'ok' : '';

@@ -8,6 +8,7 @@ import logging
 import math
 import os
 import re
+import shlex
 import socket
 import subprocess
 import sys
@@ -41,12 +42,31 @@ def run_info(executable, *args):
     return result.stdout.decode(errors='replace')
 
 
-def list_models(executable):
+def parse_models(text):
+    """Parse ``rigctld -l`` output for every manufacturer.
+
+    Columns are separated by two or more spaces.  Some entries (FLRig,
+    NET rigctl) have an empty model column, so parse the version/status tail
+    first and split the remaining head explicitly.
+    """
     models = []
-    for line in run_info(executable, '-l').splitlines():
-        cols = re.split(r'\s{2,}', line.strip())
-        if len(cols) >= 5 and cols[0].isdigit() and (cols[1] == 'Yaesu' or cols[0] == '1'):
-            models.append({'id': int(cols[0]), 'name': cols[2], 'status': cols[4]})
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or not stripped[0].isdigit():
+            continue
+        match = re.match(r'^\s*(\d+)\s{2,}(.+?)\s{2,}([\w.]+)\s{2,}([A-Za-z]+)(?:\s{2,}(\S+))?\s*$', line)
+        if not match:
+            continue
+        ident = int(match.group(1))
+        head = re.split(r'\s{2,}', match.group(2).strip(), maxsplit=1)
+        mfg = head[0].strip()
+        name = (head[1] if len(head) > 1 else '').strip() or mfg
+        models.append({'id': ident, 'mfg': mfg, 'name': name, 'status': match.group(4)})
+    return models
+
+
+def list_models(executable):
+    models = parse_models(run_info(executable, '-l'))
     if not models:
         raise RuntimeError('Hamlib не вернул список моделей')
     return models
@@ -90,6 +110,8 @@ class HamlibRig:
         self.caps = {}
         self.errors = []
         self._level_index = 0
+        self._serial_ptt = None
+        self.ptt_method = str(cfg.get('ptt_method') or 'CAT').upper()
 
     def _set(self, values):
         self.state.update(values)
@@ -134,6 +156,23 @@ class HamlibRig:
         self.caps = parse_caps(await asyncio.to_thread(run_info, executable, '-m', str(model), '-u'))
         if not self.caps['get_freq']:
             raise ValueError('Драйвер не поддерживает чтение частоты')
+        # PTT can be sent through rigctld (CAT) or through a separate RTS/DTR
+        # line.  Serial PTT is useful when a Hamlib driver has no PTT or returns
+        # EINVAL (-11), and for SignaLink/RigBlaster-style interfaces.
+        self.caps['cat_ptt'] = bool(self.caps.get('ptt'))
+        if self.ptt_method in ('RTS', 'DTR'):
+            try:
+                from ptt_serial import SerialPtt
+                self._serial_ptt = SerialPtt(self.cfg.get('ptt_port'), self.ptt_method)
+            except Exception as e:
+                raise RuntimeError('PTT линией %s: %s. Выберите отдельный COM-порт '
+                                   '(Standard COM Port) или способ PTT через CAT.'
+                                   % (self.ptt_method, e)) from e
+            self.caps['ptt'] = True
+            self.caps['get_ptt'] = False
+            self.caps['ptt_source'] = 'serial'
+        else:
+            self.caps['ptt_source'] = 'cat' if self.caps['ptt'] else ''
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
@@ -141,7 +180,14 @@ class HamlibRig:
         if model != 1:
             if not self.cfg.get('cat_port'): raise ValueError('Выберите CAT-порт')
             args += ['-r', self.cfg['cat_port'], '-s', str(int(self.cfg['cat_baud']))]
-        if self.caps['ptt']: args += ['-P', 'RIG']
+        if self.caps['cat_ptt'] and not self._serial_ptt:
+            args += ['-P', 'RIG']
+        extra = str(self.cfg.get('hamlib_extra') or '').strip()
+        if extra:
+            try:
+                args += shlex.split(extra)
+            except ValueError as e:
+                raise ValueError('Некорректные дополнительные параметры Hamlib: %s' % e) from e
         try:
             try:
                 self.process = await asyncio.create_subprocess_exec(
@@ -160,7 +206,7 @@ class HamlibRig:
                 except OSError:
                     await asyncio.sleep(.1)
             else: raise TimeoutError('rigctld не запустился за 6 секунд')
-            if self.caps['ptt']:
+            if self.caps['cat_ptt'] and not self._serial_ptt:
                 try:
                     await self.request('set_ptt 0')
                 except RigError as e:
@@ -168,10 +214,12 @@ class HamlibRig:
                         log.warning("PTT недоступен при старте Hamlib: %s", e)
                         self.caps['ptt'] = False
                         self.caps['get_ptt'] = False
+                        self.caps['cat_ptt'] = False
+                        self.caps['ptt_source'] = ''
                     else:
                         raise
             await self._poll()
-            self._set({'connected': True, 'radio_name': self.caps['name'], 'radio_caps': self.caps,
+            self._set({'connected': True, 'radio_name': self.caps['name'], 'radio_caps': dict(self.caps),
                        'backend': 'hamlib', 'backend_error': ''})
             self._task = asyncio.create_task(self._worker())
         except BaseException:
@@ -185,7 +233,7 @@ class HamlibRig:
             values = await self.request('get_mode')
             self._set({'mode': MODE_TO_UI.get(values['Mode'], values['Mode']),
                        'bandwidth_hz': int(values['Passband'])})
-        if self.caps.get('get_ptt'):
+        if self.caps.get('get_ptt') and not self._serial_ptt:
             try:
                 values = await self.request('get_ptt')
                 self._set({'tx': int(values['PTT']) != 0})
@@ -229,6 +277,16 @@ class HamlibRig:
 
     def ptt(self, on):
         if on and not self.state.get('connected'): raise ValueError('Нет связи с трансивером')
+        if self._serial_ptt:
+            try:
+                self._serial_ptt.set(on)
+            except Exception as e:
+                log.warning("PTT линией %s: %s", self.ptt_method, e)
+                if on:
+                    raise ValueError('Не удалось переключить линию PTT: %s' % e) from e
+                return
+            self._set({'tx': bool(on), 'backend_error': ''})
+            return
         if not self.caps.get('ptt'):
             if on: raise ValueError('PTT недоступен в этом драйвере')
             return
@@ -251,8 +309,11 @@ class HamlibRig:
                         if e.code in (-11, -4, -9):
                             self.caps['ptt'] = False
                             self.caps['get_ptt'] = False
+                            self.caps['cat_ptt'] = False
+                            self.caps['ptt_source'] = ''
                             self._set({'radio_caps': dict(self.caps), 'tx': False,
-                                       'backend_error': f'PTT недоступен через Hamlib ({e})'})
+                                       'backend_error': f'PTT недоступен через Hamlib ({e}); '
+                                                        'выберите PTT линией RTS/DTR'})
                         else:
                             self._set({'tx': False, 'backend_error': str(e)})
                 if self._pending:
@@ -282,7 +343,12 @@ class HamlibRig:
             await self._emergency_off()
 
     async def _emergency_off(self):
-        if self.writer and self.caps.get('ptt'):
+        if self._serial_ptt:
+            try:
+                self._serial_ptt.set(False)
+            except Exception:
+                pass
+        if self.writer and self.caps.get('cat_ptt'):
             try:
                 self.writer.write(b'\\set_ptt 0\n')
                 await asyncio.wait_for(self.writer.drain(), .5)
@@ -301,11 +367,18 @@ class HamlibRig:
                 await asyncio.gather(self._task, return_exceptions=True)
         if self.writer:
             try:
-                if self.caps.get('ptt'): await self.request('set_ptt 0')
+                if self.caps.get('cat_ptt') and not self._serial_ptt:
+                    await self.request('set_ptt 0')
             except Exception: await self._emergency_off()
             self.writer.close()
             try: await self.writer.wait_closed()
             except Exception: pass
+        if self._serial_ptt:
+            try:
+                self._serial_ptt.close()
+            except Exception:
+                pass
+            self._serial_ptt = None
         if self.process and self.process.returncode is None:
             self.process.terminate()
             try: await asyncio.wait_for(self.process.wait(), 3)

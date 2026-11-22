@@ -210,29 +210,6 @@ def core_name(name):
     return core.strip().lower()
 
 
-# Порядок драйверов «Авто»: WDM-KS отдаёт звук в трансивер напрямую, мимо микшера Windows
-# (громкость, «улучшения», приглушение при звонках), поэтому передача через него чище всего.
-API_ORDER = ['Windows WDM-KS', 'Windows WASAPI', 'Windows DirectSound', 'MME']
-
-
-def find_pair(core, api):
-    """Вход и выход одного устройства (по общей части имени) у заданного драйвера."""
-    import sounddevice as sd
-    core = (core or '').lower()
-    ins, outs = [], []
-    for i, d in enumerate(sd.query_devices()):
-        if sd.query_hostapis(d['hostapi'])['name'] != api:
-            continue
-        c = core_name(d['name'])
-        if not (c == core or (core and core in d['name'].lower())):
-            continue
-        if d['max_input_channels'] > 0:
-            ins.append(i)
-        if d['max_output_channels'] > 0:
-            outs.append(i)
-    return (ins[0] if ins else None), (outs[0] if outs else None)
-
-
 def _api_prio(api, api_pref):
     return 0 if api_pref and api == api_pref else {'MME': 1, 'Windows WASAPI': 2, 'Windows DirectSound': 3}.get(api, 4)
 
@@ -306,36 +283,15 @@ class SoundDeviceAudio:
     def start(self, on_rx):
         import sounddevice as sd
         self.on_rx = on_rx
-        if self.in_dev is None and self.out_dev is None:
-            core = core_name(self.in_name or self.out_name or '')
-            if not core:
-                gi, _ = guess_codec(list_devices())
-                core = core_name(gi['name']) if gi else ''
-            if core:
-                have = {sd.query_hostapis(i)['name'] for i in range(len(sd.query_hostapis()))}
-                apis = [self.api] if self.api else [a for a in API_ORDER if a in have]
-                errs = []
-                for api in apis:
-                    ind, outd = find_pair(core, api)
-                    if ind is None or outd is None:
-                        continue
-                    try:
-                        self._open(ind, outd)
-                        self.api_used = api
-                        return
-                    except Exception as e:
-                        errs.append('%s: %s' % (api, e))
-                        log.warning("Звук через %s не открылся: %s", api, e)
-                        self.stop()
-                if errs:
-                    raise RuntimeError('Звуковая карта трансивера не открылась (%s)' % '; '.join(errs))
         devs = list_devices()
         gi, go = guess_codec(devs)
+        # Input and output are resolved independently: a generic USB sound card
+        # often exposes capture and playback as separate PortAudio devices.
         ind = self.in_dev if self.in_dev is not None else find_device(self.in_name, 'in', self.api)
         if ind is None and not self.in_name and gi:
             ind = gi['index']
         outd = self.out_dev if self.out_dev is not None else find_device(self.out_name, 'out', self.api)
-        if outd is None and ind is not None:      # выход не задан/не найден — ищем пару к входу
+        if outd is None and not self.out_name and ind is not None:   # выход не задан — ищем пару к входу
             outd = find_device(core_name(sd.query_devices(ind)['name']), 'out',
                                sd.query_hostapis(sd.query_devices(ind)['hostapi'])['name'])
         if outd is None and not self.out_name and go:
@@ -348,7 +304,7 @@ class SoundDeviceAudio:
                 what.append("выход «%s»" % (self.out_name or 'пара к входу'))
             for d in devs:
                 log.info("  звук [%d] %s (%s) in=%d out=%d", d['index'], d['name'], d['api'], d['in'], d['out'])
-            raise RuntimeError("Не найден %s. Выберите устройства трансивера в панели управления "
+            raise RuntimeError("Не найден %s. Выберите устройства приёма и передачи в панели управления "
                                "(список всех устройств — в журнале)." % ' и '.join(what))
         self._open(ind, outd)
 
@@ -356,6 +312,7 @@ class SoundDeviceAudio:
         import sounddevice as sd
         self.names = (sd.query_devices(ind)['name'], sd.query_devices(outd)['name'])
         api = sd.query_hostapis(sd.query_devices(outd)['hostapi'])['name']
+        self.api_used = api
         log.info("Звук: приём с [%s] %s, передача на [%s] %s (%s)", ind, self.names[0], outd, self.names[1], api)
 
         self.overflows = self.underflows = 0

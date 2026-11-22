@@ -13,6 +13,7 @@
 ## Техническая документация (`docs/`)
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура
+- [RADIO-SUPPORT.md](RADIO-SUPPORT.md) — поддержка трансиверов, CAT/PTT и звука
 - [WEBSOCKET_PROTOCOL.md](WEBSOCKET_PROTOCOL.md) — протокол WebSocket
 - [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) — сборка и релиз
 - [CROSS_PLATFORM_COMPATIBILITY.md](CROSS_PLATFORM_COMPATIBILITY.md) — совместимость платформ

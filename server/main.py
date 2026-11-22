@@ -62,6 +62,7 @@ DEFAULT_CFG = {
     "radio_backend": "native",
     "hamlib_path": "rigctld",
     "hamlib_model": 1049,
+    "hamlib_extra": "",
     "cat_port": "",
     "cat_baud": 38400,
     "ptt_method": "TX1",
@@ -1223,7 +1224,8 @@ class Station:
             try:
                 if self.running or self.busy: raise ValueError('Сначала остановите соединение')
                 if self.cfg.get('radio_backend') == 'hamlib' and int(self.cfg['hamlib_model']) not in MODERN_MODELS:
-                    raise ValueError('Для старой модели используйте ручной выбор; ID-запрос для неё отключён')
+                    raise ValueError('Автоопределение по CAT ID поддерживается только для современных Yaesu. '
+                                     'Выберите модель Hamlib вручную — для Icom, Kenwood и других это основной способ.')
                 self.busy = True
                 probing = True
                 found = await asyncio.to_thread(probe, self.cfg.get('cat_port'), self.cfg['cat_baud'])
@@ -1256,7 +1258,7 @@ class Station:
                             'detect': detect(self.ports_cache, self.audio_cache), 'urls': self.urls()})
         elif t == 'admin_save':
             new = {k: v for k, v in (m.get('cfg') or {}).items() if k in DEFAULT_CFG}
-            radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'cat_port', 'cat_baud', 'ptt_method', 'ptt_port', 'audio_in_name', 'audio_out_name', 'audio_api',
+            radio_keys = ('radio_backend', 'hamlib_path', 'hamlib_model', 'hamlib_extra', 'cat_port', 'cat_baud', 'ptt_method', 'ptt_port', 'audio_in_name', 'audio_out_name', 'audio_api',
                           'audio_in_index', 'audio_out_index', 'simulate',
                           'waterfall_source', 'scope_libft4222', 'scope_d2xx', 'scope_serial', 'scope_auto_download',
                           'sdr_driver', 'sdr_device', 'sdr_format', 'sdr_sample_rate', 'sdr_gain')

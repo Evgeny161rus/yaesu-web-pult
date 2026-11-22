@@ -121,19 +121,27 @@
       <p class="hint" id="probeHint" data-i18n="panel.probe.hint">На выбранном порту и скорости, при остановленном соединении. Для старых моделей — ручной выбор.</p>
       <label class="field"><span data-i18n="panel.backend">Драйвер</span><select id="radio_backend">
         <option value="native" data-i18n="panel.backend.native">FTX-1 — расширенное управление</option>
-        <option value="hamlib" data-i18n="panel.backend.hamlib">Yaesu / Hamlib — базовое управление</option>
+        <option value="hamlib" data-i18n="panel.backend.hamlib">Любой трансивер — Hamlib/CAT</option>
       </select></label>
       <div id="hamlibFields" class="hidden">
         <label class="field"><span data-i18n="panel.hamlib.path">Путь к rigctld (Hamlib)</span><input id="hamlib_path" type="text" placeholder="rigctld"></label>
-        <label class="field"><span data-i18n="panel.hamlib.model">Модель из установленного Hamlib</span><select id="hamlib_model"></select></label>
+        <div class="row">
+          <label class="field"><span data-i18n="panel.hamlib.mfg">Производитель</span><select id="hamlib_mfg"></select></label>
+          <label class="field"><span data-i18n="panel.hamlib.model">Модель из установленного Hamlib</span><select id="hamlib_model"></select></label>
+        </div>
         <button class="btn" id="hamlibReload" data-i18n="panel.hamlib.reload">Обновить модели</button>
-        <p class="hint" id="hamlibHint" data-i18n="panel.hamlib.hint">В режиме Hamlib PTT управляется через CAT. Некоторые расширенные функции могут быть недоступны.</p>
+        <details class="advanced"><summary data-i18n="panel.hamlib.extra.summary">Дополнительные параметры Hamlib (необязательно)</summary>
+          <label class="field"><span data-i18n="panel.hamlib.extra">Аргументы rigctld</span><input id="hamlib_extra" type="text" placeholder="напр. -C civaddr=0x94"></label>
+          <p class="hint" data-i18n="panel.hamlib.extra.hint">Для Icom обычно нужен CI-V адрес: -C civaddr=0x94. Для нестандартного COM-порта: -C serial_parity=N -C serial_handshake=none. Параметры передаются rigctld без изменений.</p>
+        </details>
+        <p class="hint" id="hamlibHint" data-i18n="panel.hamlib.hint">Hamlib управляет трансивером по CAT. Для PTT можно выбрать CAT или отдельную линию RTS/DTR. Расширенные меню FTX-1 недоступны.</p>
       </div>
       <label class="field"><span data-i18n="panel.cat_port">COM-порт CAT (Enhanced COM Port)</span>
         <div class="row"><select id="cat_port"></select><button class="btn" id="btnRefresh" title="" data-i18n-title="panel.refresh">↻</button><button class="btn" id="btnDetect" title="" data-i18n="panel.detect" data-i18n-title="panel.detect">Найти</button></div></label>
       <label class="field"><span data-i18n="panel.cat_baud">Скорость CAT (как в меню трансивера CAT RATE)</span>
         <select id="cat_baud"><option>4800</option><option>9600</option><option>19200</option><option>38400</option><option>115200</option></select></label>
-      <label class="field"><span data-i18n="panel.audio_dev">Звуковая карта трансивера (USB Audio)</span><select id="audio_dev"></select></label>
+      <label class="field"><span data-i18n="panel.audio_in_dev">Звук приёма (USB-карта или вход трансивера)</span><select id="audio_in_dev"></select></label>
+      <label class="field"><span data-i18n="panel.audio_out_dev">Звук передачи (USB-карта или выход трансивера)</span><select id="audio_out_dev"></select></label>
       <details class="advanced"><summary data-i18n="panel.audio_api">Драйвер звука</summary>
         <label class="field"><span data-i18n="panel.audio_api.win">Драйвер Windows</span>
           <select id="audio_api">
@@ -155,7 +163,7 @@
       <label class="field hidden" id="pttPortField"><span data-i18n="panel.ptt.port">Порт для PTT (Standard COM Port, если отдельный)</span><select id="ptt_port"></select></label>
       <label class="chk"><input type="checkbox" id="simulate"> <span data-i18n="panel.sim">Режим симулятора — проверка без трансивера</span></label>
       <details class="advanced"><summary data-i18n="panel.scope.summary">Широкий водопад USB-scope (FT-710 / FTDX10 / FTDX101, экспериментально)</summary>
-        <p class="hint" data-i18n="panel.scope.hint">Для трансиверов с аппаратным панорамным приёмником. Читает интерфейс FTDI <b>FT4222 A</b> (не CAT-порт). Библиотеки FTDI не входят в поставку: скачайте LibFT4222/D2XX с сайта FTDI и положите их в папку <code>ftdi</code> рядом с программой (или укажите пути ниже). Без библиотек/поддерживаемого трансивера пульт автоматически использует обычный звуковой водопад. На реальном оборудовании пока не проверялось.</p>
+        <p class="hint" data-i18n="panel.scope.hint">Для трансиверов с аппаратным панорамным приёмником. Читает интерфейс FTDI <b>FT4222 A</b> (не CAT-порт). Библиотеки LibFT4222/D2XX уже поставляются в папке <code>ftdi</code> и проверяются при каждом запуске независимо от модели трансивера. Если их нет, программа попробует скачать их автоматически (может потребоваться VPN) или используйте кнопку ниже. Без библиотек/поддерживаемого трансивера пульт автоматически использует обычный звуковой водопад. На реальном оборудовании пока не проверялось.</p>
         <label class="field"><span data-i18n="panel.scope.source">Источник водопада</span>
           <select id="waterfall_source">
             <option value="auto" data-i18n="panel.scope.src.auto">Авто — USB-scope/RTL-SDR, если доступен, иначе звук</option>
@@ -176,9 +184,9 @@
         <label class="field"><span data-i18n="panel.scope.lib4222">LibFT4222 (путь к .dll / .so, можно пусто при авто-поиске в папке ftdi)</span><input id="scope_libft4222" type="text" data-i18n-placeholder="panel.scope.lib4222.ph" placeholder="авто: ./ftdi/LibFT4222-64.dll или ./ftdi/libft4222.so"></label>
         <label class="field"><span data-i18n="panel.scope.d2xx">D2XX (ftd2xx.dll / libftd2xx, если требуется отдельно)</span><input id="scope_d2xx" type="text" data-i18n-placeholder="panel.scope.d2xx.ph" placeholder="обычно рядом с LibFT4222; можно оставить пустым"></label>
         <label class="field"><span data-i18n="panel.scope.serial">Серийный номер SPI-интерфейса (необязательно)</span><input id="scope_serial" type="text" data-i18n-placeholder="panel.scope.serial.ph" placeholder="Пусто — открыть «FT4222 A» по описанию"></label>
-        <label class="chk"><input type="checkbox" id="scope_auto_download"> <span data-i18n="panel.scope.auto_dl">Автоматически скачивать библиотеки FTDI при обнаружении совместимого трансивера (нужен интернет; по умолчанию включено)</span></label>
+        <label class="chk"><input type="checkbox" id="scope_auto_download"> <span data-i18n="panel.scope.auto_dl">Проверять и при отсутствии автоматически скачивать библиотеки FTDI при запуске (нужен интернет; по умолчанию включено)</span></label>
         <div class="row"><button class="btn" id="scopeDownload" data-i18n="panel.scope.dl">Скачать библиотеки FTDI сейчас</button><span class="small muted" id="scopeDlMsg"></span></div>
-        <p class="hint" data-i18n="panel.scope.hint2">При обнаружении FT-710/FTDX10/FTDX101 и отсутствии библиотек программа попробует скачать сторонние файлы FTDI с официального сайта в папку <code>ftdi</code> (в фоне, без блокировки работы). Адреса загрузки версионированы и могут устареть — если не получилось, скачайте вручную по ссылкам в документации. Можно отключить галочку. На Raspberry Pi нужны библиотеки ARM64 (aarch64).</p>
+        <p class="hint" data-i18n="panel.scope.hint2">При отсутствии библиотек программа попробует скачать официальные файлы FTDI в папку <code>ftdi</code> в фоне, без блокировки работы — независимо от того, какая модель трансивера выбрана. Адреса загрузки версионированы и могут устареть; если не получилось, скачайте вручную по ссылкам в документации (может потребоваться VPN). Можно отключить галочку. На Raspberry Pi используются библиотеки ARM64 (aarch64), они уже включены в поставку.</p>
       </details>
     </section>
 

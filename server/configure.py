@@ -30,6 +30,7 @@ sys.path.insert(0, RES)
 # Minimal defaults needed if main can't be imported in some environments
 FALLBACK_DEFAULTS = {
     "radio_backend": "native", "hamlib_path": "rigctld", "hamlib_model": 1049,
+    "hamlib_extra": "",
     "cat_port": "", "cat_baud": 38400, "ptt_method": "TX1", "ptt_port": "",
     "ptt_line": "RTS", "audio_in_name": "", "audio_out_name": "", "audio_api": "",
     "audio_in_index": None, "audio_out_index": None, "https_port": 8443,
@@ -131,6 +132,14 @@ def probe_radio(port, baud):
         return None, str(e)
 
 
+def list_hamlib_models(executable):
+    try:
+        from hamlib_backend import list_models
+        return list_models(executable), None
+    except Exception as e:
+        return [], str(e)
+
+
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -189,12 +198,20 @@ def choose_port(ports, title, current):
     return choose(title, opts, current)
 
 
-def choose_audio(audio, title, current):
-    # Show unique "core" names that have input or output (prefer both)
+def choose_audio(audio, title, current, kind=None):
+    """Choose a capture (kind='in') or playback (kind='out') device.
+
+    Separate selections are what make generic USB sound cards work: their
+    capture and playback endpoints are often different PortAudio devices.
+    """
     seen = {}
     for d in audio:
         name = d.get('name', '')
         if not name:
+            continue
+        if kind == 'in' and d.get('in', 0) <= 0:
+            continue
+        if kind == 'out' and d.get('out', 0) <= 0:
             continue
         core = name
         # try to extract core name in parentheses
@@ -219,13 +236,51 @@ def choose_audio(audio, title, current):
     return choose(title, opts, current)
 
 
+def choose_backend(cfg):
+    """Select FTX-1 native or Hamlib/CAT for any other transceiver."""
+    v = choose("Драйвер трансивера:", [
+        ("native", "FTX-1 — расширенное управление"),
+        ("hamlib", "Любой трансивер — Hamlib/CAT"),
+    ], cfg.get('radio_backend', 'native'))
+    if v is not None:
+        cfg['radio_backend'] = v
+    path = cfg.get('hamlib_path') or 'rigctld'
+    if cfg.get('radio_backend') != 'hamlib':
+        print("Для не-FTX-1 выберите Hamlib. Модели других производителей тоже доступны.")
+        return
+    models, err = list_hamlib_models(path)
+    if err:
+        print(f"Не удалось прочитать список Hamlib ({path}): {err}")
+        print("Установите Hamlib (libhamlib-utils) или укажите hamlib_path.")
+        return
+    current = int(cfg.get('hamlib_model') or 1049)
+    cur_mfg = next((m['mfg'] for m in models if m['id'] == current), '')
+    mfgs = sorted({m['mfg'] for m in models if m.get('mfg')}, key=str.lower)
+    mfg = choose("Производитель:", [("", "Все производители")] + [(m, m) for m in mfgs], cur_mfg)
+    if mfg is None:
+        mfg = cur_mfg
+    filtered = [m for m in models if not mfg or m['mfg'] == mfg]
+    opts = [(m['id'], f"{m['mfg']} {m['name']} — {m['status']}") for m in filtered]
+    mid = choose(f"Модель Hamlib ({len(filtered)}):", opts if opts else [(current, str(current))], current)
+    if mid is not None:
+        cfg['hamlib_model'] = int(mid)
+    extra = prompt("Доп. аргументы rigctld (Icom CI-V напр. -C civaddr=0x94)", cfg.get('hamlib_extra') or '', allow_empty=True)
+    if extra is not None:
+        cfg['hamlib_extra'] = extra.strip()
+
+
 def show_status(cfg):
     print("\nТекущие настройки (config.json):")
+    print(f"  Драйвер:         {cfg.get('radio_backend') or 'native'}" +
+          (f"  Hamlib модель: {cfg.get('hamlib_model')}" if cfg.get('radio_backend') == 'hamlib' else ""))
+    if cfg.get('hamlib_extra'):
+        print(f"  Hamlib аргументы: {cfg.get('hamlib_extra')}")
     print(f"  CAT порт:        {cfg.get('cat_port') or '(не выбран)'}")
     print(f"  CAT скорость:    {cfg.get('cat_baud')}")
     print(f"  PTT метод:       {cfg.get('ptt_method')}" + (f"  порт: {cfg.get('ptt_port')}" if cfg.get('ptt_method') in ('RTS','DTR') else ""))
     print(f"  CW метод:        {cfg.get('cw_method')}" + (f"  порт: {cfg.get('cw_port')}" if cfg.get('cw_method') in ('rts','dtr','RTS','DTR') else ""))
-    print(f"  Аудио:           {cfg.get('audio_in_name') or '(авто)'}")
+    print(f"  Аудио приём:     {cfg.get('audio_in_name') or '(авто)'}")
+    print(f"  Аудио передача:  {cfg.get('audio_out_name') or cfg.get('audio_in_name') or '(авто)'}")
     print(f"  Автоподключение: {'да' if cfg.get('auto_connect') else 'нет'}")
     print(f"  Симулятор:       {'да' if cfg.get('simulate') else 'нет'}")
     print(f"  Пароль (LAN):    {'задан' if cfg.get('password') else '(нет — вход по сети невозможен)'}")
@@ -279,6 +334,13 @@ def probe_menu(cfg):
     name = info.get('name') or '?'
     hid = info.get('id')
     print(f"Определён: {name}  (CAT ID: {cid}, Hamlib ID: {hid})")
+    if cid == '0840' or hid == 1051:
+        cfg['radio_backend'] = 'native'
+        print("  → Драйвер: FTX-1 native (расширенное управление)")
+    elif hid:
+        cfg['radio_backend'] = 'hamlib'
+        cfg['hamlib_model'] = int(hid)
+        print(f"  → Драйвер: Hamlib, модель {hid} ({name})")
     if cid in SCOPE_IDS:
         print("Возможности: поддерживается аппаратный USB-scope (широкий водопад).")
         print("  Модели: FT-710 / FTDX10 / FTDX101 (экспериментально). Нужен интерфейс FT4222 и библиотеки FTDI.")
@@ -302,6 +364,7 @@ def settings_menu(cfg):
         print("  8. Порты HTTP/HTTPS и HTTP в LAN")
         print("  9. Автоподключение / симулятор")
         print(" 10. Водопад / USB-scope (FT-710/FTDX10/FTDX101)")
+        print(" 11. Драйвер трансивера / модель Hamlib")
         print("  0. Назад")
         ch = prompt("Выбор", "0")
         if ch == '0':
@@ -327,12 +390,16 @@ def settings_menu(cfg):
                 cfg['ptt_port'] = v
         elif ch == '5':
             audio = list_audio()
-            v = choose_audio(audio, "Аудиоустройство (USB Audio CODEC):", cfg.get('audio_in_name'))
-            if v is not None:
-                cfg['audio_in_name'] = v
-                cfg['audio_out_name'] = v
+            vin = choose_audio(audio, "Звук приёма (USB Audio):", cfg.get('audio_in_name'), 'in')
+            if vin is not None:
+                cfg['audio_in_name'] = vin
                 cfg['audio_api'] = ''
                 cfg['audio_in_index'] = None
+            vout = choose_audio(audio, "Звук передачи (USB Audio):",
+                                cfg.get('audio_out_name') or cfg.get('audio_in_name'), 'out')
+            if vout is not None:
+                cfg['audio_out_name'] = vout
+                cfg['audio_api'] = ''
                 cfg['audio_out_index'] = None
         elif ch == '6':
             v = choose("Метод CW:", CW_METHODS, cfg.get('cw_method'))
@@ -419,6 +486,8 @@ def settings_menu(cfg):
             v = prompt("scope_serial (SPI-интерфейс, не CAT; пусто = 'FT4222 A')", cfg.get('scope_serial') or '', allow_empty=True)
             if v is not None:
                 cfg['scope_serial'] = v.strip()
+        elif ch == '11':
+            choose_backend(cfg)
 
 
 def restart_hint():

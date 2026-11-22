@@ -206,21 +206,7 @@ class SerialTransport:
             pass
 
 
-class SerialPtt:
-    """PTT линией RTS или DTR второго (Standard) COM-порта — запасной способ."""
-
-    def __init__(self, port, line='RTS'):
-        import serial
-        self.line = line.upper()
-        self.ser = serial.Serial(port, 9600, timeout=0)
-        self.ser.rts = False
-        self.ser.dtr = False
-
-    def set(self, on):
-        if self.line == 'DTR':
-            self.ser.dtr = bool(on)
-        else:
-            self.ser.rts = bool(on)
+from ptt_serial import SerialPtt  # noqa: E402  (re-exported for older imports)
 
 
 # --------------------------------------------------------------------- Rig

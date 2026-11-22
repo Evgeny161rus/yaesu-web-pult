@@ -1189,7 +1189,7 @@ class Station:
                     self._maybe_scope_autodownload()
         except Exception:
             pass
-        st = self.rig.state if self.rig else {}
+        st = (getattr(self.rig, 'state', None) or {})
         return {
             'running': self.running, 'busy': self.busy, 'sim': self.sim,
             'connected': bool(st.get('connected')), 'tx': bool(st.get('tx')),
@@ -1402,7 +1402,7 @@ class Station:
                                 'audio_err': self.audio_err, 'ctcss': CTCSS, 'running': self.running,
                                 'max_tx': self.cfg['max_tx_seconds'], 'ptt_method': self.cfg['ptt_method'],
                                 'wf_scope': self.scope_live(), 'wf_scope_reason': self.scope_reason})
-                c.ws.send_json({'t': 'state', 's': self.rig.state if self.rig else {'connected': False}, 'full': True})
+                c.ws.send_json({'t': 'state', 's': (getattr(self.rig, 'state', None) or {'connected': False}), 'full': True})
                 if self.rig:
                     self.rig.refresh()                     # свежие значения из трансивера, а не из памяти
                 c.ws.send_json({'t': 'audio_status', 'err': self.audio_err if self.running else 'Связь с трансивером остановлена'})
@@ -1440,7 +1440,7 @@ class Station:
             return
         if t in ('rec_start', 'rec_stop', 'rec_hello'):
             if t == 'rec_start' and self.running and self.audio and not self.audio_err:
-                st = self.rig.state if self.rig else {}
+                st = (getattr(self.rig, 'state', None) or {})
                 name = self.rec.start(st.get('freq_a') or 0, st.get('mode') or '')
                 log.info("Запись связи: %s", name)
             elif t == 'rec_start':

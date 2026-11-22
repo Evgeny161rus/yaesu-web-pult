@@ -187,8 +187,11 @@ class HamlibRig:
             port = sock.getsockname()[1]
         args = [executable, '-m', str(model), '-T', '127.0.0.1', '-t', str(port)]
         if model != 1:
-            if not self.cfg.get('cat_port'): raise ValueError('Выберите CAT-порт')
-            args += ['-r', self.cfg['cat_port'], '-s', str(int(self.cfg['cat_baud']))]
+            cat_port = self.cfg.get('cat_port')
+            if not cat_port: raise ValueError('Выберите CAT-порт')
+            if os.name != 'nt' and not os.path.exists(cat_port):
+                raise ValueError(f'CAT-порт {cat_port} не найден. Проверьте USB-кабель и выберите правильный порт в панели.')
+            args += ['-r', cat_port, '-s', str(int(self.cfg['cat_baud']))]
         if self.caps['cat_ptt'] and not self._serial_ptt:
             args += ['-P', 'RIG']
         extra = str(self.cfg.get('hamlib_extra') or '').strip()

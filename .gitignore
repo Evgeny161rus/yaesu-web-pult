@@ -39,6 +39,14 @@ worked_import.json
 # External tools
 tools/hamlib/
 tools/hamlib-*.zip
+tools/rtlsdr/
+tools/rtlsdr-*.zip
+
+# Remote VPS: never commit real keys/configs
+deploy/vps/*.key
+deploy/vps/wg0.conf
+deploy/vps/Caddyfile
+deploy/vps/nginx-yaesu.conf
 
 # FTDI scope libraries (bundled for out-of-box USB scope support)
 # Keep ftdi/README.txt and platform binaries tracked in repo.

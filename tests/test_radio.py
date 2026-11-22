@@ -56,6 +56,9 @@ class ParsingTests(unittest.TestCase):
     def test_origin(self):
         self.assertTrue(valid_origin('http://localhost:8080', 'localhost:8080', False))
         self.assertTrue(valid_origin('https://192.168.1.5:8443', '192.168.1.5:8443', True))
+        # Reverse proxy must preserve Host (see docs/REMOTE-VPS.md).
+        self.assertTrue(valid_origin('https://pult.example.com', 'pult.example.com', True))
+        self.assertFalse(valid_origin('https://pult.example.com', '10.8.0.2:8443', True))
         for origin in ['', 'null', 'https://evil.example', 'http://localhost:8080/path', 'https://localhost:8080']:
             self.assertFalse(valid_origin(origin, 'localhost:8080', False))
 

@@ -39,3 +39,9 @@ jobs:
       continue-on-error: true
       run: |
         mypy server --ignore-missing-imports --no-strict-optional
+
+    - name: Shell script syntax
+      run: |
+        for f in deploy/rpi/*.sh deploy/vps/*.sh scripts/*.sh; do
+          [ -f "$f" ] && bash -n "$f"
+        done

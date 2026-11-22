@@ -1,0 +1,9 @@
+[Interface]
+Address = 10.8.0.1/24
+ListenPort = 51820
+PrivateKey = <VPS_PRIVATE_KEY>
+
+[Peer]
+# Raspberry Pi
+PublicKey = <PI_PUBLIC_KEY>
+AllowedIPs = 10.8.0.2/32

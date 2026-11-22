@@ -121,26 +121,33 @@ class HamlibRig:
         if '\n' in command or '\r' in command:
             raise ValueError('Invalid rigctld command')
         async with self._lock:
-            async with asyncio.timeout(2):
-                self.writer.write(('+\\' + command + '\n').encode('ascii'))
-                await self.writer.drain()
-                values = {}
-                for _ in range(128):
-                    raw = await self.reader.readline()
-                    if not raw:
-                        raise ConnectionError('rigctld закрыл соединение')
-                    line = raw.decode('ascii', 'replace').strip()
-                    if line.startswith('RPRT '):
-                        code = int(line.split()[1])
-                        if code:
-                            raise RigError(f'{command.split()[0]}: Hamlib error {code}', code=code)
-                        return values
-                    if ': ' in line:
-                        key, val = line.split(': ', 1)
-                        values[key] = val
-                    elif line:
-                        values['_value'] = line
-                raise ConnectionError('Слишком длинный ответ rigctld')
+            try:
+                async with asyncio.timeout(2):
+                    self.writer.write(('+\\' + command + '\n').encode('ascii'))
+                    await self.writer.drain()
+                    values = {}
+                    for _ in range(128):
+                        raw = await self.reader.readline()
+                        if not raw:
+                            raise ConnectionError('rigctld закрыл соединение')
+                        line = raw.decode('ascii', 'replace').strip()
+                        if line.startswith('RPRT '):
+                            code = int(line.split()[1])
+                            if code:
+                                raise RigError(f'{command.split()[0]}: Hamlib error {code}', code=code)
+                            return values
+                        if ': ' in line:
+                            key, val = line.split(': ', 1)
+                            values[key] = val
+                        elif line:
+                            values['_value'] = line
+                    raise ConnectionError('Слишком длинный ответ rigctld')
+            except TimeoutError as e:
+                tail = '; '.join(self.errors[-3:]).strip()
+                msg = f'{command.split()[0]}: таймаут ответа rigctld'
+                if tail:
+                    msg += f' ({tail})'
+                raise RigError(msg) from e
 
     async def _drain_errors(self):
         while line := await self.process.stderr.readline():

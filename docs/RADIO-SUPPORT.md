@@ -54,6 +54,20 @@
   PortAudio — выберите каждое в своём списке.
 * Если оставить «Автоматически», пульт подберёт USB-кодек или пару к входу.
 
+## Windows: Hamlib и RTL-SDR
+
+В релизе `windows-latest` рядом с `Yaesu-Web-Pult.exe` приложены два скрипта:
+
+* `install-hamlib.ps1` — скачивает Hamlib 4.7.2 в `tools/hamlib/...`.
+  Запуск: `powershell -ExecutionPolicy Bypass -File .\install-hamlib.ps1`
+* `install-rtlsdr.ps1` — скачивает `rtl_sdr.exe` и DLL в `tools/rtlsdr/`.
+  Запуск: `powershell -ExecutionPolicy Bypass -File .\install-rtlsdr.ps1`
+
+После установки перезапустите программу/панель. Hamlib появится в списке моделей,
+а RTL-SDR — как источник водопада (`waterfall_source=rtlsdr`). Программа ищет
+`rigctld.exe` в `tools/hamlib/...`, а `rtl_sdr.exe` — в `PATH` и `tools/rtlsdr`.
+Оба скрипта качают файлы с GitHub/osmocom, а не с ftdichip.com.
+
 ## Частые проблемы
 
 | Симптом | Что проверить |

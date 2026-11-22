@@ -218,14 +218,29 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 В «Диспетчере устройств» появятся COM-порты (названия зависят от модели) и звуковое устройство.
 
 **Вариант А — готовый Yaesu-Web-Pult.exe** (Python не нужен): скачайте его со страницы
-[Releases → latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/latest) и запускайте двойным кликом.
+[Releases → windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest) и запускайте двойным кликом.
 Каждое изменение в ветке `main` пересобирает exe автоматически (GitHub Actions); собрать вручную — `build-exe.bat` (legacy-вариант: `scripts/build_exe.bat`).
 
 **Вариант Б — без сборки.** Установите Python 3.11+ с python.org (галочка *Add python.exe to PATH*)
 и запустите двойным кликом `Yaesu-Web-Pult.pyw`. При первом запуске программа сама предложит
 установить нужные библиотеки.
 
+**Hamlib и RTL-SDR на Windows (для не-FTX-1 и внешней панорамы)**
+
+- **Hamlib**: положите `install-hamlib.ps1` рядом с `Yaesu-Web-Pult.exe` и выполните в PowerShell:
+  `powershell -ExecutionPolicy Bypass -File .\install-hamlib.ps1`. Скрипт скачает Hamlib 4.7.2
+  в `tools/hamlib/...`. После этого в панели выберите «Любой трансивер — Hamlib/CAT» и нажмите
+  «Обновить модели».
+- **RTL-SDR**: аналогично `powershell -ExecutionPolicy Bypass -File .\install-rtlsdr.ps1` —
+  скачает `rtl_sdr.exe` в `tools/rtlsdr/`. Затем в панели выберите источник водопада
+  `rtlsdr` (или `sdr`) и драйвер `rtlsdr`. Программа ищет `rtl_sdr.exe` в `PATH` и в `tools/rtlsdr`.
+- Оба скрипта приложены к релизу `windows-latest`. Они качают файлы с GitHub/osmocom,
+  а не с ftdichip.com.
+
 ### Linux / Raspberry Pi
+
+Готовый архив для Pi: [Releases → pi-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/pi-latest)
+(`yaesu-web-pult-pi.tar.gz`, внутри — исходники и `deploy/install-rpi.sh`).
 
 ```bash
 # Клонировать репозиторий

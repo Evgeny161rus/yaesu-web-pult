@@ -1,7 +1,7 @@
-# Автоматическая сборка FTX1-Pult.exe на серверах GitHub.
-# Загрузите проект в свой репозиторий GitHub → вкладка Actions → «Build FTX1-Pult.exe» → Run workflow.
-# Готовый exe — в разделе Artifacts у завершённой сборки.
-name: Build Yaesu-Web-Pult.exe
+# Сборка релизов для двух платформ из общей ветки main.
+# Windows: EXE + ZIP. Raspberry Pi: tar.gz с исходниками и установщиком.
+# Отдельные релизы: windows-latest и pi-latest.
+name: Build Windows + Raspberry Pi releases
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 jobs:
-  build:
+  windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -57,9 +57,9 @@ jobs:
       - name: Проверка сборки
         shell: pwsh
         run: |
-          if (-not (Test-Path dist\Yaesu-Web-Pult.exe)) { 
+          if (-not (Test-Path dist\Yaesu-Web-Pult.exe)) {
             Write-Host "EXE not found"
-            exit 1 
+            exit 1
           }
           $size = (Get-Item dist\Yaesu-Web-Pult.exe).Length / 1MB
           Write-Host "EXE size: $([math]::Round($size, 2)) MB"
@@ -69,44 +69,91 @@ jobs:
           }
       - uses: actions/upload-artifact@v7
         with:
-          name: Yaesu-Web-Pult
+          name: Yaesu-Web-Pult-windows
           path: |
             dist/Yaesu-Web-Pult.exe
             dist/Yaesu-Web-Pult-folder.zip
             dist/SHA256.txt
-      - name: Релиз «последняя сборка»
+      - name: Релиз Windows
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: latest
-          name: Yaesu Web Pult — Latest Build
+          tag_name: windows-latest
+          name: Yaesu Web Pult — Windows (latest)
           body: |
-            ## 📥 Download
-            
+            ## 📥 Windows
+
             **Yaesu-Web-Pult.exe** — single file, download and run (no Python required)
-            
+
             **Yaesu-Web-Pult-folder.zip** — folder version (less likely to trigger antivirus)
-            
+
             ## ⚠️ Windows Defender Warning
-            
+
             PyInstaller executables sometimes trigger false positives. If Windows Defender blocks:
             1. Use the folder version (Yaesu-Web-Pult-folder.zip)
             2. Or add exception to Windows Defender
             3. All source code is open in this repository
-            
-            ## ✅ Features
-            
-            - 7 professional themes
-            - Support for FTX-1, FT-710, FTDX10, FT-991, FT-891 and more
-            - CW, FT8/FT4, RTTY, PSK31, NAVTEX, SSTV
-            - Works on Raspberry Pi
-            
+
+            ## 📦 Other platforms
+
+            Raspberry Pi build: see the **pi-latest** release.
+
             **SHA256 checksums:** SHA256.txt
-            
+
             **Build:** ${{ github.sha }}
-          make_latest: true
+          make_latest: false
           overwrite_files: true
           files: |
             dist/Yaesu-Web-Pult.exe
             dist/Yaesu-Web-Pult-folder.zip
             dist/SHA256.txt
+            install-hamlib.ps1
+            install-rtlsdr.ps1
+
+  pi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Собрать архив для Raspberry Pi
+        run: |
+          mkdir -p dist
+          git archive --format=tar.gz --prefix=yaesu-web-pult/ -o dist/yaesu-web-pult-pi.tar.gz HEAD
+          sha256sum dist/yaesu-web-pult-pi.tar.gz > dist/SHA256-pi.txt
+          ls -lh dist/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Yaesu-Web-Pult-pi
+          path: |
+            dist/yaesu-web-pult-pi.tar.gz
+            dist/SHA256-pi.txt
+      - name: Релиз Raspberry Pi
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: pi-latest
+          name: Yaesu Web Pult — Raspberry Pi (latest)
+          body: |
+            ## 📥 Raspberry Pi (headless)
+
+            1. Download `yaesu-web-pult-pi.tar.gz`
+            2. Extract and run the installer:
+               ```bash
+               tar -xzf yaesu-web-pult-pi.tar.gz
+               cd yaesu-web-pult
+               sudo bash deploy/install-rpi.sh
+               ```
+            3. The installer will ask for the web-panel password and enable
+               `yaesu-web-pult.service`.
+
+            ## 📦 Other platforms
+
+            Windows build: see the **windows-latest** release.
+
+            **SHA256 checksum:** SHA256-pi.txt
+
+            **Build:** ${{ github.sha }}
+          make_latest: false
+          overwrite_files: true
+          files: |
+            dist/yaesu-web-pult-pi.tar.gz
+            dist/SHA256-pi.txt

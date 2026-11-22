@@ -290,6 +290,30 @@ def detect(ports, audio):
     return out
 
 
+def sdr_executable(name):
+    """Find an SDR tool in PATH or in the bundled tools/ folder (Windows).
+
+    Returns an absolute path when a local copy exists, otherwise the bare
+    command name so the OS/PATH is used.
+    """
+    import shutil
+    name = str(name or '').strip()
+    if not name:
+        return ''
+    exe = name if os.name != 'nt' or name.lower().endswith('.exe') else name + '.exe'
+    found = shutil.which(name)
+    if not found and os.name == 'nt':
+        found = shutil.which(exe)
+    if found:
+        return found
+    for parts in (('tools', 'rtlsdr'), ('tools', 'rtlsdr', 'bin'),
+                  ('tools', 'sdr'), ('tools', 'sdr', 'bin'), ('tools',)):
+        path = os.path.join(BASE, *parts, exe)
+        if os.path.isfile(path):
+            return path
+    return ''
+
+
 # ------------------------------------------------------------------- станция
 class Client:
     def __init__(self, ws, local):
@@ -617,10 +641,9 @@ class Station:
         return self._sdr_available()
 
     def _sdr_available(self):
-        import shutil
         drv = self._sdr_driver()
         if drv == 'rtlsdr':
-            if shutil.which('rtl_sdr') or shutil.which('rtl_power'):
+            if sdr_executable('rtl_sdr') or sdr_executable('rtl_power'):
                 return True
             for p in ('/dev/swradio0', '/dev/rtlsdr0'):
                 if os.path.exists(p):
@@ -633,25 +656,28 @@ class Station:
                 pass
             return False
         if drv in ('rx_sdr', 'hackrf', 'airspy', 'sdrplay', 'sdr'):
-            exe = 'rx_sdr' if drv != 'hackrf' else 'hackrf_transfer'
-            if shutil.which(exe):
+            if sdr_executable('rx_sdr' if drv != 'hackrf' else 'hackrf_transfer'):
                 return True
             # SoapySDR devices may be present even if we only check later
-            if shutil.which('SoapySDRUtil'):
+            if sdr_executable('SoapySDRUtil'):
                 return True
             return False
-        return bool(shutil.which(drv))
+        return bool(sdr_executable(drv))
 
     def _start_rtlsdr(self):
         return self._start_sdr()
 
     def _start_sdr(self):
-        import shutil
         drv = self._sdr_driver()
-        exe = 'rtl_sdr' if drv == 'rtlsdr' else ('hackrf_transfer' if drv == 'hackrf' else 'rx_sdr')
-        if not shutil.which(exe):
-            hint = 'sudo apt-get install -y rtl-sdr librtlsdr-dev' if drv == 'rtlsdr' else f'установите {exe} (SoapySDR tools / драйвер устройства)'
-            self.scope_state, self.scope_reason = 'unavailable', f'{drv}: {exe} не найден. {hint}'
+        exe_name = 'rtl_sdr' if drv == 'rtlsdr' else ('hackrf_transfer' if drv == 'hackrf' else 'rx_sdr')
+        exe = sdr_executable(exe_name)
+        if not exe:
+            if drv == 'rtlsdr':
+                hint = ('запустите install-rtlsdr.ps1 из папки программы' if os.name == 'nt'
+                        else 'sudo apt-get install -y rtl-sdr librtlsdr-dev')
+            else:
+                hint = f'установите {exe_name} (SoapySDR tools / драйвер устройства)'
+            self.scope_state, self.scope_reason = 'unavailable', f'{drv}: {exe_name} не найден. {hint}'
             log.warning("SDR: %s", self.scope_reason)
             return False
         try:
@@ -681,7 +707,8 @@ class Station:
                 pass
 
         try:
-            sdr = RtlSdrScope(on_frame=on_frame, on_status=on_status, driver=drv, device=device, fmt=fmt)
+            sdr = RtlSdrScope(on_frame=on_frame, on_status=on_status, driver=drv,
+                              device=device, fmt=fmt, executable=exe)
             sdr.start(center_hz=center, sample_rate=sr, gain=gain, fft=1024)
         except Exception as e:
             self.scope_state, self.scope_reason = 'unavailable', str(e).split('\n')[0]

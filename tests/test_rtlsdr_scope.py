@@ -118,6 +118,38 @@ class RtlSdrScopeTests(unittest.TestCase):
         s.stop()
         self.assertFalse(s.running)
 
+    def test_custom_executable_is_used(self):
+        exe = r'C:\tools\rtlsdr\rtl_sdr.exe'
+        s = RtlSdrScope(on_frame=lambda *a: None, executable=exe)
+        self.assertEqual(s._build_cmd(14_100_000, 1_024_000, 40)[0], exe)
+
+
+class SdrExecutableTests(unittest.TestCase):
+    def test_local_tool_is_found(self):
+        import os
+        import tempfile
+        import main
+        name = 'rtl_sdr.exe' if os.name == 'nt' else 'rtl_sdr'
+        with tempfile.TemporaryDirectory() as d:
+            folder = os.path.join(d, 'tools', 'rtlsdr')
+            os.makedirs(folder)
+            exe = os.path.join(folder, name)
+            open(exe, 'w').close()
+            with mock.patch.object(main, 'BASE', d), \
+                    mock.patch('shutil.which', return_value=None):
+                self.assertEqual(main.sdr_executable('rtl_sdr'), exe)
+
+    def test_path_tool_is_preferred(self):
+        import main
+        with mock.patch('shutil.which', return_value='/usr/bin/rtl_sdr'):
+            self.assertEqual(main.sdr_executable('rtl_sdr'), '/usr/bin/rtl_sdr')
+
+    def test_missing_tool_returns_empty(self):
+        import main
+        with mock.patch('shutil.which', return_value=None), \
+                mock.patch.object(main, 'BASE', '/nonexistent-yaesu-root'):
+            self.assertEqual(main.sdr_executable('rtl_sdr'), '')
+
 
 class RtlSdrConfigTests(unittest.TestCase):
     def test_configure_has_rtlsdr_source(self):

@@ -17,13 +17,14 @@ class RtlSdrScope:
     """Generic subprocess-based SDR scope. Name kept for backward compat."""
 
     def __init__(self, on_frame, on_status=None, driver='rtlsdr', device='',
-                 fmt='cu8', cmd=None):
+                 fmt='cu8', cmd=None, executable=''):
         self.on_frame = on_frame      # on_frame(center_hz:int, span_hz:int, levels:bytes)
         self.on_status = on_status    # on_status(state:str, reason:str, span:int)
         self.driver = (driver or 'rtlsdr').lower()
         self.device = str(device or '')
         self.fmt = (fmt or self._default_fmt()).lower()
         self.cmd_template = cmd  # optional custom command list template
+        self.executable = str(executable or '')
         self._stop = threading.Event()
         self._thread = None
         self._proc = None
@@ -101,7 +102,7 @@ class RtlSdrScope:
             cmd = [str(x).format(freq=center, sr=sr, gain=gain, device=self.device) for x in self.cmd_template]
             return cmd
         if self.driver == 'rtlsdr':
-            cmd = ['rtl_sdr', '-f', str(center), '-s', str(sr), '-g', str(gain)]
+            cmd = [self.executable or 'rtl_sdr', '-f', str(center), '-s', str(sr), '-g', str(gain)]
             if self.device:
                 cmd += ['-d', str(self.device)]
             cmd += ['-']
@@ -109,20 +110,20 @@ class RtlSdrScope:
         if self.driver in ('rx_sdr', 'soapysdr', 'sdr'):
             # rx_sdr (SoapySDR tools) - supports many SDRs
             fmt = {'cu8': 'CU8', 'cs16': 'CS16', 'cf32': 'CF32'}.get(self.fmt, 'CF32')
-            cmd = ['rx_sdr', '-f', str(center), '-s', str(sr), '-F', fmt, '-g', str(gain)]
+            cmd = [self.executable or 'rx_sdr', '-f', str(center), '-s', str(sr), '-F', fmt, '-g', str(gain)]
             if self.device:
                 cmd += ['-d', str(self.device)]
             cmd += ['-']
             return cmd
         if self.driver == 'hackrf':
             # hackrf_transfer outputs signed 8-bit IQ by default
-            cmd = ['hackrf_transfer', '-r', '-', '-f', str(center), '-s', str(sr),
+            cmd = [self.executable or 'hackrf_transfer', '-r', '-', '-f', str(center), '-s', str(sr),
                    '-a', '1', '-l', str(gain), '-g', str(gain)]
             if self.device:
                 cmd += ['-d', str(self.device)]
             return cmd
         # fallback: treat as rtl_sdr-compatible
-        cmd = [self.driver, '-f', str(center), '-s', str(sr), '-g', str(gain), '-']
+        cmd = [self.executable or self.driver, '-f', str(center), '-s', str(sr), '-g', str(gain), '-']
         return cmd
 
     def _driver_label(self):

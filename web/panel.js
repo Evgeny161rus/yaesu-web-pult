@@ -3,18 +3,26 @@
 const $ = s => document.querySelector(s);
 let ws, cfg = {}, ports = [], audio = [], quitting = false, saveT, lastStatus = {};
 let hamlibAll = [];                       // все модели из установленного Hamlib
+let panelAuthed = false;                  // не шлём admin_* до успешного admin_init
 
 function toast(msg, ms = 2600) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
   clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), ms);
 }
-const send = o => ws && ws.readyState === 1 && ws.send(JSON.stringify(o));
+const send = o => {
+  if (!ws || ws.readyState !== 1) return;
+  // До аутентификации разрешён только admin_hello; иначе несколько
+  // admin_denied подряд вызывали повторные запросы пароля.
+  if (o && o.t && o.t.startsWith('admin_') && o.t !== 'admin_hello' && !panelAuthed) return;
+  ws.send(JSON.stringify(o));
+};
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function connect() {
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
   ws.onopen = () => send({ t: 'admin_hello' });
   ws.onclose = () => {
+    panelAuthed = false;
     if (quitting) { $('#gone').classList.remove('hidden'); setTimeout(() => window.close(), 800); return; }
     setLamp('bad', (window.tr?tr('panel.status.noconn','Нет связи с сервером'):'Нет связи с сервером'), (window.tr?tr('panel.status.closed','Программа закрыта? Запустите FTX-1 Пульт снова.'):'Программа закрыта? Запустите FTX-1 Пульт снова.'));
     setTimeout(connect, 2000);
@@ -51,7 +59,7 @@ function connect() {
           if (pw != null) { send({ t: 'admin_hello', pw }); break; }
         }
         setLamp('bad', (window.tr?tr('panel.denied','Панель доступна только на ПК с трансивером или по паролю'):'Панель доступна только на ПК с трансивером или по паролю'), ''); break;
-      case 'admin_init': init(m); break;
+      case 'admin_init': panelAuthed = true; init(m); break;
       case 'admin_devices': ports = m.ports; audio = m.audio; fillDevices(); renderUrls(m.urls); applyDetectIfEmpty(m.detect); break;
       case 'admin_status': renderStatus(m.s); break;
       case 'admin_log': addLog(m.line); break;

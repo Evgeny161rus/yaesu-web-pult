@@ -12,7 +12,6 @@ WEFAX: 48 кГц -> 12 кГц -> ЧМ-демодулятор вокруг 1900 �
   фазирование по импульсу в начале строки (+ авто-коррекция наклона), стоп по тону 450 Гц.
 """
 import logging
-import threading
 import time
 
 import numpy as np
@@ -205,7 +204,6 @@ class RttyDecoder:
 
     def _scores(self, f, sm, lo_c, hi_c):
         """Оценка каждого возможного центра: слабейший из двух тонов (оба должны быть сильными)."""
-        df = f[1]
         c = np.arange(max(lo_c, 250 + self.shift / 2), min(hi_c, 3450 - self.shift / 2), 2.0)
         if not len(c):
             return c, c
@@ -295,8 +293,6 @@ class RttyDecoder:
         now = time.monotonic()
         if now - self.t_info > 0.5:
             self.t_info = now
-            mk_, sp_ = self.lvl
-            sig = 20 * np.log10((mk_ + sp_ + 1e-9) / (abs(mk_ - sp_) * 0 + np.percentile(np.abs(d), 10) + 1e-3))
             self.on_event({'t': 'rt_info', 'fc': round(self.fc), 'shift': self.shift, 'baud': self.baud,
                            'pol': 'прямая' if self.best == 0 else 'обратная',
                            'err': round(self.u[self.best].score() * 100), 'mark': self.lvl[0], 'space': self.lvl[1]})

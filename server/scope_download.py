@@ -60,10 +60,6 @@ def _pick_member(names, wanted):
 def _extract_libft4222(archive, out_dir, system, machine):
     placed = []
     if system == 'windows':
-        wanted = ['LibFT4222-64.dll', 'ftd2xx64.dll'] if machine.endswith('64') else ['LibFT4222.dll', 'ftd2xx.dll']
-        # also try to place the 64-bit name on 64-bit systems
-        if machine.endswith('64'):
-            wanted = ['LibFT4222-64.dll', 'LibFT4222.dll', 'ftd2xx64.dll', 'ftd2xx.dll']
         with zipfile.ZipFile(archive) as zf:
             names = zf.namelist()
             for name in ('LibFT4222-64.dll', 'LibFT4222.dll', 'ftd2xx64.dll', 'ftd2xx.dll'):

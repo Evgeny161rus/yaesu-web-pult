@@ -2,7 +2,7 @@
 Утилиты для работы с COM-портами и звуковыми устройствами.
 """
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 log = logging.getLogger("devices")
 

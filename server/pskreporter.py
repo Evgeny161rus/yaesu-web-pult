@@ -8,7 +8,6 @@ PSK Reporter (pskreporter.info): отправка принятых станци�
 «Где меня слышат» — https://retrieve.pskreporter.info/query (не чаще раза в 5 минут, как просит сайт).
 """
 import logging
-import os
 import random
 import socket
 import struct

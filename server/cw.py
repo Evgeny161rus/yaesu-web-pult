@@ -21,7 +21,7 @@ import time
 
 import numpy as np
 
-from audio import Decimator, SR
+from audio import Decimator
 
 log = logging.getLogger("cw")
 
@@ -58,7 +58,7 @@ ENCODE_CYR = {v: k for k, v in CYRILLIC.items() if len(v) == 1 and v.isalpha()}
 def clean_tx_text(text, cyr=False):
     """Текст для передачи: верхний регистр, только символы азбуки, прососигналы в <..>."""
     t = (text or '').upper().replace('\n', ' ').replace('Ё', 'Е')
-    out, i = [], 0
+    out = []
     for m in re.finditer(r'<[A-Z]{2}>|.', t):
         tok = m.group(0)
         if tok == ' ' or tok in ENCODE or (cyr and tok in ENCODE_CYR):

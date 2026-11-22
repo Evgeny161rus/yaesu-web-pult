@@ -206,7 +206,7 @@ class SerialTransport:
             pass
 
 
-from ptt_serial import SerialPtt  # noqa: E402  (re-exported for older imports)
+from ptt_serial import SerialPtt  # noqa: E402,F401  (re-exported for older imports)
 
 
 # --------------------------------------------------------------------- Rig

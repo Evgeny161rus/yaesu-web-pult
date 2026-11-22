@@ -843,7 +843,6 @@ class Station:
 
     async def _rtlsdr_hotswap_loop(self):
         """Watch for external SDR unplug/replug while service is running."""
-        import shutil
         while not self.quit_event.is_set():
             try:
                 await asyncio.wait_for(self.quit_event.wait(), timeout=5.0)

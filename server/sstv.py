@@ -8,8 +8,6 @@ SSTV — приём картинок: Martin M1/M2, Scottie S1/S2, Robot 36, PD 
 
 Тайминги — по N7CXI (2000) «Proposal for SSTV Mode Specifications».
 """
-import time
-
 import numpy as np
 
 from audio import Decimator, SR
@@ -349,7 +347,6 @@ class SstvDecoder:
         edges = a + np.arange(W + 1) * (cl * FS / W)
         i = edges - self.fb
         cum = np.concatenate([[0.0], np.cumsum(self.f - self.shift, dtype=np.float64)])
-        lo = np.clip(np.floor(i).astype(int), 0, len(self.f))
         idx = np.arange(len(cum))
         val = np.interp(i, idx, cum)
         width = np.maximum(np.diff(i), 1e-6)

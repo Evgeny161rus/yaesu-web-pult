@@ -7,7 +7,7 @@ Produces the same binary \x04 frames as the FT4222 scope:
   b'\x04' + <QIH little-endian center_hz, span_hz, n> + levels[n]
 """
 from __future__ import annotations
-import logging, shutil, subprocess, threading, time
+import logging, subprocess, threading, time
 import numpy as np
 
 log = logging.getLogger(__name__)

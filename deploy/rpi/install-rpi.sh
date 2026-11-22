@@ -114,44 +114,152 @@ install -m 0644 "${DEST}/deploy/yaesu-web-pult.service" /etc/systemd/system/yaes
 systemctl daemon-reload
 systemctl enable yaesu-web-pult.service
 
-# --- Пароль для веб-панели ---
-echo
-echo "==> Пароль для веб-панели"
-CFG="${DEST}/config.json"
-PW_SET=""
-if [ -t 0 ]; then
-  echo "    Задайте пароль для входа в панель по сети (https://<IP-Pi>:8443/)."
-  echo "    Пусто — удалённый доступ будет запрещён, панель только с самой Pi."
-  read -r -s -p "    Пароль: " PW1; echo
-  if [ -n "${PW1}" ]; then
-    read -r -s -p "    Повторите пароль: " PW2; echo
-    if [ "${PW1}" != "${PW2}" ]; then
-      echo "    Пароли не совпадают — пароль не изменён. Можно задать позже: sudo nano ${CFG}"
-    else
-      PW_SET="1"
+# --- Интерактивное меню настройки (whiptail, как raspi-config) ---
+tui_config() {
+  local PY="${DEST}/.venv/bin/python" CLI="${DEST}/server/config_cli.py"
+  local val cur opts dev desc name flags id mid
+
+  cfg_get() { "$PY" "$CLI" get "$1"; }
+  cfg_set() { "$PY" "$CLI" set "$1" "$2" >/dev/null; }
+
+  tui_ports() {
+    local key="$1"
+    opts=()
+    while IFS=$'\t' read -r dev desc; do
+      [ -n "$dev" ] || continue
+      opts+=("$dev" "${desc:-$dev}")
+    done < <("$PY" "$CLI" ports)
+    if [ ${#opts[@]} -eq 0 ]; then
+      whiptail --title "Порты" --msgbox "COM/tty-порты не найдены. Подключите трансивер и повторите." 0 0
+      return
     fi
+    val=$(whiptail --title "Порты" --menu "Выберите порт" 0 0 0 "${opts[@]}" 3>&1 1>&2 2>&3) || return
+    [ -n "$val" ] && cfg_set "$key" "\"$val\""
+  }
+
+  tui_radio() {
+    cur="$(cfg_get radio_backend)"
+    val=$(whiptail --title "Трансивер" --radiolist "Драйвер трансивера" 0 0 2 \
+      "native" "FTX-1 — расширенное управление" "$([ "$cur" = native ] && echo ON || echo OFF)" \
+      "hamlib" "Любой трансивер — Hamlib/CAT" "$([ "$cur" = hamlib ] && echo ON || echo OFF)" \
+      3>&1 1>&2 2>&3) || return
+    cfg_set radio_backend "\"$val\""
+
+    if [ "$val" = hamlib ]; then
+      opts=()
+      while IFS=$'\t' read -r id name; do
+        [ -n "$id" ] || continue
+        opts+=("$id" "${name:0:60}")
+      done < <("$PY" "$CLI" hamlib)
+      if [ ${#opts[@]} -gt 0 ]; then
+        mid=$(whiptail --title "Трансивер" --menu "Модель Hamlib" 0 0 0 "${opts[@]}" 3>&1 1>&2 2>&3) || return
+        [ -n "$mid" ] && cfg_set hamlib_model "$mid"
+      else
+        whiptail --title "Трансивер" --msgbox "Список Hamlib пуст (проверьте rigctld)." 0 0
+      fi
+    fi
+
+    tui_ports cat_port
+    val=$(whiptail --title "Трансивер" --menu "Скорость CAT" 0 0 0 \
+      "4800" "" "9600" "" "19200" "" "38400" " (по умолчанию)" "115200" "" 3>&1 1>&2 2>&3) || return
+    [ -n "$val" ] && cfg_set cat_baud "$val"
+  }
+
+  tui_audio() {
+    local kind key
+    for kind in in out; do
+      key="audio_${kind}_name"
+      opts=()
+      while IFS=$'\t' read -r name flags; do
+        [ -n "$name" ] || continue
+        case "$flags" in *"$kind"*) opts+=("$name" "$name") ;; esac
+      done < <("$PY" "$CLI" audio)
+      val=$(whiptail --title "Звук" --menu "$([ "$kind" = in ] && echo 'Звук приёма' || echo 'Звук передачи')" 0 0 0 \
+        "" "(авто)" "${opts[@]}" 3>&1 1>&2 2>&3) || return
+      cfg_set "$key" "\"$val\""
+    done
+  }
+
+  tui_ptt() {
+    cur="$(cfg_get ptt_method)"
+    val=$(whiptail --title "PTT" --radiolist "Способ PTT" 0 0 4 \
+      "TX1" "Командой CAT (рекомендуется)" "$([ "$cur" = TX1 ] && echo ON || echo OFF)" \
+      "TX2" "Командой CAT (DATA)" "$([ "$cur" = TX2 ] && echo ON || echo OFF)" \
+      "RTS" "Линией RTS порта" "$([ "$cur" = RTS ] && echo ON || echo OFF)" \
+      "DTR" "Линией DTR порта" "$([ "$cur" = DTR ] && echo ON || echo OFF)" \
+      3>&1 1>&2 2>&3) || return
+    cfg_set ptt_method "\"$val\""
+    if [ "$val" = RTS ] || [ "$val" = DTR ]; then
+      tui_ports ptt_port
+    fi
+  }
+
+  tui_wf() {
+    cur="$(cfg_get waterfall_source)"
+    val=$(whiptail --title "Водопад" --radiolist "Источник водопада" 0 0 4 \
+      "auto" "Авто" "$([ "$cur" = auto ] && echo ON || echo OFF)" \
+      "audio" "По звуку USB-кодека" "$([ "$cur" = audio ] && echo ON || echo OFF)" \
+      "rtlsdr" "RTL-SDR / внешний SDR" "$([ "$cur" = rtlsdr ] && echo ON || echo OFF)" \
+      "sdr" "SoapySDR (rx_sdr)" "$([ "$cur" = sdr ] && echo ON || echo OFF)" \
+      3>&1 1>&2 2>&3) || return
+    cfg_set waterfall_source "\"$val\""
+  }
+
+  tui_pw() {
+    local pw1 pw2
+    pw1=$(whiptail --title "Пароль панели" --passwordbox "Пароль для входа в панель по сети (пусто — запретить удалённый вход):" 0 0 3>&1 1>&2 2>&3) || return
+    if [ -n "$pw1" ]; then
+      pw2=$(whiptail --title "Пароль панели" --passwordbox "Повторите пароль:" 0 0 3>&1 1>&2 2>&3) || return
+      if [ "$pw1" != "$pw2" ]; then
+        whiptail --title "Пароль панели" --msgbox "Пароли не совпадают." 0 0
+      else
+        cfg_set password "\"$pw1\""
+      fi
+    else
+      cfg_set password '""'
+    fi
+  }
+
+  while true; do
+    val=$(whiptail --title "Yaesu Web Pult — настройка" --menu "Выберите пункт" 0 0 0 \
+      "radio" "Трансивер и CAT" \
+      "audio" "Звук (приём/передача)" \
+      "ptt"   "PTT (передача)" \
+      "wf"    "Водопад / SDR" \
+      "pw"    "Пароль панели" \
+      "done"  "Сохранить и перезапустить" \
+      "exit"  "Выйти без перезапуска" \
+      3>&1 1>&2 2>&3) || break
+    case "$val" in
+      radio) tui_radio ;;
+      audio) tui_audio ;;
+      ptt)   tui_ptt ;;
+      wf)    tui_wf ;;
+      pw)    tui_pw ;;
+      done)
+        systemctl restart yaesu-web-pult
+        whiptail --title "Yaesu Web Pult" --msgbox "Сервис перезапущен.\nПанель: http://$(hostname -I | awk '{print $1}'):8080/panel.html" 0 0
+        break ;;
+      exit) break ;;
+    esac
+  done
+}
+
+# --- Запуск настройки ---
+CFG="${DEST}/config.json"
+if [ -t 0 ]; then
+  echo
+  echo "==> Настройка"
+  if command -v whiptail >/dev/null 2>&1 || apt-get install -y whiptail >/dev/null 2>&1; then
+    tui_config
+  else
+    echo "    whiptail недоступен — настройка пропущена. Задайте пароль вручную: sudo nano ${CFG}"
   fi
 else
-  echo "    Неинтерактивный режим: пароль не запрошен. Задайте позже: sudo nano ${CFG}"
+  echo
+  echo "    Неинтерактивный режим: настройка пропущена. Задайте позже: sudo nano ${CFG}"
 fi
-if [ -n "${PW_SET}" ]; then
-  CFG="${CFG}" PWPASS="${PW1}" "${DEST}/.venv/bin/python" - <<'PY'
-import json, os
-cfg = os.environ.get('CFG', '/opt/yaesu-web-pult/config.json')
-pw = os.environ.get('PWPASS', '')
-try:
-    with open(cfg, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-except Exception:
-    data = {}
-data['password'] = pw
-with open(cfg, 'w', encoding='utf-8') as f:
-    json.dump(data, f, ensure_ascii=False, indent=2)
-    f.write('\n')
-print('    Пароль сохранён в config.json')
-PY
-  chown "${USER_NAME}:${USER_NAME}" "${CFG}" 2>/dev/null || true
-fi
+chown "${USER_NAME}:${USER_NAME}" "${CFG}" 2>/dev/null || true
 
 echo
 echo "Готово. Дальнейшие шаги:"

@@ -69,7 +69,7 @@ cd yaesu-web-pult
 sudo bash deploy/install-rpi.sh
 ```
 
-Скрипт установит системные зависимости, создаст `/opt/yaesu-web-pult`, виртуальное окружение `.venv`, пользователя `yaesu`, установит и включит unit `yaesu-web-pult.service`. В конце установки скрипт спросит **пароль для веб-панели** (можно оставить пустым и задать позже).
+Скрипт установит системные зависимости, создаст `/opt/yaesu-web-pult`, виртуальное окружение `.venv`, пользователя `yaesu`, установит и включит unit `yaesu-web-pult.service`. В конце установки откроется **интерактивное меню** (whiptail, как в `raspi-config`): трансивер/CAT, звук, PTT, водопад/SDR и пароль панели. В неинтерактивном режиме (без TTY) меню пропускается — настройте позже через `config.json` или `configure.py`.
 
 Обновление до новой версии: снова выполните `git pull` в каталоге репозитория и `sudo bash deploy/install-rpi.sh`, затем `sudo systemctl restart yaesu-web-pult`.
 

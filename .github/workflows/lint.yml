@@ -43,5 +43,7 @@ jobs:
     - name: Shell script syntax
       run: |
         for f in deploy/rpi/*.sh deploy/vps/*.sh scripts/*.sh; do
-          [ -f "$f" ] && bash -n "$f"
+          if [ -f "$f" ]; then
+            bash -n "$f"
+          fi
         done

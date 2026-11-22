@@ -189,7 +189,9 @@ class HamlibRig:
         if model != 1:
             cat_port = self.cfg.get('cat_port')
             if not cat_port: raise ValueError('Выберите CAT-порт')
-            if os.name != 'nt' and not os.path.exists(cat_port):
+            # Only local device paths can be checked this way.  Network
+            # addresses (NET rigctl) and Windows COM ports are left to Hamlib.
+            if os.name != 'nt' and cat_port.startswith('/') and not os.path.exists(cat_port):
                 raise ValueError(f'CAT-порт {cat_port} не найден. Проверьте USB-кабель и выберите правильный порт в панели.')
             args += ['-r', cat_port, '-s', str(int(self.cfg['cat_baud']))]
         if self.caps['cat_ptt'] and not self._serial_ptt:

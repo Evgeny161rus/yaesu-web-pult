@@ -77,8 +77,10 @@ function hamlibMfg() {
 }
 function fillHamlibManufacturers() {
   const sel = $('#hamlib_mfg');
-  const selected = hamlibAll.find(x => String(x.id) === String($('#hamlib_model').value || cfg.hamlib_model));
-  let cur = sel.value || (selected && selected.mfg) || '';
+  // Default to "All manufacturers"; do not silently narrow the list to the
+  // manufacturer of the saved model (users looking for another brand would
+  // otherwise see only their current brand).
+  let cur = sel.value || '';
   sel.replaceChildren(new Option((window.tr?tr('panel.hamlib.all','Все производители'):'Все производители'), ''));
   for (const name of hamlibMfg()) sel.add(new Option(name, name));
   if (cur && ![...sel.options].some(x => x.value === cur)) sel.add(new Option(cur, cur));

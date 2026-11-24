@@ -521,7 +521,9 @@ class Rig:
             self._freq_pend[key] = cmd
             if first:
                 self._q.put_nowait('@%s;' % key)
-            st[key] = f
+            # Оповещаем клиентов сразу: иначе при отсутствии эха FA/FB от
+            # трансивера (или в симуляторе) пульт не увидит новую частоту.
+            self._set({key: f})
             if key == 'freq_a' and band_type(f) != band:
                 self.refresh(0.4)
             return [cmd]

@@ -8,26 +8,32 @@
 |---|---|
 | `web/app.css` | базовая тема `original` (переменные в `:root`) |
 | `web/appearance.css` | темы `studio`, `daylight`, `heritage`, `field` |
-| `web/console-layout.css` | темы `radio-night`, `radio-silver` + консольный layout |
-| `web/appearance.js` | список `allowed`, запись в `localStorage`, обработка `<select>` |
-| `web/console-layout.js` | `consoleThemes` (какие темы используют консольный layout) |
-| `web/index.html` | `<select id="optAppearance">` с названиями |
-| `web/lang/ru.json`, `en.json` | переводы `opts.appearance.*` |
+| `web/console-layout.css` | компоновка «передняя панель» (workspace `console`) |
+| `web/dx.css` | компоновки `right`/`dx`, размер кнопок `touch`, стили DX-спотов |
+| `web/appearance.js` | темы `themes`, компоновки `layouts`, размер, запись в `localStorage` |
+| `web/console-layout.js` | перенос метров/панели для workspace `console` |
+| `web/index.html` | `<select id="optAppearance">`, `#optWorkspace`, `#optDensity` |
+| `web/lang/ru.json`, `en.json` | переводы `opts.appearance.*`, `layout.*` |
 
 ## Как это работает
 
 1. `appearance.js` при загрузке читает `localStorage['ftx1-appearance']`,
-   проверяет, что ID есть в `allowed`, и ставит `document.documentElement.dataset.appearance`.
-2. CSS применяет переменные по селектору `:root[data-appearance="..."]`.
-3. `console-layout.js` включает консольную разметку только для `radio-night`/`radio-silver`.
+   проверяет, что ID есть в `themes`, и ставит `document.documentElement.dataset.appearance`.
+2. Там же независимо читаются `ftx1-workspace` (компоновка) и `ftx1-density` (размер кнопок)
+   и ставятся `data-workspace` / `data-density`.
+3. CSS применяет переменные по `:root[data-appearance="..."]`, компоновку — по
+   `html[data-workspace="..."]`, крупные элементы — по `html[data-density="touch"]`.
+4. `console-layout.js` включает консольную разметку только для `data-workspace="console"`.
+   Старые темы `radio-night`/`radio-silver` и `daylight`/`field` переносятся автоматически.
 
 ## Добавить тему (по шагам)
 
 1. CSS-блок с переменными (см. `THEMES.md`).
-2. Добавить ID в `allowed` в `appearance.js`.
+2. Добавить ID в `themes` в `appearance.js`.
 3. Добавить `<option>` в `#optAppearance` в `index.html`.
 4. Переводы в `web/lang/*.json`.
-5. Для консольной темы — добавить ID в `consoleThemes` в `console-layout.js`.
+
+Компоновка (`layouts`) и размер кнопок добавляются отдельно и от темы не зависят.
 
 ## Правила
 

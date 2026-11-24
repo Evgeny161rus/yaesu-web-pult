@@ -52,6 +52,7 @@ from voicecq import VoiceCq  # noqa: E402
 from recorder import QsoRecorder  # noqa: E402
 from ft8 import Ft8Desk  # noqa: E402
 from memory import MemoryDesk  # noqa: E402
+from dxcluster import DxCluster  # noqa: E402
 
 VERSION = "3.2-preview"
 APP_NAME = "FTX-1 Пульт"
@@ -381,6 +382,7 @@ class Station:
         self.rec = QsoRecorder(BASE)
         self.ft = Ft8Desk(self, BASE, VERSION, RES)
         self.mem = MemoryDesk(self, BASE)
+        self.dx = DxCluster(self)
         LOGBUF.listeners.append(self._on_log)
 
     def save_cfg(self):
@@ -1476,6 +1478,9 @@ class Station:
             return
         if not c.authed:
             return
+        if t.startswith('dx_'):
+            await self.dx.on_msg(c, m)
+            return
         if t == 'spectrum_get':
             c.ws.send_json(self.spectrum.snapshot())
             return
@@ -1744,6 +1749,7 @@ async def amain(args):
 
     tasks = [asyncio.create_task(s.serve_forever()) for s in servers]
     await st.quit_event.wait()
+    await st.dx.stop()
     await st.stop_radio()
     for client in list(st.clients):
         await client.ws.close()
@@ -1762,7 +1768,7 @@ def selftest(path):
     """Проверка собранного exe: все библиотеки и файлы пульта на месте."""
     rep, ok = [], True
     for mod in ('numpy', 'serial', 'serial.tools.list_ports', 'sounddevice', 'cryptography', 'pystray', 'PIL',
-                'radio_backends', 'hamlib_backend', 'ptt_serial', 'rtlsdr_scope',
+                'radio_backends', 'hamlib_backend', 'ptt_serial', 'rtlsdr_scope', 'dxcluster',
                 'ft710_scope', 'ft4222_transport', 'scope_download'):
         try:
             __import__(mod)

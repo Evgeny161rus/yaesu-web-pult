@@ -20,8 +20,8 @@
 body.hamlib #hamlibControls { display:grid; gap:14px; max-width:600px; }
 body.hamlib #hamlibControls input { display:block; width:100%; }
 body.hamlib #tab-rx > :not(#hamlibControls),
-body.hamlib #tabs button:not([data-tab="rx"]):not([data-tab="opts"]),
-body.hamlib .tab:not(#tab-rx):not(#tab-opts),
+body.hamlib #tabs button:not([data-tab="rx"]):not([data-tab="opts"]):not([data-tab="dx"]),
+body.hamlib .tab:not(#tab-rx):not(#tab-opts):not(#tab-dx),
 body.hamlib .display .sub-row, body.hamlib .display .meters,
 body.hamlib .display .badges button, body.hamlib #bBusy,
 body.hamlib #bands, body.hamlib #modes, body.hamlib #sqRow { display:none !important; }

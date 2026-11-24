@@ -4,9 +4,16 @@
 **Настройки → Внешний вид** (или `<select id="optAppearance">`). Выбор хранится в
 `localStorage` под ключом `ftx1-appearance`.
 
-Темы задаются CSS-переменными через атрибут `data-appearance` на `<html>`.
-Файлы: `web/app.css` (базовая), `web/appearance.css` (студийные темы),
-`web/console-layout.css` (radio-night / radio-silver).
+От оформления отдельно настраиваются:
+
+- **компоновка** — `ftx1-workspace`: `classic`, `right`, `console`, `dx`;
+- **размер кнопок** — `ftx1-density`: `normal`, `touch`.
+
+Темы задаются CSS-переменными через атрибут `data-appearance` на `<html>`,
+компоновка — `data-workspace`, размер — `data-density`.
+Файлы: `web/app.css` (базовая), `web/appearance.css` (темы),
+`web/console-layout.css` (компоновка «передняя панель»),
+`web/dx.css` (компоновки `right`/`dx` и крупные кнопки).
 
 | ID | Название | Стиль |
 |---|---|---|
@@ -14,8 +21,8 @@
 | `studio` | Studio | тёмная студийная, стальной/синий, скругления 14px |
 | `daylight` | Daylight | светлая, бирюзовый акцент, тени |
 | `heritage` | Heritage | «ламповая», янтарный LCD, углы 3px |
-| `field` | Field | «полевая», зелёный LCD, крупные кнопки |
-| `radio-night` | Radio Night | консоль радио, тёмный экран, оранжевый акцент |
+| `field` | Field | «полевая», зелёный LCD |
+| `radio-night` | Radio Night | радио-панель, тёмный экран, оранжевый акцент |
 | `radio-silver` | Radio Silver | светлый металл, тёмный экран, зелёный LCD |
 
 ## Цвета
@@ -39,7 +46,7 @@
 - **studio** — спокойная тёмная с синим акцентом, увеличенные скругления (14px), панель с верхней линией акцента.
 - **daylight** — светлая для работы днём; `color-scheme: light`, мягкие тени, контрастные таблицы памяти.
 - **heritage** — «ретро» с янтарным LCD и почти прямыми углами (3px), двойная рамка дисплея.
-- **field** — для выездов: крупные PTT (68px) и кнопки (мин. 44px), зелёный LCD.
+- **field** — «полевая», зелёный LCD. Крупные кнопки включаются отдельно размером «Крупный».
 - **radio-night** — стиль аппаратной консоли: тёмный «экран» дисплея (`--screen`), оранжевый акцент.
 - **radio-silver** — светлый металлический корпус, тёмный экран с зелёным LCD.
 
@@ -55,7 +62,10 @@
    }
    ```
 
-2. Добавьте ID в список `allowed` в `web/appearance.js`.
+2. Добавьте ID в список `themes` в `web/appearance.js`.
 3. Добавьте `<option value="mytheme">` в `<select id="optAppearance">` в `web/index.html`.
-4. (Только для консольных тем) добавьте ID в `consoleThemes` в `web/console-layout.js`.
-5. Обновите перевод названия в `web/lang/ru.json` / `en.json` (`opts.appearance.*`).
+4. Обновите перевод названия в `web/lang/ru.json` / `en.json` (`opts.appearance.*`).
+
+Компоновка и размер кнопок от темы не зависят. Новый вариант компоновки добавляется
+в `layouts` (`web/appearance.js`) и описывается в CSS через `html[data-workspace="..."]`;
+новый размер — через `html[data-density="..."]`.

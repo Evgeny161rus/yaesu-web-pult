@@ -17,6 +17,8 @@ class WindowsInstallerTests(unittest.TestCase):
         self.assertIn('runasoriginaluser', ISS)
         self.assertNotIn('runascurrentuser', ISS)
         self.assertIn('installed-mode.txt', ISS)
+        self.assertIn('[UninstallDelete]', ISS)
+        self.assertIn(r'{app}\drivers\install.log', ISS)
 
     def test_driver_packages_are_present(self):
         for name in ('ftdi/ftdibus.inf', 'ftdi/ftdiport.inf', 'ftdi/ftdibus.cat',

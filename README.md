@@ -238,8 +238,10 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 
 ### Windows
 
-Установите драйвер **Virtual COM Port** для вашего трансивера и подключите его кабелем USB.
-В «Диспетчере устройств» появятся COM-порты (названия зависят от модели) и звуковое устройство.
+Установщик Windows ставит драйверы **CP210x/FTDI** автоматически. Если Windows
+не увидел COM-порт нестандартного кабеля, установите VCP-драйвер производителя
+кабеля. После подключения трансивера в «Диспетчере устройств» появятся COM-порты
+(названия зависят от модели) и звуковое устройство.
 
 **Вариант А (рекомендуется) — установщик `Yaesu-Web-Pult-Setup.exe`**
 скачайте со страницы [Releases → windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest).
@@ -262,13 +264,15 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 
 **Вариант Б — портативный `Yaesu-Web-Pult.exe` или `Yaesu-Web-Pult-folder.zip`**
 (Python не нужен): скачайте с той же страницы релиза и запускайте двойным кликом.
-Портативной версии Hamlib/RTL-SDR нужно ставить отдельно (см. ниже).
+В `Yaesu-Web-Pult-folder.zip` Hamlib и RTL-SDR уже внутри; для одиночного EXE
+поставьте их скриптами ниже. Драйверы USB ставит установщик или Windows Update.
+У портативной версии данные лежат рядом с EXE.
 
 **Вариант В — без сборки.** Установите Python 3.11+ с python.org (галочка *Add python.exe to PATH*)
 и запустите двойным кликом `Yaesu-Web-Pult.pyw`. При первом запуске программа сама предложит
 установить нужные библиотеки.
 
-**Hamlib и RTL-SDR для портативной версии**
+**Hamlib и RTL-SDR для одиночного портативного EXE** (в `folder.zip` уже внутри)
 
 - **Hamlib**: положите `install-hamlib.ps1` рядом с `Yaesu-Web-Pult.exe` и выполните в PowerShell:
   `powershell -ExecutionPolicy Bypass -File .\install-hamlib.ps1`. Скрипт скачает Hamlib 4.7.2
@@ -400,7 +404,7 @@ sudo usermod -a -G dialout,audio $USER
 * `server/ft8.py` — FT8/FT4: слоты, автоматика связи, передача, лог ADIF и UDP; `server/ftx/` — модуль `_ftx` на основе ft8_lib (MIT), сборка `python server/setup_ftx.py build_ext --inplace`.
 * `server/digi.py` — RTTY и метеофакс; `server/navtex.py`, `server/sstv.py`, `server/psk31.py` — NAVTEX, SSTV, PSK31; `server/digidesk.py` — их работа в сервере.
 * `server/main.py` — сервер, панель управления, автозапуск, значок в трее.
-* `FTX1-Pult.pyw` — запуск двойным кликом без консоли.
+* `Yaesu-Web-Pult.pyw` — запуск двойным кликом без консоли.
 * `server/menu_ftx1.json` — таблица меню EX (402 пункта).
 * `web/` — пульт (HTML/JS, ставится как PWA) и `panel.html` — окно управления сервером.
 

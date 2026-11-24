@@ -50,24 +50,14 @@ build-exe.bat
 
 ### Ручная сборка (если нужно)
 
-```bash
-# Установить PyInstaller
-pip install pyinstaller
+Используйте актуальную команду PyInstaller из `.github/workflows/build.yml`
+(job `windows`): она включает `_ftx`, `dxcluster`, `app_paths`,
+`hamlib_backend`, `rtlsdr_scope`, `ft4222_transport`, `radio_backends`,
+`ptt_serial`, а также данные `web`, `menu_ftx1.json`, `cty.dat` и `ftdi`.
+`build-exe.bat` собирает onefile тем же набором.
 
-# Собрать
-pyinstaller --clean ^
-    --name "Yaesu-Web-Pult" ^
-    --noconsole ^
-    --onefile ^
-    --icon web\icon.ico ^
-    --add-data "web;web" ^
-    --add-data "server;server" ^
-    --hidden-import numpy ^
-    --hidden-import numpy.core ^
-    --collect-all sounddevice ^
-    --version-file version_info.txt ^
-    Yaesu-Web-Pult.pyw
-```
+Старые команды без этих `hidden-import`/`--add-data` дадут EXE, который
+запускается, но не находит FT8, Hamlib, SDR или справочник стран.
 
 ### Проверка EXE
 
@@ -108,207 +98,51 @@ powershell -ExecutionPolicy Bypass -File deploy\windows\build-installer.ps1 `
 
 ---
 
-## Шаг 3: Подготовка к GitHub
+## Шаг 4: Публикация релизов
 
-### Создать README.md (уже готов)
+Релизы собираются автоматически в GitHub Actions при push в `main`:
 
-Проверьте `README.md` и обновите:
-- [ ] Ваш GitHub username в ссылках
-- [ ] Email для контактов
-- [ ] Скриншоты (если есть)
+- **windows-latest** — `Yaesu-Web-Pult-Setup.exe`, портативные EXE/ZIP и `SHA256.txt`;
+- **pi-latest** — `yaesu-web-pult-pi.tar.gz` и `SHA256-pi.txt`.
 
-### Подготовить Release
+Теги `windows-latest` и `pi-latest` автоматически указывают на коммит
+опубликованной сборки. Публикации сериализованы, чтобы параллельные запуски
+не перезаписывали ассеты. Вручную создавать релиз `v3.2.0` и загружать только
+`Yaesu-Web-Pult.exe` не нужно — это оставлено в истории для старых ссылок
+(тег `latest`).
 
-```bash
-cd C:\Users\bayan\Documents\yaesu-web-pult-release
+Проверить сборку: вкладка **Actions** → `Build Windows + Raspberry Pi releases`.
+Локальная сборка установщика описана в разделе «Установщик Windows» выше.
 
-# Создать папку релиза
-mkdir release
-
-# Скопировать EXE
-copy dist\Yaesu-Web-Pult.exe release\
-
-# Создать архив с исходниками (опционально)
-# Можно использовать 7-Zip или WinRAR
-```
-
-### Создать CHANGELOG для релиза
-
-```bash
-# release/RELEASE_NOTES.md
-```
-
-```markdown
-# Yaesu Web Pult v3.2.0
-
-## Новое в этой версии
-
-### 🎨 Дизайн
-- 7 профессиональных тем оформления
-- Современная адаптивная панель управления
-- Улучшенный мобильный интерфейс
-
-### 🚀 Функциональность
-- Поддержка множества моделей Yaesu через Hamlib
-- Оптимизация для Raspberry Pi
-- Упрощённая настройка
-
-### 📚 Документация
-- Полная документация на русском
-- Руководство по темам оформления
-- Инструкции по развёртыванию
-
-## Установка
-
-### Windows
-1. Скачать `Yaesu-Web-Pult.exe`
-2. Запустить двойным кликом
-3. Готово!
-
-### Системные требования
-- Windows 10/11 (64-bit)
-- 2 GB RAM
-- USB порт для трансивера
-
-## Что нужно
-- Трансивер Yaesu (FTX-1, FT-710, FTDX10, и др.)
-- USB кабель
-- Драйвер Virtual COM Port от Yaesu
-```
-
----
-
-## Шаг 4: Публикация на GitHub
-
-### Вариант A: GitHub Desktop (рекомендуется для новичков)
-
-1. Открыть GitHub Desktop
-2. File → Add Local Repository
-3. Выбрать: `C:\Users\bayan\Documents\yaesu-web-pult-release`
-4. Commit all changes: "Initial release v3.2.0"
-5. Publish repository
-6. Create Release → v3.2.0
-7. Прикрепить `Yaesu-Web-Pult.exe`
-
-### Вариант B: Командная строка GitHub CLI
-
-```bash
-cd C:\Users\bayan\Documents\yaesu-web-pult-release
-
-# Создать репозиторий на GitHub
-gh repo create yaesu-web-pult --public --source=. --remote=origin
-
-# Первый коммит
-git add .
-git commit -m "Initial release v3.2.0 - Modern design with 7 themes"
-
-# Push
-git push -u origin main
-
-# Создать релиз
-gh release create v3.2.0 ^
-    --title "Yaesu Web Pult v3.2.0" ^
-    --notes-file release/RELEASE_NOTES.md ^
-    dist/Yaesu-Web-Pult.exe
-```
-
-### Вариант C: Через веб-интерфейс GitHub
-
-1. Зайти на github.com
-2. New repository → `yaesu-web-pult`
-3. Public, без README (уже есть)
-4. Скопировать команды push:
-
-```bash
-cd C:\Users\bayan\Documents\yaesu-web-pult-release
-
-git add .
-git commit -m "Initial release v3.2.0"
-git remote add origin https://github.com/YOUR_USERNAME/yaesu-web-pult.git
-git branch -M main
-git push -u origin main
-```
-
-5. На GitHub: Releases → Create a new release
-6. Tag: `v3.2.0`
-7. Title: `Yaesu Web Pult v3.2.0`
-8. Upload: `Yaesu-Web-Pult.exe`
-9. Publish release
-
----
-
-## Шаг 5: После публикации
-
-### Обновить README.md
-
-Заменить в ссылках `YOUR_USERNAME` на реальный:
-
-```bash
-# Найти и заменить
-YOUR_USERNAME → ваш_github_username
-```
-
-### Добавить badges
-
-В начало README.md:
-
-```markdown
-[![Downloads](https://img.shields.io/github/downloads/YOUR_USERNAME/yaesu-web-pult/total.svg)](https://github.com/YOUR_USERNAME/yaesu-web-pult/releases)
-[![Version](https://img.shields.io/github/v/release/YOUR_USERNAME/yaesu-web-pult.svg)](https://github.com/YOUR_USERNAME/yaesu-web-pult/releases)
-```
-
-### Создать скриншоты
-
-```bash
-mkdir docs\screenshots
-
-# Сделать скриншоты:
-# 1. Главный пульт с частотой
-# 2. Панель управления
-# 3. Селектор тем
-# 4. Мобильная версия
-```
-
-### Добавить в QRZ.com
-
-1. Зайти на qrz.com/db/R6AAF
-2. Edit → Software
-3. Добавить ссылку на GitHub
-
----
-
-## Проверка релиза
+## Шаг 5: Проверка релиза
 
 ### Чеклист перед публикацией
 
 - [ ] Все тесты проходят (`pytest`)
-- [ ] EXE собран и запускается
-- [ ] README.md актуален
+- [ ] `VERSION` в `server/main.py` и `version_info.txt` соответствуют сборке
+- [ ] README.md и START-HERE-RU.md актуальны
 - [ ] LICENSE файл присутствует
 - [ ] CHANGELOG.md обновлён
-- [ ] Версия в `constants.py` = 3.2.0
-- [ ] Версия в `version_info.txt` = 3.2.0
 - [ ] .gitignore настроен
-- [ ] Нет config.json в репозитории
-- [ ] Нет logs/ в репозитории
+- [ ] Нет `config.json`/`cert.pem`/`records` в репозитории
+- [ ] Setup, портативные EXE/ZIP и Pi tar собираются
 
 ### Проверка после публикации
 
-- [ ] Репозиторий доступен публично
-- [ ] README.md корректно отображается
-- [ ] Release v3.2.0 создан
-- [ ] EXE доступен для скачивания
-- [ ] Ссылки в README работают
-- [ ] Badges отображаются
+- [ ] GitHub Actions завершились успешно
+- [ ] Теги `windows-latest` и `pi-latest` указывают на коммит сборки
+- [ ] В релизах есть `Yaesu-Web-Pult-Setup.exe`, портативные файлы и Pi tar
+- [ ] Ссылки в README/START-HERE открываются
+- [ ] `SHA256` в релизах соответствуют ассетам
 
 ---
 
 ## Автоматизация (CI/CD)
 
 После публикации GitHub Actions автоматически:
-- ✅ Запустит линтеры (flake8, pylint, mypy)
-- ✅ Запустит тесты на Python 3.11-3.13
-- ✅ Проверит на Windows и Linux
+- ✅ Проверит стиль (flake8) и запустит тесты на Python 3.11–3.13
+- ✅ Соберёт Windows EXE/ZIP/Setup и архив Raspberry Pi
+- ✅ Обновит релизы `windows-latest` / `pi-latest` и их теги
 
 Проверить статус: вкладка Actions на GitHub
 
@@ -316,29 +150,23 @@ mkdir docs\screenshots
 
 ## Дополнительно
 
-### Создать Release для других платформ
+### Сборка для Linux / Raspberry Pi
+
+Для Raspberry Pi CI собирает **исходники + `deploy/install-rpi.sh`** (tar.gz),
+а не PyInstaller-EXE. Локально можно повторить:
 
 ```bash
-# Linux (на Linux машине)
-pyinstaller Yaesu-Web-Pult.spec
-tar -czf yaesu-web-pult-linux-x64.tar.gz dist/
-
-# Raspberry Pi (на RPi)
-pyinstaller Yaesu-Web-Pult.spec
-tar -czf yaesu-web-pult-rpi-arm64.tar.gz dist/
+git archive --format=tar.gz --prefix=yaesu-web-pult/ -o yaesu-web-pult-pi.tar.gz HEAD
 ```
 
-### Docker Image на Docker Hub
+и передать архив на Pi; установка — `sudo bash deploy/install-rpi.sh`.
+Docker-вариант описан в [DOCKER.md](DOCKER.md).
+
+### Docker Image (опционально)
 
 ```bash
-# Собрать образ
-docker build -t YOUR_USERNAME/yaesu-web-pult:3.2.0 .
-docker build -t YOUR_USERNAME/yaesu-web-pult:latest .
-
-# Push на Docker Hub
-docker login
-docker push YOUR_USERNAME/yaesu-web-pult:3.2.0
-docker push YOUR_USERNAME/yaesu-web-pult:latest
+docker build -t yaesu-web-pult:latest .
+docker run --rm -it --device /dev/ttyUSB0 -v "$PWD/config.json:/app/config.json" yaesu-web-pult:latest
 ```
 
 ---
@@ -359,7 +187,7 @@ docker push YOUR_USERNAME/yaesu-web-pult:latest
 `C:\Users\bayan\Documents\yaesu-web-pult-release`
 
 **Следующий шаг:**  
-Запустить `build-exe.bat` для компиляции
+Запустить `deploy\windows\build-installer.ps1` для установщика (см. «Шаг 3»).
 
 ### Данные установленной Windows-версии
 

@@ -54,9 +54,20 @@
   PortAudio — выберите каждое в своём списке.
 * Если оставить «Автоматически», пульт подберёт USB-кодек или пару к входу.
 
-## Windows: Hamlib и RTL-SDR
+## Windows: установщик, Hamlib и RTL-SDR
 
-В релизе `windows-latest` рядом с `Yaesu-Web-Pult.exe` приложены два скрипта:
+Рекомендуемый вариант — **`Yaesu-Web-Pult-Setup.exe`** из релиза `windows-latest`.
+Установщик ставит программу в `C:\Program Files\Yaesu Web Pult`, сразу добавляет
+Hamlib 4.7.2 и RTL-SDR, устанавливает драйверы FTDI/CP210x и Zadig для RTL-SDR.
+Настройки и записи хранятся в `%LOCALAPPDATA%\Yaesu Web Pult`; приложение
+запускается без прав администратора.
+
+Портативные варианты:
+
+* `Yaesu-Web-Pult-folder.zip` — Hamlib и RTL-SDR уже внутри;
+* `Yaesu-Web-Pult.exe` — один файл, Hamlib/RTL-SDR ставятся скриптами ниже.
+
+Для одиночного портативного EXE в релизе есть скрипты:
 
 * `install-hamlib.ps1` — скачивает Hamlib 4.7.2 в `tools/hamlib/...`.
   Запуск: `powershell -ExecutionPolicy Bypass -File .\install-hamlib.ps1`
@@ -66,7 +77,7 @@
 После установки перезапустите программу/панель. Hamlib появится в списке моделей,
 а RTL-SDR — как источник водопада (`waterfall_source=rtlsdr`). Программа ищет
 `rigctld.exe` в `tools/hamlib/...`, а `rtl_sdr.exe` — в `PATH` и `tools/rtlsdr`.
-Оба скрипта качают файлы с GitHub/osmocom, а не с ftdichip.com.
+Скрипты качают файлы с GitHub/osmocom, а не с ftdichip.com.
 
 ## Частые проблемы
 

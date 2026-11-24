@@ -292,14 +292,14 @@ WebSocket → Все клиенты
 ## Развёртывание
 
 ### Windows (основная платформа)
-- Standalone EXE через PyInstaller
-- Автоустановка зависимостей через `FTX1-Pult.pyw`
-- Автозапуск через реестр Windows
+- Установщик Inno Setup: Program Files + драйверы + Hamlib/RTL-SDR
+- Данные пользователя в `%LOCALAPPDATA%\Yaesu Web Pult`, запуск без администратора
+- Портативные варианты: один EXE или папка ZIP
 
-### Linux / Raspberry Pi (планируется)
-- systemd service
-- USB permissions через udev
-- Автообновление hamlib
+### Linux / Raspberry Pi
+- Headless systemd-сервис `yaesu-web-pult`
+- Установщик `deploy/install-rpi.sh` с меню настройки и USB-правами
+- Hamlib из `libhamlib-utils`, SDR через `rtl-sdr`/SoapySDR
 
 ### Docker (для разработки)
 - Изолированная среда

@@ -121,11 +121,13 @@ jobs:
             ## 📥 Windows
 
             **Yaesu-Web-Pult-Setup.exe** — recommended: installs to `C:\Program Files\Yaesu Web Pult`
-            and bundles Hamlib, RTL-SDR tools and FTDI/CP210x USB drivers.
+            and bundles Hamlib, RTL-SDR tools and FTDI/CP210x USB drivers. Settings, certificates
+            and recordings are stored in `%LOCALAPPDATA%\Yaesu Web Pult`; the app runs without elevation.
 
-            **Yaesu-Web-Pult.exe** — portable single file, download and run (no Python required)
+            **Yaesu-Web-Pult.exe** — portable single file (no Python required). Hamlib/RTL-SDR
+            are added with the bundled PowerShell scripts.
 
-            **Yaesu-Web-Pult-folder.zip** — portable folder version (less likely to trigger antivirus)
+            **Yaesu-Web-Pult-folder.zip** — portable folder version; Hamlib and RTL-SDR included.
 
             ## 🔌 Drivers
 
@@ -140,7 +142,7 @@ jobs:
 
             ## 📦 Other platforms
 
-            Raspberry Pi build: see the **pi-latest** release.
+            Raspberry Pi build: see the [pi-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/pi-latest) release.
 
             **SHA256 checksums:** SHA256.txt
 
@@ -213,7 +215,7 @@ jobs:
 
             ## 📦 Other platforms
 
-            Windows build: see the **windows-latest** release.
+            Windows build: see the [windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest) release.
 
             **SHA256 checksum:** SHA256-pi.txt
 

@@ -72,8 +72,9 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 3. Unsigned build: accept the SmartScreen prompt («More info» → «Run anyway»).
 
 Portable alternatives from the same release: `Yaesu-Web-Pult.exe` (single file)
-or `Yaesu-Web-Pult-folder.zip`. For the portable build, install Hamlib/RTL-SDR
-with the bundled PowerShell scripts if needed. Portable data stays beside the EXE.
+or `Yaesu-Web-Pult-folder.zip`. The folder ZIP includes Hamlib and RTL-SDR;
+the single-file EXE needs the bundled PowerShell scripts to add them. Portable
+data stays beside the EXE.
 
 ### From source
 

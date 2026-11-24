@@ -130,10 +130,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Справочник стран для FT8/DX. Файл в .gitignore, поэтому кладём его
+      # в архив отдельно: на чистой установке страны доступны без интернета.
+      - name: cty.dat
+        run: |
+          mkdir -p server
+          curl -fsSL --max-time 60 https://www.country-files.com/cty/cty.dat -o server/cty.dat \
+            || { echo "cty.dat недоступен"; : > server/cty.dat; }
+          ls -l server/cty.dat
       - name: Собрать архив для Raspberry Pi
         run: |
           mkdir -p dist
-          git archive --format=tar.gz --prefix=yaesu-web-pult/ -o dist/yaesu-web-pult-pi.tar.gz HEAD
+          git archive --format=tar --prefix=yaesu-web-pult/ -o dist/yaesu-web-pult-pi.tar HEAD
+          tar --append --file=dist/yaesu-web-pult-pi.tar --transform='s,^,yaesu-web-pult/,' server/cty.dat
+          gzip -9 -c dist/yaesu-web-pult-pi.tar > dist/yaesu-web-pult-pi.tar.gz
+          rm -f dist/yaesu-web-pult-pi.tar
           sha256sum dist/yaesu-web-pult-pi.tar.gz > dist/SHA256-pi.txt
           ls -lh dist/
       - uses: actions/upload-artifact@v7
@@ -158,7 +169,9 @@ jobs:
                cd yaesu-web-pult
                sudo bash deploy/install-rpi.sh
                ```
-            3. The installer will ask for the web-panel password and enable
+            3. The installer opens an interactive setup menu (whiptail):
+               transceiver/CAT, Hamlib model, RX/TX audio, PTT, waterfall/SDR
+               and the web-panel password. It then enables
                `yaesu-web-pult.service`.
 
             ## 📦 Other platforms

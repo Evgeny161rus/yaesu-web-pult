@@ -41,8 +41,12 @@ mkdir -p "${DEST}"
 RUNTIME_PATHS=(config.json cert.pem key.pem records voice sstv fax memory
   ft8_log.adi cty.dat worked_import.json 'ftx1-pult.log*')
 RUNTIME_EXCLUDES=()
+RUNTIME_TAR_EXCLUDES=()
 for path in "${RUNTIME_PATHS[@]}"; do
-  RUNTIME_EXCLUDES+=("--exclude=${path}")
+  # Anchor to the install root: a bare "cty.dat" would also exclude the
+  # bundled server/cty.dat on a fresh install.
+  RUNTIME_EXCLUDES+=("--exclude=/${path}")
+  RUNTIME_TAR_EXCLUDES+=("--exclude=./${path}")
 done
 # Prefer rsync if available to keep updates clean; fall back to tar.
 if command -v rsync >/dev/null 2>&1; then
@@ -57,7 +61,7 @@ else
   tar -C "${SRC_DIR}" \
     --exclude='.git' --exclude='.venv' --exclude='__pycache__' --exclude='*.pyc' \
     --exclude='dist' --exclude='build' --exclude='*.spec' \
-    "${RUNTIME_EXCLUDES[@]}" \
+    "${RUNTIME_TAR_EXCLUDES[@]}" \
     -cf - . | tar -C "${DEST}" -xf -
 fi
 # Stale .pyc from a previous copy can shadow updated sources on the Pi.
@@ -127,6 +131,7 @@ tui_config() {
 
   cfg_get() { "$PY" "$CLI" get "$1"; }
   cfg_set() { "$PY" "$CLI" set "$1" "$2" >/dev/null; }
+  cfg_set_raw() { "$PY" "$CLI" setraw "$1" >/dev/null; }
 
   tui_ports() {
     local key="$1"
@@ -223,10 +228,10 @@ tui_config() {
       if [ "$pw1" != "$pw2" ]; then
         whiptail --title "Пароль панели" --msgbox "Пароли не совпадают." 0 0
       else
-        cfg_set password "\"$pw1\""
+        printf '%s' "$pw1" | cfg_set_raw password
       fi
     else
-      cfg_set password '""'
+      printf '%s' "" | cfg_set_raw password
     fi
   }
 

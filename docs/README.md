@@ -13,6 +13,7 @@
 ## Техническая документация (`docs/`)
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — архитектура
+- [AI-HANDOFF.md](AI-HANDOFF.md) — контекст для продолжения работы/AI
 - [RADIO-SUPPORT.md](RADIO-SUPPORT.md) — поддержка трансиверов, CAT/PTT и звука
 - [REMOTE-VPS.md](REMOTE-VPS.md) — удалённый доступ через VPS (WireGuard + Nginx)
 - [PERFORMANCE.md](PERFORMANCE.md) — производительность/температура на Raspberry Pi 4

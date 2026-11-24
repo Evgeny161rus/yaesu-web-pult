@@ -32,12 +32,19 @@ import webbrowser
 import numpy as np
 
 if getattr(sys, 'frozen', False):                  # собрано в exe (PyInstaller)
-    BASE = os.path.dirname(os.path.abspath(sys.argv[0]))     # config.json рядом с exe
+    BASE = os.path.dirname(os.path.abspath(sys.executable))  # portable app directory
     RES = getattr(sys, '_MEIPASS', BASE)
 else:
     RES = os.path.dirname(os.path.abspath(__file__))         # папка server
     BASE = os.path.dirname(RES)                              # config.json в корне проекта
 sys.path.insert(0, RES)
+
+from app_paths import data_directory  # noqa: E402
+APP_DIR = BASE
+BASE = data_directory(APP_DIR, installed=(
+    sys.platform == 'win32' and getattr(sys, 'frozen', False)
+    and os.path.isfile(os.path.join(APP_DIR, 'installed-mode.txt'))))
+
 
 from cat import Rig, SerialTransport, SerialPtt, CTCSS  # noqa: E402
 from radio_backends import create_hamlib, list_hamlib_models, is_hamlib  # noqa: E402
@@ -218,7 +225,7 @@ def launch_command(background=True):
         exe = sys.executable
         if IS_WIN and exe.lower().endswith('python.exe'):
             exe = exe[:-10] + 'pythonw.exe'
-        cmd = '"%s" "%s"' % (exe, os.path.join(BASE, 'Yaesu-Web-Pult.pyw'))
+        cmd = '"%s" "%s"' % (exe, os.path.join(APP_DIR, 'Yaesu-Web-Pult.pyw'))
     return cmd + (' --background' if background else '')
 
 
@@ -307,11 +314,12 @@ def sdr_executable(name):
         found = shutil.which(exe)
     if found:
         return found
-    for parts in (('tools', 'rtlsdr'), ('tools', 'rtlsdr', 'bin'),
-                  ('tools', 'sdr'), ('tools', 'sdr', 'bin'), ('tools',)):
-        path = os.path.join(BASE, *parts, exe)
-        if os.path.isfile(path):
-            return path
+    for root in dict.fromkeys((APP_DIR, BASE)):
+        for parts in (('tools', 'rtlsdr'), ('tools', 'rtlsdr', 'bin'),
+                      ('tools', 'sdr'), ('tools', 'sdr', 'bin'), ('tools',)):
+            path = os.path.join(root, *parts, exe)
+            if os.path.isfile(path):
+                return path
     return ''
 
 
@@ -622,7 +630,8 @@ class Station:
         cfg = self.cfg
         lib = str(cfg.get('scope_libft4222') or '').strip()
         d2xx = str(cfg.get('scope_d2xx') or '').strip()
-        roots = [os.path.join(BASE, 'ftdi'), BASE, os.path.join(RES, 'ftdi'), RES]
+        roots = [os.path.join(APP_DIR, 'ftdi'), os.path.join(RES, 'ftdi'), RES,
+                 os.path.join(BASE, 'ftdi'), BASE]
         if not lib:
             if IS_WIN:
                 names = ['LibFT4222-64.dll', 'LibFT4222.dll', 'libft4222.dll']
@@ -635,9 +644,8 @@ class Station:
                               os.path.join(r, 'build-x86_64', n), os.path.join(r, 'build-arm-v8', n)]
             lib = next((os.path.abspath(p) for p in cands if os.path.isfile(p)), '')
         elif not os.path.isabs(lib):
-            alt = os.path.join(BASE, lib)
-            if os.path.isfile(alt):
-                lib = os.path.abspath(alt)
+            lib = next((os.path.abspath(os.path.join(root, lib)) for root in (BASE, APP_DIR)
+                        if os.path.isfile(os.path.join(root, lib))), lib)
         if not d2xx and lib:
             if IS_WIN:
                 names = ['ftd2xx64.dll', 'ftd2xx.dll']
@@ -650,9 +658,8 @@ class Station:
                     cands.append(os.path.join(r, n))
             d2xx = next((os.path.abspath(p) for p in cands if os.path.isfile(p)), '')
         elif d2xx and not os.path.isabs(d2xx):
-            alt = os.path.join(BASE, d2xx)
-            if os.path.isfile(alt):
-                d2xx = os.path.abspath(alt)
+            d2xx = next((os.path.abspath(os.path.join(root, d2xx)) for root in (BASE, APP_DIR)
+                         if os.path.isfile(os.path.join(root, d2xx))), d2xx)
         # Windows: load_api requires an explicit D2XX path; try system locations.
         if IS_WIN and lib and not d2xx:
             windir = os.environ.get('WINDIR', r'C:\Windows')
@@ -1701,7 +1708,7 @@ def web_dir():
     candidates = [
         os.path.join(RES, 'web'),
         os.path.join(RES, '..', 'web'),
-        os.path.join(BASE, 'web'),
+        os.path.join(APP_DIR, 'web'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'web'),
     ]
     for d in candidates:
@@ -1808,9 +1815,9 @@ async def amain(args):
 
 def selftest(path):
     """Проверка собранного exe: все библиотеки и файлы пульта на месте."""
-    rep, ok = [], True
+    rep, ok = ['DATA_DIR ' + BASE, 'APP_DIR ' + APP_DIR], True
     for mod in ('numpy', 'serial', 'serial.tools.list_ports', 'sounddevice', 'cryptography', 'pystray', 'PIL',
-                'radio_backends', 'hamlib_backend', 'ptt_serial', 'rtlsdr_scope', 'dxcluster',
+                'radio_backends', 'hamlib_backend', 'ptt_serial', 'rtlsdr_scope', 'dxcluster', 'app_paths',
                 'ft710_scope', 'ft4222_transport', 'scope_download'):
         try:
             __import__(mod)

@@ -5,6 +5,7 @@
   const t = (key, fallback) => window.I18N ? I18N.t(key, fallback) : fallback;
   let state = {state:'off', spots:[], total:0, log_qso:0}, selected = '', initialized = false;
   let shown = [], markerKey = '';
+  let collapseOnLive = false;
   const bandName = b => b ? (b[0] === '70' ? '70cm' : b[0] + 'm') : '?';
   const bandmap = document.createElement('div'); bandmap.id = 'dxBandmap';
   document.querySelector('.wfpanel').insertBefore(bandmap, el('wfWrap'));
@@ -98,9 +99,9 @@
     bandmap.replaceChildren(fragment);
   }
   el('dxConnectForm').onsubmit = e => {
-    e.preventDefault(); sendDx({t:'dx_connect',config:{host:el('dxHost').value,port:Number(el('dxPort').value),call:el('dxCall').value}});
+    e.preventDefault(); collapseOnLive = true; sendDx({t:'dx_connect',config:{host:el('dxHost').value,port:Number(el('dxPort').value),call:el('dxCall').value}});
   };
-  el('dxDisconnect').onclick = () => sendDx({t:'dx_disconnect'});
+  el('dxDisconnect').onclick = () => { collapseOnLive = false; sendDx({t:'dx_disconnect'}); };
   function mergeSpots(message) {
     const map = new Map(state.spots.map(s => [s.id, s]));
     for (const spot of message.spots || []) map.set(spot.id, spot);
@@ -115,7 +116,7 @@
   el('dxTune').onclick = () => tune(selected);
   window.dxDesk = {
     on(message) {
-      if (message.t === 'dx_error') { el('dxReason').textContent = message.msg; toast(message.msg,4000); return; }
+      if (message.t === 'dx_error') { collapseOnLive = false; el('dxReason').textContent = message.msg; toast(message.msg,4000); return; }
       if (message.t === 'dx_state') {
         // Full snapshot on connect/reconnect; later updates are deltas.
         state = Object.assign({state:'off', spots:[], total:0, log_qso:0}, message);
@@ -131,7 +132,10 @@
         state.state = message.state;
         state.reason = message.reason || '';
       } else return;
-      if (state.state === 'live') el('dxSettings').open = false;
+      if (state.state === 'live' && collapseOnLive) {
+        el('dxSettings').open = false;
+        collapseOnLive = false;
+      }
       render();
     },
     offline() { state.state = 'offline'; render(); }, markers

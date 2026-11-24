@@ -7,6 +7,9 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+concurrency:
+  group: releases-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
@@ -96,6 +99,9 @@ jobs:
           .\deploy\windows\build-installer.ps1 -AppDir distdir\Yaesu-Web-Pult -OutDir dist
           if ($LASTEXITCODE -ne 0) { exit 1 }
           (Get-FileHash dist\Yaesu-Web-Pult-Setup.exe -Algorithm SHA256).Hash + '  Yaesu-Web-Pult-Setup.exe' | Out-File dist\SHA256.txt -Append
+      - name: Check installed layout, migration and legacy permissions
+        shell: pwsh
+        run: .\deploy\windows\test-installer.ps1
       - uses: actions/upload-artifact@v7
         with:
           name: Yaesu-Web-Pult-windows
@@ -109,6 +115,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: windows-latest
+          target_commitish: ${{ github.sha }}
           name: Yaesu Web Pult — Windows (latest)
           body: |
             ## 📥 Windows
@@ -148,6 +155,13 @@ jobs:
             install-hamlib.ps1
             install-rtlsdr.ps1
 
+      - name: Point latest tag at the published build
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/windows-latest" -f "sha=$GITHUB_SHA" -F force=true
+
   pi:
     runs-on: ubuntu-latest
     steps:
@@ -180,6 +194,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           tag_name: pi-latest
+          target_commitish: ${{ github.sha }}
           name: Yaesu Web Pult — Raspberry Pi (latest)
           body: |
             ## 📥 Raspberry Pi (headless)
@@ -208,3 +223,10 @@ jobs:
           files: |
             dist/yaesu-web-pult-pi.tar.gz
             dist/SHA256-pi.txt
+
+      - name: Point latest tag at the published build
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/pi-latest" -f "sha=$GITHUB_SHA" -F force=true

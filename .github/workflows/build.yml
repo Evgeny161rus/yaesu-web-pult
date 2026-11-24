@@ -57,6 +57,11 @@ jobs:
             --hidden-import ft4222_transport --hidden-import scope_download --hidden-import radio_backends --hidden-import ptt_serial `
             --collect-all numpy --collect-all sounddevice `
             --paths server server\main.py
+          # Bundle Hamlib and RTL-SDR tools into the folder/setup build.
+          & .\install-hamlib.ps1 -Destination distdir\Yaesu-Web-Pult
+          if (-not $?) { exit 1 }
+          & .\install-rtlsdr.ps1 -Destination distdir\Yaesu-Web-Pult
+          if (-not $?) { exit 1 }
           Compress-Archive -Path distdir\Yaesu-Web-Pult -DestinationPath dist\Yaesu-Web-Pult-folder.zip
           (Get-FileHash dist\Yaesu-Web-Pult.exe -Algorithm SHA256).Hash + '  Yaesu-Web-Pult.exe' | Out-File dist\SHA256.txt
           (Get-FileHash dist\Yaesu-Web-Pult-folder.zip -Algorithm SHA256).Hash + '  Yaesu-Web-Pult-folder.zip' | Out-File dist\SHA256.txt -Append
@@ -83,12 +88,21 @@ jobs:
             Write-Host "Selftest failed: exit $($p.ExitCode)"
             exit 1
           }
+      - name: Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Установщик Windows (Program Files + драйверы)
+        shell: pwsh
+        run: |
+          .\deploy\windows\build-installer.ps1 -AppDir distdir\Yaesu-Web-Pult -OutDir dist
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          (Get-FileHash dist\Yaesu-Web-Pult-Setup.exe -Algorithm SHA256).Hash + '  Yaesu-Web-Pult-Setup.exe' | Out-File dist\SHA256.txt -Append
       - uses: actions/upload-artifact@v7
         with:
           name: Yaesu-Web-Pult-windows
           path: |
             dist/Yaesu-Web-Pult.exe
             dist/Yaesu-Web-Pult-folder.zip
+            dist/Yaesu-Web-Pult-Setup.exe
             dist/SHA256.txt
       - name: Релиз Windows
         if: github.ref == 'refs/heads/main'
@@ -99,16 +113,23 @@ jobs:
           body: |
             ## 📥 Windows
 
-            **Yaesu-Web-Pult.exe** — single file, download and run (no Python required)
+            **Yaesu-Web-Pult-Setup.exe** — recommended: installs to `C:\Program Files\Yaesu Web Pult`
+            and bundles Hamlib, RTL-SDR tools and FTDI/CP210x USB drivers.
 
-            **Yaesu-Web-Pult-folder.zip** — folder version (less likely to trigger antivirus)
+            **Yaesu-Web-Pult.exe** — portable single file, download and run (no Python required)
 
-            ## ⚠️ Windows Defender Warning
+            **Yaesu-Web-Pult-folder.zip** — portable folder version (less likely to trigger antivirus)
 
-            PyInstaller executables sometimes trigger false positives. If Windows Defender blocks:
-            1. Use the folder version (Yaesu-Web-Pult-folder.zip)
-            2. Or add exception to Windows Defender
-            3. All source code is open in this repository
+            ## 🔌 Drivers
+
+            The setup installs FTDI (incl. FT4222) and Silicon Labs CP210x drivers.
+            For RTL-SDR, use the **RTL-SDR (Zadig)** shortcut if Windows does not detect the dongle.
+
+            ## ⚠️ Windows Defender / SmartScreen
+
+            The setup and EXE are not code-signed. Windows may show a SmartScreen warning;
+            choose «Подробнее» → «Выполнить». PyInstaller executables sometimes trigger
+            false positives. All source code is open in this repository.
 
             ## 📦 Other platforms
 
@@ -120,6 +141,7 @@ jobs:
           make_latest: false
           overwrite_files: true
           files: |
+            dist/Yaesu-Web-Pult-Setup.exe
             dist/Yaesu-Web-Pult.exe
             dist/Yaesu-Web-Pult-folder.zip
             dist/SHA256.txt

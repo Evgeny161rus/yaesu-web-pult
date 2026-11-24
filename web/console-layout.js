@@ -2,7 +2,6 @@
  * Original implementation; moves existing live controls, never duplicates CAT logic.
  */
 (() => {
-  const consoleThemes = new Set(['radio-night', 'radio-silver']);
   let anchor, meters, shelf;
   function apply() {
     if (!document.querySelector('.layout')) return;
@@ -23,7 +22,7 @@
       const legend = document.createElement('span'); legend.className = 'scope-source muted small';
       legend.textContent = 'АУДИОСПЕКТР · USB AUDIO'; document.querySelector('.wf-tools').prepend(legend);
     }
-    const active = consoleThemes.has(document.documentElement.dataset.appearance);
+    const active = document.documentElement.dataset.workspace === 'console';
     document.body.classList.toggle('radio-console', active);
     if (active) shelf.insertBefore(meters,shelf.children[1]); else anchor.after(meters);
     window.dispatchEvent(new Event('resize'));

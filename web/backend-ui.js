@@ -49,7 +49,7 @@ window.renderBackend = function () {
     document.getElementById('hamError').textContent = S.backend_error || '';
     document.getElementById('ptt').disabled = !caps.ptt || !S.connected;
     const current = document.querySelector('#tabs button.on');
-    if (changed || (current && !['rx','opts'].includes(current.dataset.tab)))
+    if (changed || (current && !['rx','opts','dx'].includes(current.dataset.tab)))
       document.querySelector('#tabs [data-tab="rx"]').click();
   } else document.getElementById('ptt').disabled = false;
   if (changed) window.dispatchEvent(new Event('resize'));

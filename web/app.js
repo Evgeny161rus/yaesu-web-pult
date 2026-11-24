@@ -121,7 +121,7 @@ function connect() {
   C.ws = ws;
   ws.onopen = () => send({ t: 'hello', pw: C.pw, rate: C.rate || 16000 });
   ws.onclose = () => {
-    C.authed = false; setLink(false, tr('conn.lost','Нет связи с сервером'), 'conn.lost');
+    C.authed = false; window.dxDesk?.offline(); setLink(false, tr('conn.lost','Нет связи с сервером'), 'conn.lost');
     if (C.txOwner) { C.txOwner = false; updatePtt(); }
     setTimeout(connect, 2000);
   };
@@ -146,6 +146,7 @@ function connect() {
         updateSpan(true);
         renderWfMode();
         syncWfSource(true);
+        send({ t: 'dx_hello' });
         send({ t: 'cw_hello' }); cwDesk.resend(); digiDesk.resend(); digi2.resend(); ft8Desk.resend(); voiceCq.hello(); qsoRec.hello();
         if (C.audioOn) send({ t: 'audio', on: true, rate: C.rate });
         break;
@@ -183,6 +184,7 @@ function connect() {
       case 'menu_list': buildMenu(m.items); break;
       case 'menu_val': setMenuVal(m.ex, m.v); break;
       default:
+        if (m.t?.startsWith('dx_')) { window.dxDesk?.on(m); break; }
         if (m.t && m.t.startsWith('cw_')) cwDesk.on(m);
         else if (m.t && (m.t.startsWith('rt_') || m.t.startsWith('fax_'))) digiDesk.on(m);
         else if (m.t && /^(nx_|psk_|sstv_)/.test(m.t)) digi2.on(m);
@@ -717,6 +719,7 @@ function passband() {
   return [Math.max(0, center - bw / 2 + sh), center + bw / 2 + sh];
 }
 function drawOverlay() {
+  window.dxDesk?.markers();
   const c = wf.ov; if (!c.width) return;
   const mir = mirrored();
   const ctx = c.getContext('2d'), W = c.width, H = c.height, span = viewSpan(),
@@ -1996,9 +1999,9 @@ function applyScale() {
   const w = window.innerWidth, h = window.innerHeight;
   let z = parseFloat(opts.scale);
   const auto = !(z > 0);
-  if (auto) z = document.body.classList.contains('radio-console') ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.55, 2.4));
+  if (auto) z = (document.body.classList.contains('radio-console') || document.documentElement.dataset.workspace === 'dx') ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.55, 2.4));
   const fit = setZoom(z);
-  if (fit && auto && !document.body.classList.contains('radio-console')) {
+  if (fit && auto && !document.body.classList.contains('radio-console') && document.documentElement.dataset.workspace !== 'dx') {
     z = Math.min(z, w / 840);                     // левая колонка + водопад по ширине
     setZoom(z);
     const cl = $('#colLeft');

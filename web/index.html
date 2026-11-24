@@ -15,6 +15,7 @@
 <script src="appearance.js"></script>
 <link rel="stylesheet" href="console-layout.css">
 <script src="console-layout.js"></script>
+<link rel="stylesheet" href="dx.css">
 </head>
 <body>
 
@@ -127,6 +128,7 @@
   <!-- ===== Вкладки ===== -->
   <section class="panel tabs-panel">
     <nav class="tabs" id="tabs">
+      <button data-tab="dx" data-i18n="dx.tab">DX-споты</button>
       <button data-tab="rx" class="on" data-i18n="tab.rx">Приём</button>
       <button data-tab="tx" data-i18n="tab.tx">Передача</button>
       <button data-tab="vfo" data-i18n="tab.vfo">VFO/Память</button>
@@ -138,6 +140,33 @@
       <button data-tab="opts" data-i18n="tab.opts">Настройки</button>
     </nav>
 
+    <div class="tab" id="tab-dx">
+      <p id="dxDockHint" class="muted" data-i18n="dx.docked">DX-споты закреплены рядом со спектром.</p>
+      <div id="dxContent">
+        <header class="dx-heading"><div><span class="dx-eyebrow">DX CLUSTER</span><h2 data-i18n="dx.title">На диапазонах</h2></div><span id="dxStatus" class="dx-status" role="status">Отключён</span></header>
+        <p id="dxReason" class="muted small" role="status"></p>
+        <details id="dxSettings" class="dx-settings" open><summary data-i18n="dx.connection">Подключение к кластеру</summary>
+          <form id="dxConnectForm" class="dx-connect">
+            <label><span data-i18n="dx.host">Сервер</span><input id="dxHost" value="dxc.hamserve.uk" maxlength="253" required autocomplete="off"></label>
+            <label><span data-i18n="dx.port">Порт</span><input id="dxPort" type="number" min="1" max="65535" value="7300" required></label>
+            <label><span data-i18n="dx.call">Ваш позывной</span><input id="dxCall" maxlength="23" placeholder="R6…" required autocomplete="off" spellcheck="false"></label>
+            <div class="dx-actions"><button type="submit" id="dxConnect" class="btn primary" data-i18n="dx.connect">Подключить</button><button type="button" id="dxDisconnect" class="btn" data-i18n="dx.disconnect">Отключить</button></div>
+          </form>
+          <p class="muted small" data-i18n="dx.shared">Одно подключение для всех пультов. Только приём спотов; позывной передаётся выбранному кластеру.</p>
+        </details>
+        <div class="dx-filters">
+          <label><span data-i18n="dx.band">Диапазон</span><select id="dxBand"><option value="" data-i18n="dx.all">Все</option><option value="current" data-i18n="dx.current">Текущий VFO</option></select></label>
+          <label><span data-i18n="dx.mode">Вид из комментария</span><select id="dxMode"><option value="" data-i18n="dx.all">Все</option><option>CW</option><option>SSB</option><option>FT8</option><option>FT4</option><option>RTTY</option><option>FM</option><option>AM</option><option>PSK31</option><option value="unknown" data-i18n="dx.unknown">Не указан</option></select></label>
+          <label><span data-i18n="dx.age">Не старше</span><select id="dxAge"><option value="5">5 min</option><option value="15">15 min</option><option value="30" selected>30 min</option><option value="60">60 min</option></select></label>
+          <label class="dx-search"><span data-i18n="dx.search">Позывной / страна</span><input id="dxSearch" type="search" maxlength="40" placeholder="DX…" autocomplete="off"></label>
+          <label class="dx-check"><input type="checkbox" id="dxNew"><span data-i18n="dx.newonly">Новые страны / диапазоны</span></label>
+        </div>
+        <div class="dx-summary"><span id="dxCount"></span><span id="dxLog" class="muted"></span></div>
+        <div class="dx-table-wrap"><table class="dx-table"><thead><tr><th data-i18n="dx.station">Станция</th><th data-i18n="dx.freq">кГц</th><th data-i18n="dx.details">Сообщение</th><th>UTC</th></tr></thead><tbody id="dxRows"></tbody></table><p id="dxEmpty" class="dx-empty"></p></div>
+        <div class="dx-selection"><span id="dxSelected" class="muted" data-i18n="dx.select">Выберите спот</span><button id="dxTune" class="btn primary" disabled data-i18n="dx.tune">На частоту</button></div>
+        <p class="muted small dx-footnote" data-i18n="dx.hint">Двойной клик — частота приёма. Вид работы и SPLIT не меняются. Во время передачи перестройка заблокирована.</p>
+      </div>
+    </div>
     <div class="tab on" id="tab-rx">
       <div id="hamlibControls"></div>
       <div class="ctl-grid">
@@ -583,6 +612,8 @@
             <option value="radio-silver" data-i18n="opts.appearance.radio_silver">Radio Silver — передняя панель, серебристая</option>
           </select>
         </label>
+        <label><span data-i18n="layout.label">Расположение панелей</span><select id="optWorkspace"><option value="classic" data-i18n="layout.classic">Классическое</option><option value="right" data-i18n="layout.right">Управление справа</option><option value="console" data-i18n="layout.console">Передняя панель</option><option value="dx" data-i18n="layout.dx">DX — споты рядом со спектром</option></select></label>
+        <label><span data-i18n="layout.density">Размер кнопок</span><select id="optDensity"><option value="normal" data-i18n="layout.normal">Обычный</option><option value="touch" data-i18n="layout.touch">Крупный, для касаний</option></select></label>
         <label><span data-i18n="opts.audio_rate">Качество звука по сети</span>
           <select id="optRate"><option value="48000" data-i18n="opts.rate.48">48 кГц — без сжатия (этот ПК, проводная сеть)</option><option value="16000" data-i18n="opts.rate.16">16 кГц (Wi-Fi, телефон дома)</option><option value="8000" data-i18n="opts.rate.8">8 кГц (мобильный интернет)</option></select></label>
         <p class="muted small" id="audioStat"></p>
@@ -713,5 +744,6 @@
 <script src="app.js"></script>
 <script src="sdfile.js"></script>
 <script src="mem.js"></script>
+<script src="dx.js"></script>
 </body>
 </html>

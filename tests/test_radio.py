@@ -110,6 +110,21 @@ class ProtocolTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError): rig.ptt(True)
 
 
+class NativeRigTests(unittest.IsolatedAsyncioTestCase):
+    async def test_tuning_notifies_clients_without_transceiver_echo(self):
+        # DX-споты и другие внешние команды не обновляют пульт оптимистично:
+        # новая частота должна прийти клиентам сразу, не дожидаясь эха FA/FB.
+        from cat import Rig
+        changes = []
+        rig = Rig(SimpleNamespace(), changes.append)
+        rig._q = asyncio.Queue()
+        rig.state.update({'connected': True, 'freq_a': 14074000})
+        rig.set_param('freq_a', 14025000)
+        self.assertEqual(rig.state['freq_a'], 14025000)
+        self.assertEqual(changes, [{'freq_a': 14025000}])
+        self.assertEqual(rig._freq_pend, {'freq_a': 'FA014025000;'})
+
+
 @unittest.skipUnless(os.environ.get('HAMLIB_TEST_EXE'), 'Set HAMLIB_TEST_EXE to test real rigctld Dummy')
 class DummyTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

@@ -140,15 +140,6 @@ sudo ufw allow from 192.168.1.0/24 to any port 8080
 sudo ufw deny 8080
 ```
 
-### Docker Security
-```yaml
-# docker-compose.yml
-services:
-  yaesu-web-pult:
-    network_mode: bridge
-    # Do not use host mode unless necessary
-```
-
 ### Password Requirements
 
 Minimum recommended:

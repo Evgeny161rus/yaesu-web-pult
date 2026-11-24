@@ -137,7 +137,6 @@ git push -u origin main
 ### 💻 Оптимизация
 - Работает на Raspberry Pi
 - Низкие требования к ресурсам (1 GB RAM)
-- Docker поддержка
 - CI/CD с автотестами
 
 ## Установка
@@ -167,7 +166,6 @@ python3 server/main.py --console
 - [Быстрый старт](START-HERE-RU.md)
 - [Темы оформления](docs/THEMES.md)
 - [Архитектура](docs/ARCHITECTURE.md)
-- [Docker](docs/DOCKER.md)
 
 ## 🐛 Известные проблемы
 
@@ -283,7 +281,6 @@ git push
 1. **Microsoft Store** — требует сертификат
 2. **Chocolatey** — менеджер пакетов Windows
 3. **Winget** — новый менеджер от Microsoft
-4. **Docker Hub** — для Docker образов
 
 ---
 

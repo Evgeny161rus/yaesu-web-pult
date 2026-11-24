@@ -34,7 +34,6 @@ C:\Users\bayan\Documents\yaesu-web-pult-release
 - ✅ docs/THEMES.md
 - ✅ docs/ARCHITECTURE.md
 - ✅ docs/WEBSOCKET_PROTOCOL.md
-- ✅ docs/DOCKER.md
 
 ### 4. Скрипты сборки ✅
 - ✅ `build-exe.bat` - автоматическая сборка Windows EXE

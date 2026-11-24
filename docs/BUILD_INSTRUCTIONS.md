@@ -160,14 +160,6 @@ git archive --format=tar.gz --prefix=yaesu-web-pult/ -o yaesu-web-pult-pi.tar.gz
 ```
 
 и передать архив на Pi; установка — `sudo bash deploy/install-rpi.sh`.
-Docker-вариант описан в [DOCKER.md](DOCKER.md).
-
-### Docker Image (опционально)
-
-```bash
-docker build -t yaesu-web-pult:latest .
-docker run --rm -it --device /dev/ttyUSB0 -v "$PWD/config.json:/app/config.json" yaesu-web-pult:latest
-```
 
 ---
 

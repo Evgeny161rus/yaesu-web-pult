@@ -103,21 +103,12 @@ pip3 install -r requirements.txt
 python3 server/main.py --console
 ```
 
-### Docker
-
-```bash
-docker-compose up -d
-```
-
-See [DOCKER.md](docs/DOCKER.md) for details.
-
 ## 📚 Documentation
 
 - [Quick Start Guide](START-HERE-RU.md) (Russian)
 - [Theme Gallery](docs/THEMES.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [WebSocket Protocol](docs/WEBSOCKET_PROTOCOL.md)
-- [Docker Guide](docs/DOCKER.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## 🎨 Themes Preview

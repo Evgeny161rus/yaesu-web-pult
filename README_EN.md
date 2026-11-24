@@ -61,6 +61,19 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 
 ### Windows
 
+1. Download **`Yaesu-Web-Pult-Setup.exe`** from
+   [Releases → windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest)
+   and run it as administrator. It installs to `C:\Program Files\Yaesu Web Pult`
+   and bundles Hamlib, RTL-SDR, FTDI and CP210x drivers.
+2. Connect the transceiver by USB and open the panel shortcut.
+3. Unsigned build: accept the SmartScreen prompt («More info» → «Run anyway»).
+
+Portable alternatives from the same release: `Yaesu-Web-Pult.exe` (single file)
+or `Yaesu-Web-Pult-folder.zip`. For the portable build, install Hamlib/RTL-SDR
+with the bundled PowerShell scripts if needed.
+
+### From source
+
 1. Install **Yaesu Virtual COM Port driver** for your transceiver
 2. Clone the repository:
    ```bash

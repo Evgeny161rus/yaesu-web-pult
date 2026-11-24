@@ -24,6 +24,10 @@
 - **Меню настройки при установке Raspberry Pi** (whiptail, как в `raspi-config`):
   трансивер и CAT, модель Hamlib, отдельные устройства звука приёма/передачи,
   PTT (CAT/RTS/DTR), источник водопада и пароль панели.
+- **Установщик Windows `Yaesu-Web-Pult-Setup.exe`**: ставит программу в
+  `C:\Program Files\Yaesu Web Pult`, сразу включает Hamlib 4.7.2 и RTL-SDR,
+  ставит драйверы FTDI (включая FT4222) и Silicon Labs CP210x, добавляет
+  ярлыки и Zadig для RTL-SDR. Портативные EXE/ZIP остаются в релизе.
 - [docs/RADIO-SUPPORT.md](docs/RADIO-SUPPORT.md) — матрица поддерживаемых
   моделей, настройка CAT/PTT/звука и устранение неполадок.
 

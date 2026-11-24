@@ -78,6 +78,34 @@ dist\Yaesu-Web-Pult.exe
 # Должна открыться панель управления
 ```
 
+## Шаг 3: Установщик Windows (Program Files + драйверы)
+
+Нужен [Inno Setup 6](https://jrsoftware.org/isinfo.php):
+
+```powershell
+winget install JRSoftware.InnoSetup
+```
+
+Соберите **onedir**-версию (её использует установщик) в `distdir\Yaesu-Web-Pult`
+тем же PyInstaller, но с `--onedir --distpath distdir` и теми же
+`--add-data`/`--hidden-import`, что и в CI (см. `.github/workflows/build.yml`),
+затем:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File deploy\windows\build-installer.ps1 `
+    -AppDir distdir\Yaesu-Web-Pult -OutDir dist
+```
+
+Скрипт:
+
+- при необходимости скачает Hamlib 4.7.2 и RTL-SDR в `tools/` рядом с EXE;
+- соберёт `dist\Yaesu-Web-Pult-Setup.exe` по `deploy\windows\Yaesu-Web-Pult.iss`.
+
+Установщик ставит программу в `C:\Program Files\Yaesu Web Pult`, добавляет
+драйверы из `drivers/` (FTDI, CP210x) через `pnputil`, ярлыки и Zadig.
+Портативные `dist\Yaesu-Web-Pult.exe` и `dist\Yaesu-Web-Pult-folder.zip`
+собираются как раньше.
+
 ---
 
 ## Шаг 3: Подготовка к GitHub

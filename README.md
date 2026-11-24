@@ -238,18 +238,33 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 
 ### Windows
 
-Установите драйвер **Virtual COM Port** с сайта Yaesu для вашего трансивера и подключите его кабелем USB.
+Установите драйвер **Virtual COM Port** для вашего трансивера и подключите его кабелем USB.
 В «Диспетчере устройств» появятся COM-порты (названия зависят от модели) и звуковое устройство.
 
-**Вариант А — готовый Yaesu-Web-Pult.exe** (Python не нужен): скачайте его со страницы
-[Releases → windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest) и запускайте двойным кликом.
-Каждое изменение в ветке `main` пересобирает exe автоматически (GitHub Actions); собрать вручную — `build-exe.bat` (legacy-вариант: `scripts/build_exe.bat`).
+**Вариант А (рекомендуется) — установщик `Yaesu-Web-Pult-Setup.exe`**
+скачайте со страницы [Releases → windows-latest](https://github.com/Evgeny161rus/yaesu-web-pult/releases/tag/windows-latest).
+Установщик:
 
-**Вариант Б — без сборки.** Установите Python 3.11+ с python.org (галочка *Add python.exe to PATH*)
+- ставит программу в `C:\Program Files\Yaesu Web Pult` (нужны права администратора);
+- сразу включает **Hamlib 4.7.2** и **RTL-SDR** (`rtl_sdr.exe`) в `tools/`;
+- устанавливает драйверы **FTDI** (включая FT4222 для USB-scope) и **Silicon Labs CP210x**
+  (CAT-порт FTX-1); для RTL-SDR добавляет ярлык **Zadig** в меню «Пуск»;
+- создаёт ярлыки в меню «Пуск» и на рабочем столе;
+- настройки, сертификаты и записи хранит в папке установки (как портативная версия);
+  установщик выдаёт локальным пользователям права на запись в эту папку.
+
+Установщик и EXE не подписаны сертификатом — SmartScreen может предупредить:
+«Подробнее» → «Выполнить». Это нормально для открытого проекта.
+
+**Вариант Б — портативный `Yaesu-Web-Pult.exe` или `Yaesu-Web-Pult-folder.zip`**
+(Python не нужен): скачайте с той же страницы релиза и запускайте двойным кликом.
+Портативной версии Hamlib/RTL-SDR нужно ставить отдельно (см. ниже).
+
+**Вариант В — без сборки.** Установите Python 3.11+ с python.org (галочка *Add python.exe to PATH*)
 и запустите двойным кликом `Yaesu-Web-Pult.pyw`. При первом запуске программа сама предложит
 установить нужные библиотеки.
 
-**Hamlib и RTL-SDR на Windows (для не-FTX-1 и внешней панорамы)**
+**Hamlib и RTL-SDR для портативной версии**
 
 - **Hamlib**: положите `install-hamlib.ps1` рядом с `Yaesu-Web-Pult.exe` и выполните в PowerShell:
   `powershell -ExecutionPolicy Bypass -File .\install-hamlib.ps1`. Скрипт скачает Hamlib 4.7.2
@@ -258,8 +273,7 @@ cty.dat (Country Files, AD1C, www.country-files.com) — программа об
 - **RTL-SDR**: аналогично `powershell -ExecutionPolicy Bypass -File .\install-rtlsdr.ps1` —
   скачает `rtl_sdr.exe` в `tools/rtlsdr/`. Затем в панели выберите источник водопада
   `rtlsdr` (или `sdr`) и драйвер `rtlsdr`. Программа ищет `rtl_sdr.exe` в `PATH` и в `tools/rtlsdr`.
-- Оба скрипта приложены к релизу `windows-latest`. Они качают файлы с GitHub/osmocom,
-  а не с ftdichip.com.
+- Оба скрипта приложены к релизу `windows-latest`. Они качают файлы с GitHub, а не с ftdichip.com.
 
 ### Linux / Raspberry Pi
 

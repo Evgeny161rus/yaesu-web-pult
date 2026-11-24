@@ -3,7 +3,7 @@
   'use strict';
   const el = id => document.getElementById(id);
   const t = (key, fallback) => window.I18N ? I18N.t(key, fallback) : fallback;
-  let state = {state:'off', spots:[], log_qso:0}, selected = '', initialized = false;
+  let state = {state:'off', spots:[], total:0, log_qso:0}, selected = '', initialized = false;
   let shown = [], markerKey = '';
   const bandName = b => b ? (b[0] === '70' ? '70cm' : b[0] + 'm') : '?';
   const bandmap = document.createElement('div'); bandmap.id = 'dxBandmap';
@@ -47,7 +47,7 @@
     el('dxConnect').disabled = !C.authed;
     el('dxDisconnect').disabled = !C.authed || status === 'off';
     shown = filtered();
-    el('dxCount').textContent = `${shown.length} / ${state.spots.length} ` + t('dx.spots','спотов');
+    el('dxCount').textContent = `${shown.length} / ${state.total ?? state.spots.length} ` + t('dx.spots','спотов');
     el('dxLog').textContent = state.log_qso ? `${state.log_qso} QSO ` + t('dx.inlog','в журнале') : t('dx.nolog','Журнал пуст — отметки предварительные');
     const fragment = document.createDocumentFragment();
     for (const s of shown) {
@@ -101,16 +101,36 @@
     e.preventDefault(); sendDx({t:'dx_connect',config:{host:el('dxHost').value,port:Number(el('dxPort').value),call:el('dxCall').value}});
   };
   el('dxDisconnect').onclick = () => sendDx({t:'dx_disconnect'});
+  function mergeSpots(message) {
+    const map = new Map(state.spots.map(s => [s.id, s]));
+    for (const spot of message.spots || []) map.set(spot.id, spot);
+    for (const id of message.removed || []) map.delete(id);
+    const cutoff = Date.now() / 1000 - 3600;             // same MAX_AGE as the server
+    state.spots = [...map.values()].filter(s => s.time >= cutoff).sort((a, b) => b.time - a.time);
+    state.state = message.state;
+    state.reason = message.reason || '';
+    state.total = message.total ?? state.spots.length;
+    if (message.log_qso != null) state.log_qso = message.log_qso;
+  }
   el('dxTune').onclick = () => tune(selected);
   window.dxDesk = {
     on(message) {
       if (message.t === 'dx_error') { el('dxReason').textContent = message.msg; toast(message.msg,4000); return; }
-      if (message.t !== 'dx_state') return;
-      state = message;
-      if (!initialized && message.config?.host) {
-        el('dxHost').value = message.config.host; el('dxPort').value = message.config.port; el('dxCall').value = message.config.call;
-      }
-      initialized = true;
+      if (message.t === 'dx_state') {
+        // Full snapshot on connect/reconnect; later updates are deltas.
+        state = Object.assign({state:'off', spots:[], total:0, log_qso:0}, message);
+        state.spots = message.spots || [];
+        state.total = message.total ?? state.spots.length;
+        if (!initialized && message.config?.host) {
+          el('dxHost').value = message.config.host; el('dxPort').value = message.config.port; el('dxCall').value = message.config.call;
+        }
+        initialized = true;
+      } else if (message.t === 'dx_spots') {
+        mergeSpots(message);
+      } else if (message.t === 'dx_status') {
+        state.state = message.state;
+        state.reason = message.reason || '';
+      } else return;
       if (state.state === 'live') el('dxSettings').open = false;
       render();
     },

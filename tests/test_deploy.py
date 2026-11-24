@@ -37,6 +37,12 @@ class PiInstallerTests(unittest.TestCase):
                              'cty.dat', 'worked_import.json', 'ftx1-pult.log.1'):
                     (root / tree / name).write_text(tree)
                 (root / tree / 'app.py').write_text(tree)
+            # Bundled country file inside server/ must not be treated as runtime
+            # data: a bare "cty.dat" exclude would drop it on a fresh install.
+            (root / 'source/server').mkdir()
+            (root / 'source/server/cty.dat').write_text('source')
+            (root / 'dest/server').mkdir()
+            (root / 'dest/server/cty.dat').write_text('dest')
             (root / 'dest/obsolete.py').write_text('old')
             prelude = 'SRC_DIR="$PWD/source"\nDEST="$PWD/dest"\n'
             if use_rsync:
@@ -47,7 +53,7 @@ class PiInstallerTests(unittest.TestCase):
                 prelude += 'command() { if [[ "$*" == "-v rsync" ]]; then return 1; fi; builtin command "$@"; }\n'
             self.run_bash(prelude + fragment, directory)
             for path in (root / 'dest').rglob('*'):
-                if path.is_file() and path.name not in ('app.py', 'obsolete.py'):
+                if path.is_file() and path.name not in ('app.py', 'obsolete.py') and path != root / 'dest/server/cty.dat':
                     self.assertEqual(path.read_text(), 'dest', str(path))
             # Also assert that --delete did not remove whole runtime directories.
             for name in ('records', 'voice', 'sstv', 'fax', 'memory'):
@@ -56,6 +62,7 @@ class PiInstallerTests(unittest.TestCase):
                          'cty.dat', 'worked_import.json', 'ftx1-pult.log.1'):
                 self.assertEqual((root / 'dest' / name).read_text(), 'dest')
             self.assertEqual((root / 'dest/app.py').read_text(), 'source')
+            self.assertEqual((root / 'dest/server/cty.dat').read_text(), 'source')
             if use_rsync:
                 self.assertFalse((root / 'dest/obsolete.py').exists())
 

@@ -75,7 +75,7 @@ def hamlib():
 
 def main(argv):
     if len(argv) < 2:
-        print('usage: config_cli.py get KEY | set KEY JSON | ports | audio | hamlib')
+        print('usage: config_cli.py get KEY | set KEY JSON | setraw KEY | ports | audio | hamlib')
         return 2
     cmd = argv[1]
     if cmd == 'get':
@@ -93,6 +93,19 @@ def main(argv):
             val = json.loads(argv[3])
         except Exception:
             val = argv[3]
+        cfg = load()
+        cfg[key] = val
+        save(cfg)
+        print('ok')
+    elif cmd == 'setraw':
+        # Точное значение из stdin: пароли с кавычками/обратными слэшами
+        # не должны проходить через JSON-разбор аргумента командной строки.
+        key = argv[2]
+        val = sys.stdin.read()
+        if val.endswith('\r\n'):
+            val = val[:-2]
+        elif val.endswith('\n'):
+            val = val[:-1]
         cfg = load()
         cfg[key] = val
         save(cfg)

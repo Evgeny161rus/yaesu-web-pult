@@ -94,10 +94,14 @@ class TelnetText:
 class DxCluster:
     MAX_SPOTS = 500
     MAX_AGE = 3600
+    PUBLISH_DELAY = 0.5
 
     def __init__(self, station):
         self.station = station
         self.spots = collections.OrderedDict()
+        self.dirty = set()
+        self.removed = set()
+        self.status_dirty = False
         self.task = None
         self.writer = None
         self.timer = None
@@ -105,25 +109,55 @@ class DxCluster:
         self.state, self.reason = 'off', ''
         self.config = dict(station.cfg.get('dx_cluster') or {})
 
-    def snapshot(self):
+    def _prune(self):
         cutoff = time.time() - self.MAX_AGE
-        self.spots = collections.OrderedDict((k, s) for k, s in self.spots.items() if s['time'] >= cutoff)
-        spots = []
-        for spot in reversed(self.spots.values()):
-            tags, entity = self.station.ft.wk.status(spot['call'], spot['band'])
-            spots.append(dict(spot, country=entity['name'] if entity else '', tags=tags))
-        return {'t': 'dx_state', 'state': self.state, 'reason': self.reason,
-                'config': self.config, 'spots': spots, 'log_qso': self.station.ft.wk.n}
+        for key, spot in list(self.spots.items()):
+            if spot['time'] < cutoff:
+                del self.spots[key]
+                self.removed.add(key)
 
-    def publish(self):
+    def _decorate(self, spot):
+        tags, entity = self.station.ft.wk.status(spot['call'], spot['band'])
+        return dict(spot, country=entity['name'] if entity else '', tags=tags)
+
+    def snapshot(self):
+        self._prune()
+        spots = [self._decorate(s) for s in reversed(self.spots.values())]
+        return {'t': 'dx_state', 'state': self.state, 'reason': self.reason,
+                'config': self.config, 'spots': spots, 'total': len(spots),
+                'log_qso': self.station.ft.wk.n}
+
+    def publish(self, full=False):
         if self.timer:
             self.timer.cancel()
         self.timer = None
-        self.station.broadcast(self.snapshot())
+        self._prune()
+        if full:
+            message = self.snapshot()
+            self.dirty.clear()
+            self.removed.clear()
+            self.status_dirty = False
+            self.station.broadcast(message)
+            return
+        spots = [self._decorate(self.spots[key]) for key in list(self.dirty) if key in self.spots]
+        removed = [key for key in self.removed if key not in self.spots]
+        self.dirty.clear()
+        self.removed.clear()
+        if not spots and not removed and not self.status_dirty:
+            return
+        self.status_dirty = False
+        # Только изменения: полный список (до 500 спотов) присылается при
+        # подключении, дальше — новые/обновлённые и удалённые записи. Это
+        # важно для удалённого доступа через VPS: полный список каждые 0.5 с
+        # давал бы сотни килобайт трафика.
+        self.station.broadcast({'t': 'dx_spots', 'state': self.state, 'reason': self.reason,
+                                'spots': spots, 'removed': removed,
+                                'total': len(self.spots), 'log_qso': self.station.ft.wk.n})
 
-    def status(self, state, reason=''):
+    def status(self, state, reason='', full=False):
         self.state, self.reason = state, reason
-        self.publish()
+        self.status_dirty = True
+        self.publish(full=full)
 
     def ingest(self, line):
         spot = parse_spot(line)
@@ -132,10 +166,14 @@ class DxCluster:
         previous = self.spots.pop(spot['id'], None)
         spot['count'] = (previous['count'] if previous else 0) + 1
         self.spots[spot['id']] = spot
+        self.dirty.add(spot['id'])
+        self.removed.discard(spot['id'])
         while len(self.spots) > self.MAX_SPOTS:
-            self.spots.popitem(last=False)
+            key, _ = self.spots.popitem(last=False)
+            self.dirty.discard(key)
+            self.removed.add(key)
         if self.timer is None:
-            self.timer = asyncio.get_running_loop().call_later(0.5, self.publish)
+            self.timer = asyncio.get_running_loop().call_later(self.PUBLISH_DELAY, self.publish)
         return True
 
     async def stop(self):
@@ -154,9 +192,11 @@ class DxCluster:
         await self.stop()
         self.config = config
         self.spots.clear()
+        self.dirty.clear()
+        self.removed.clear()
         self.station.cfg['dx_cluster'] = config
         self.station.save_cfg()
-        self.status('connecting')
+        self.status('connecting', full=True)
         self.task = asyncio.create_task(self.run())
 
     async def run(self):

@@ -79,6 +79,35 @@ class ClusterTests(unittest.IsolatedAsyncioTestCase):
         with patch('dxcluster.time.time', return_value=time.time() + 3700):
             self.assertEqual(dx.snapshot()['spots'], [])
 
+    async def test_publish_sends_only_changes(self):
+        dx = self.make_cluster()
+
+        def sent():
+            return self.station.broadcast.call_args[0][0]
+
+        dx.ingest(line(call='JA1ABC'))
+        dx.publish()
+        self.assertEqual(sent()['t'], 'dx_spots')
+        self.assertEqual([s['call'] for s in sent()['spots']], ['JA1ABC'])
+        self.assertEqual(sent()['removed'], [])
+        self.assertEqual(sent()['total'], 1)
+
+        self.station.broadcast.reset_mock()
+        dx.ingest(line(call='JA2ABC'))
+        dx.publish()
+        self.assertEqual([s['call'] for s in sent()['spots']], ['JA2ABC'])
+
+        self.station.broadcast.reset_mock()
+        dx.ingest(line(call='JA1ABC', comment='CW UP 5'))
+        dx.publish()
+        self.assertEqual([(s['call'], s['count']) for s in sent()['spots']], [('JA1ABC', 2)])
+
+        self.station.broadcast.reset_mock()
+        with patch('dxcluster.time.time', return_value=time.time() + 3700):
+            dx.publish()
+        self.assertEqual(sent()['spots'], [])
+        self.assertEqual(set(sent()['removed']), {'JA1ABC:14025000', 'JA2ABC:14025000'})
+
     async def test_real_socket_login_fragments_and_cleanup(self):
         dx = self.make_cluster()
         received = []

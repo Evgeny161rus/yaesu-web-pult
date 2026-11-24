@@ -20,13 +20,17 @@ if exist dist rmdir /s /q dist
 
 echo.
 echo [3/3] Сборка EXE файла...
+REM cty.dat is optional: the application downloads it at runtime if absent.
+set CTYDATA=
+if exist cty.dat set CTYDATA=--add-data "cty.dat;."
+if exist server\cty.dat set CTYDATA=--add-data "server\cty.dat;."
 set FTDIDATA=
 if exist ftdi set FTDIDATA=--add-data "ftdi;ftdi"
 python -m PyInstaller --noconfirm --clean --onefile --windowed --noupx --name Yaesu-Web-Pult ^
     --icon web\icon.ico ^
     --add-data "web;web" ^
     --add-data "server\menu_ftx1.json;." ^
-    --add-data "cty.dat;." ^
+    %CTYDATA% ^
     %FTDIDATA% ^
     --hidden-import pystray._win32 ^
     --hidden-import _ftx ^

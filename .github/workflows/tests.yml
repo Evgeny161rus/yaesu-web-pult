@@ -27,6 +27,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: Install rsync for Raspberry Pi update tests
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y rsync
+
     - name: Run tests
       run: |
         python -m unittest discover -s tests -v

@@ -108,15 +108,11 @@
 - **CI/CD пайплайн**: 
   - `lint.yml` - проверка качества кода (flake8, pylint, mypy)
   - `tests.yml` - автоматическое тестирование на Python 3.11-3.13, Windows/Linux
-- **Docker поддержка**: 
-  - `Dockerfile` с multi-stage build
-  - `docker-compose.yml` для быстрого развёртывания
   - Health checks и resource limits
 
 #### Документация
 - `docs/WEBSOCKET_PROTOCOL.md` - полная документация WebSocket протокола
 - `docs/ARCHITECTURE.md` - детальное описание архитектуры проекта
-- `docs/DOCKER.md` - руководство по Docker развёртыванию
 - `CONTRIBUTING.md` - руководство для разработчиков
 - `CHANGELOG.md` - история изменений
 

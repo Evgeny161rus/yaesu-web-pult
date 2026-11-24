@@ -24,7 +24,6 @@
 - ✅ Windows 10/11 - полностью работает
 - ✅ Linux - протестировано (симулятор)
 - ⚠️ Raspberry Pi - не тестировано на реальном железе
-- ⚠️ Docker - образ есть, но не протестирован
 
 #### Кроссплатформенность
 - ✅ Все зависимости (numpy, sounddevice, PIL) работают везде
@@ -106,7 +105,6 @@
 1. Убрать зависимость от Hamlib
 2. Добавить RTL-SDR для водопада
 3. Протестировать на RPi
-4. Протестировать Docker
 
 **Задачи:**
 
@@ -176,14 +174,6 @@ def select_waterfall_source(self):
 - [ ] systemd service
 - [ ] Документация
 
-#### Docker тесты
-- [ ] Build образа
-- [ ] USB passthrough (CAT)
-- [ ] USB Audio passthrough
-- [ ] RTL-SDR passthrough
-- [ ] docker-compose.yml
-- [ ] Документация
-
 ---
 
 ## 📂 Структура проекта
@@ -236,8 +226,6 @@ yaesu-web-pult/
 │
 ├── docs/                    # Документация
 ├── requirements.txt         # Python зависимости
-├── Dockerfile               # Docker образ
-├── docker-compose.yml       # Docker compose
 └── README.md                # Главный README
 ```
 
@@ -366,7 +354,6 @@ SPECTRUM_UPDATE_MS = 100      # Реже обновления waterfall
 - [ ] Native CAT для FT-991
 - [ ] RTL-SDR поддержка
 - [ ] Тесты на RPi 3/4/5
-- [ ] Docker тесты
 - [ ] Обновлена документация
 
 ---
@@ -396,11 +383,6 @@ build-exe.bat
 # Результат: dist\Yaesu-Web-Pult.exe
 ```
 
-### Docker
-```bash
-docker build -t yaesu-web-pult .
-docker run -p 8080:8080 -p 8443:8443 yaesu-web-pult
-```
 
 ---
 

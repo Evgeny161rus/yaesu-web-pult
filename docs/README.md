@@ -19,7 +19,6 @@
 - [WEBSOCKET_PROTOCOL.md](WEBSOCKET_PROTOCOL.md) — протокол WebSocket
 - [BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md) — сборка и релиз
 - [CROSS_PLATFORM_COMPATIBILITY.md](CROSS_PLATFORM_COMPATIBILITY.md) — совместимость платформ
-- [DOCKER.md](DOCKER.md) — Docker
 - [RASPBERRY-PI-HEADLESS.md](../deploy/rpi/RASPBERRY-PI-HEADLESS.md) — установка на Raspberry Pi (headless)
 
 ## Дизайн и планы

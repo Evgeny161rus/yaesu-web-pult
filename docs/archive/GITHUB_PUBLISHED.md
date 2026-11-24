@@ -34,7 +34,6 @@
 - ✅ **docs/THEME_PREVIEWS.md** - превью тем
 - ✅ **docs/ARCHITECTURE.md** - архитектура проекта
 - ✅ **docs/WEBSOCKET_PROTOCOL.md** - WebSocket протокол
-- ✅ **docs/DOCKER.md** - Docker инструкции
 
 ### CI/CD
 - ✅ **.github/workflows/lint.yml** - проверка кода

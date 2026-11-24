@@ -155,70 +155,6 @@ sudo usermod -a -G dialout,audio $USER
 sudo cp yaesu-web-pult.service /etc/systemd/system/
 sudo systemctl enable yaesu-web-pult
 sudo systemctl start yaesu-web-pult
-```
-```
-
----
-
-### 4. Docker контейнер
-
-**Цель:** Простой запуск в контейнере
-
-**Файлы:**
-```dockerfile
-# Dockerfile (уже есть, но нужно обновить)
-
-FROM python:3.11-slim
-
-RUN apt-get update && apt-get install -y \
-    portaudio19-dev \
-    libusb-1.0-0-dev \
-    rtl-sdr \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY . .
-
-# Компиляция FT8 модуля
-RUN cd server && python setup_ftx.py build_ext --inplace
-
-EXPOSE 8080 8443
-
-CMD ["python3", "server/main.py", "--console"]
-```
-
-**docker-compose.yml:**
-```yaml
-version: '3.8'
-
-services:
-  yaesu-web-pult:
-    build: .
-    container_name: yaesu-web-pult
-    ports:
-      - "8080:8080"
-      - "8443:8443"
-    devices:
-      - /dev/ttyUSB0:/dev/ttyUSB0  # CAT порт
-      - /dev/bus/usb:/dev/bus/usb  # USB Audio + RTL-SDR
-    volumes:
-      - ./config.json:/app/config.json
-      - ./records:/app/records
-      - ./sstv:/app/sstv
-      - ./fax:/app/fax
-    restart: unless-stopped
-    privileged: true  # Для USB устройств
-```
-
-**Задачи:**
-- [ ] Обновить Dockerfile
-- [ ] Тесты в Docker на Windows/Linux
-- [ ] USB Audio passthrough
-- [ ] RTL-SDR passthrough
-- [ ] Документация Docker запуска
 
 ---
 
@@ -288,7 +224,6 @@ import airspy
 1. ✅ Уход от Hamlib
 2. ✅ RTL-SDR поддержка
 3. ✅ Тесты на RPi
-4. ✅ Docker образ
 
 ### Средний приоритет (v3.4.0)
 5. ⏳ SDRPlay поддержка
@@ -333,7 +268,6 @@ yaesu-web-pult/
 │   ├── CAT_PROTOCOLS.md       # Документация CAT
 │   ├── SDR_SETUP.md           # Настройка SDR
 │   ├── RASPBERRY_PI_SETUP.md  # Установка на RPi
-│   └── DOCKER.md              # Docker инструкции
 │
 └── tests/
     ├── test_cat_ft710.py      # Тесты FT-710 CAT
@@ -374,7 +308,6 @@ airspy>=0.1             # NEW: AirSpy
 - [ ] Ubuntu 22.04/24.04
 - [ ] Debian 12
 - [ ] Raspberry Pi OS (64-bit)
-- [ ] Docker (alpine/debian)
 
 ### Трансиверы для тестов:
 - [x] FTX-1 (симулятор)
@@ -468,7 +401,6 @@ elif self.model == 'MODEL-NAME':
 - [ ] Все модели работают без Hamlib
 - [ ] RTL-SDR работает на 3 платформах
 - [ ] RPi тесты проходят
-- [ ] Docker образ собирается
 
 ### v3.4.0
 - [ ] 3+ SDR поддерживаются

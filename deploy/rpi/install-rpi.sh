@@ -33,7 +33,13 @@ echo "==> Пользователь сервиса ${USER_NAME}"
 if ! id -u "${USER_NAME}" >/dev/null 2>&1; then
   useradd --system --home-dir "${DEST}" --shell /usr/sbin/nologin --comment "Yaesu Web Pult" "${USER_NAME}"
 fi
-usermod -aG dialout,audio "${USER_NAME}" || true
+# RTL-SDR/FTDI USB devices are root:plugdev; without this group rtl_sdr
+# cannot open the dongle on a clean Raspberry Pi OS install.
+SERVICE_GROUPS="dialout,audio"
+if getent group plugdev >/dev/null 2>&1; then
+  SERVICE_GROUPS="${SERVICE_GROUPS},plugdev"
+fi
+usermod -aG "${SERVICE_GROUPS}" "${USER_NAME}" || true
 
 echo "==> Копирование файлов"
 mkdir -p "${DEST}"

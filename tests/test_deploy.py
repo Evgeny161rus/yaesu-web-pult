@@ -94,6 +94,18 @@ chown() { printf '%s\\n' "$*" >> owners; }
                 self.assertTrue(any(line.startswith('-R yaesu:yaesu ') and
                                     line.endswith('/' + name) for line in owners), name)
 
+    def test_service_user_groups_include_plugdev_when_available(self):
+        block = ('SERVICE_GROUPS="dialout,audio"'
+                 + INSTALLER.split('SERVICE_GROUPS="dialout,audio"', 1)[1]
+                 .split('echo "==> Копирование файлов"', 1)[0])
+        for present, expected in ((0, 'dialout,audio,plugdev'), (1, 'dialout,audio')):
+            with self.subTest(plugdev_present=present == 0), tempfile.TemporaryDirectory() as directory:
+                script = (f'getent() {{ return {present}; }}\n'
+                          'usermod() { printf "%s\\n" "$*"; }\n'
+                          'USER_NAME=yaesu\n' + block)
+                out = self.run_bash(script, directory)
+                self.assertIn(f'-aG {expected} yaesu', out)
+
     def test_menu_switches_driver_in_both_directions(self):
         definitions = 'tui_config() {' + INSTALLER.split('tui_config() {', 1)[1].split('  while true; do', 1)[0] + '\n}\ntui_config\n'
         for source, expected in (('sdr', 'rx_sdr'), ('rtlsdr', 'rtlsdr')):

@@ -21,8 +21,8 @@ if (Test-Path -LiteralPath (Join-Path $installDir 'drivers\install.log')) { thro
 $users = 'S-1-5-32-545'
 $writeMask = [System.Security.AccessControl.FileSystemRights]::Write -bor [System.Security.AccessControl.FileSystemRights]::Delete
 foreach ($path in @($installDir, $exe, (Join-Path $installDir 'drivers\install-drivers.ps1'))) {
-    foreach ($rule in (Get-Acl -LiteralPath $path).Access) {
-        if ($rule.IdentityReference.Translate([System.Security.Principal.SecurityIdentifier]).Value -eq $users -and
+    foreach ($rule in (Get-Acl -LiteralPath $path).GetAccessRules($true, $true, [System.Security.Principal.SecurityIdentifier])) {
+        if ($rule.IdentityReference.Value -eq $users -and
             $rule.AccessControlType -eq 'Allow' -and ($rule.FileSystemRights -band $writeMask)) {
             throw "Users can still modify $path"
         }

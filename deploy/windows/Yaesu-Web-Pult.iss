@@ -61,6 +61,7 @@ Name: "drivers"; Description: "Установить драйверы FTDI и Sil
 ; Application (onedir PyInstaller build, including tools\hamlib and tools\rtlsdr).
 Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; \
     Excludes: "config.json,cert.pem,key.pem,records\*,voice\*,sstv\*,fax\*,memory\*,ft8_log.adi,ftx1-pult.log*,__pycache__\*,*.pyc"
+Source: "deploy\windows\installed-mode.txt"; DestDir: "{app}"; Flags: ignoreversion
 ; Bundled USB drivers and the driver installer.
 Source: "drivers\*"; DestDir: "{app}\drivers"; Flags: ignoreversion recursesubdirs createallsubdirs
 
@@ -70,12 +71,27 @@ Name: "{group}\Драйверы\RTL-SDR (Zadig)"; Filename: "{app}\drivers\rtlsd
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; The application lives in Program Files, but writes config.json/cert.pem/records
-; next to the EXE. Give local users Modify on the install folder (the app is a
-; desktop ham tool, not a multi-user service).
-Filename: "{sys}\icacls.exe"; Parameters: """{app}"" /grant *S-1-5-32-545:(OI)(CI)M /T /C /Q"; \
-    Flags: runhidden waituntilterminated; StatusMsg: "Настройка прав на папку программы..."
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\drivers\install-drivers.ps1"""; \
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\drivers\install-drivers.ps1"""; \
     Flags: runhidden waituntilterminated; Tasks: drivers; StatusMsg: "Установка драйверов FTDI и CP210x..."
 Filename: "{app}\{#MyAppExeName}"; Description: "Запустить {#MyAppName}"; \
-    Flags: nowait postinstall skipifsilent runascurrentuser
+    Flags: nowait postinstall skipifsilent runasoriginaluser
+
+[Code]
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  Result := '';
+  { Remove the explicit Users:Modify grants left by older installers before
+    writing or executing any application files. Inherited Program Files RX
+    permissions remain intact. No user data is removed. }
+  if DirExists(ExpandConstant('{app}')) then
+  begin
+    if not Exec(ExpandConstant('{sys}\icacls.exe'),
+      '"' + ExpandConstant('{app}') + '" /remove:g *S-1-5-32-545 /T /L /Q',
+      '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+      Result := 'Unable to restore application folder permissions.'
+    else if ResultCode <> 0 then
+      Result := 'Unable to restore application folder permissions (icacls ' + IntToStr(ResultCode) + ').';
+  end;
+end;

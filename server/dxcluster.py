@@ -2,6 +2,7 @@
 import asyncio
 import collections
 import contextlib
+import math
 import re
 import time
 from datetime import datetime, timezone, timedelta
@@ -18,7 +19,12 @@ def parse_spot(line, now=None):
     if not match:
         return None
     reporter, khz, call, comment, utc = match.groups()
-    freq = round(float(khz) * 1000)
+    # Validate before rounding: a long but syntactically valid number can
+    # convert to infinity and must not terminate the receive task.
+    hz = float(khz) * 1000
+    if not math.isfinite(hz) or not 10000 <= hz <= 100_000_000_000:
+        return None
+    freq = round(hz)
     if not 10000 <= freq <= 100_000_000_000 or not any(c.isdigit() for c in call):
         return None
     now = time.time() if now is None else now

@@ -33,6 +33,11 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(parse_spot(line(freq='99999999999999')))
         self.assertIsNone(parse_spot('Welcome to DXSpider'))
 
+    def test_overflowing_frequency_is_ignored(self):
+        for freq in ('9' * 400, '9' * 16000, '0.' + '0' * 400 + '1'):
+            with self.subTest(length=len(freq)):
+                self.assertIsNone(parse_spot(line(freq=freq)))
+
     def test_config_cannot_inject_cluster_commands(self):
         good = {'host': 'dxc.example.org', 'port': 7300, 'call': 'r6abc/p'}
         self.assertEqual(validate_config(good)['call'], 'R6ABC/P')
@@ -121,6 +126,9 @@ class ClusterTests(unittest.IsolatedAsyncioTestCase):
                 writer.write(b'gin: ')
                 await writer.drain()
                 received.append(await reader.readline())
+                # A damaged spot must not disconnect or poison the next one.
+                writer.write((line(freq='9' * 400) + '\r\n').encode())
+                await writer.drain()
                 raw = (line() + '\r\n').encode()
                 writer.write(raw[:19])
                 await writer.drain()

@@ -1,0 +1,1 @@
+Use per-user LOCALAPPDATA for runtime data. Created by the Windows installer only.

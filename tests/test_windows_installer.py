@@ -12,6 +12,11 @@ class WindowsInstallerTests(unittest.TestCase):
         self.assertIn(r'Source: "drivers\*"', ISS)
         self.assertIn(r'install-drivers.ps1', ISS)
         self.assertIn(r'icacls.exe', ISS)
+        self.assertIn('/remove:g *S-1-5-32-545', ISS)
+        self.assertNotIn('/grant ', ISS)
+        self.assertIn('runasoriginaluser', ISS)
+        self.assertNotIn('runascurrentuser', ISS)
+        self.assertIn('installed-mode.txt', ISS)
 
     def test_driver_packages_are_present(self):
         for name in ('ftdi/ftdibus.inf', 'ftdi/ftdiport.inf', 'ftdi/ftdibus.cat',

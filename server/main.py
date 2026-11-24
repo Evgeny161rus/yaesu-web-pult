@@ -342,6 +342,10 @@ class Station:
         self.audio = None
         self.running = False
         self.busy = False
+        self.connect_wanted = False
+        self._connect_task = None
+        self._connect_wake = asyncio.Event()
+        self.connect_retry_delay = 2.0
         self.last_error = ''
         self.audio_err = None
         self.decims = {48000: Decimator(1), 16000: Decimator(3), 8000: Decimator(6)}
@@ -403,6 +407,32 @@ class Station:
         self._rtlsdr_hotswap_task = asyncio.create_task(self._rtlsdr_hotswap_loop())
 
     # ----- запуск/остановка связи с трансивером
+    def request_connect(self):
+        """Подключиться к трансиверу и повторять попытки, пока порт не появится."""
+        if self.running:
+            return
+        self.connect_wanted = True
+        if self._connect_task and not self._connect_task.done():
+            self._connect_wake.set()
+            return
+        self._connect_wake.clear()
+        self._connect_task = asyncio.create_task(self._connect_loop())
+
+    async def _connect_loop(self):
+        delay = max(0.2, float(self.connect_retry_delay))
+        while self.connect_wanted and not self.quit_event.is_set():
+            if not self.running and not self.busy:
+                await self.start_radio()
+                if self.running:
+                    log.info("Связь с трансивером установлена (автоподключение)")
+                    return
+            try:
+                await asyncio.wait_for(self._connect_wake.wait(), timeout=delay)
+            except asyncio.TimeoutError:
+                pass
+            self._connect_wake.clear()
+            delay = min(30.0, delay * 2)
+
     async def start_radio(self):
         if self.running or self.busy:
             return
@@ -470,6 +500,15 @@ class Station:
             self.push_status()
 
     async def stop_radio(self):
+        self.connect_wanted = False
+        self._connect_wake.clear()
+        task, self._connect_task = self._connect_task, None
+        if task and task is not asyncio.current_task():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
         self.spectrum.clear()
         self._stop_scope('', notify=False)
         self.last_error = ''
@@ -1324,13 +1363,16 @@ class Station:
             if need_restart:
                 log.info("Перезапуск связи с новыми настройками")
                 await self.stop_radio()
-                await self.start_radio()
+                self.request_connect()
+            elif self.connect_wanted and not self.running:
+                # Настройки сохранили во время автоподключения — попробовать сразу.
+                self.request_connect()
             else:
                 self.push_status()
         elif t == 'admin_start':
             if not os.path.exists(cfg_path()):
                 save_cfg(self.cfg)
-            await self.start_radio()
+            self.request_connect()
         elif t == 'admin_stop':
             await self.stop_radio()
         elif t == 'admin_autostart':
@@ -1737,7 +1779,7 @@ async def amain(args):
 
     first_run = not os.path.exists(cfg_path())
     if (cfg.get('auto_connect') and not first_run) or args.sim:
-        asyncio.create_task(st.start_radio())
+        st.request_connect()
     if not (args.background or args.headless):
         if cfg.get('open_panel', True) or first_run:
             open_window(panel_url, (1280, 820))

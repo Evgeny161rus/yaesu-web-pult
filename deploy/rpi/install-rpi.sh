@@ -37,12 +37,19 @@ usermod -aG dialout,audio "${USER_NAME}" || true
 
 echo "==> Копирование файлов"
 mkdir -p "${DEST}"
-# Prefer rsync if available to keep updates clean; fall back to cp.
+# Preserve station data on both update paths, including rsync --delete.
+RUNTIME_PATHS=(config.json cert.pem key.pem records voice sstv fax memory
+  ft8_log.adi cty.dat worked_import.json 'ftx1-pult.log*')
+RUNTIME_EXCLUDES=()
+for path in "${RUNTIME_PATHS[@]}"; do
+  RUNTIME_EXCLUDES+=("--exclude=${path}")
+done
+# Prefer rsync if available to keep updates clean; fall back to tar.
 if command -v rsync >/dev/null 2>&1; then
   rsync -a --delete \
     --exclude '.git' --exclude '.venv' --exclude '__pycache__' --exclude '*.pyc' \
     --exclude 'dist' --exclude 'build' --exclude '*.spec' \
-    --exclude 'config.json' --exclude 'cert.pem' --exclude 'key.pem' \
+    "${RUNTIME_EXCLUDES[@]}" \
     "${SRC_DIR}/" "${DEST}/"
 else
   # Fallback without rsync: exclude runtime files so an update never
@@ -50,7 +57,7 @@ else
   tar -C "${SRC_DIR}" \
     --exclude='.git' --exclude='.venv' --exclude='__pycache__' --exclude='*.pyc' \
     --exclude='dist' --exclude='build' --exclude='*.spec' \
-    --exclude='config.json' --exclude='cert.pem' --exclude='key.pem' \
+    "${RUNTIME_EXCLUDES[@]}" \
     -cf - . | tar -C "${DEST}" -xf -
 fi
 # Stale .pyc from a previous copy can shadow updated sources on the Pi.
@@ -98,16 +105,15 @@ else
 fi
 
 echo "==> Права доступа"
-# config/cert are runtime files; keep them writable by the service user.
-if [[ -f "${DEST}/config.json" ]]; then
-  chown "${USER_NAME}:${USER_NAME}" "${DEST}/config.json" || true
-fi
+# Restore ownership of all preserved runtime data, not just config.json.
 touch "${DEST}/config.json" 2>/dev/null || true
 chown -R root:root "${DEST}"
 chown "${USER_NAME}:${USER_NAME}" "${DEST}"
-chown "${USER_NAME}:${USER_NAME}" "${DEST}/config.json" 2>/dev/null || true
-# Allow cert generation next to config
-chown "${USER_NAME}:${USER_NAME}" "${DEST}" || true
+for pattern in "${RUNTIME_PATHS[@]}"; do
+  while IFS= read -r -d '' path; do
+    chown -R "${USER_NAME}:${USER_NAME}" "$path"
+  done < <(find "${DEST}" -mindepth 1 -maxdepth 1 -name "$pattern" -print0)
+done
 
 echo "==> systemd unit"
 install -m 0644 "${DEST}/deploy/yaesu-web-pult.service" /etc/systemd/system/yaesu-web-pult.service
@@ -203,6 +209,10 @@ tui_config() {
       "sdr" "SoapySDR (rx_sdr)" "$([ "$cur" = sdr ] && echo ON || echo OFF)" \
       3>&1 1>&2 2>&3) || return
     cfg_set waterfall_source "\"$val\""
+    case "$val" in
+      sdr) cfg_set sdr_driver '"rx_sdr"' ;;
+      rtlsdr) cfg_set sdr_driver '"rtlsdr"' ;;
+    esac
   }
 
   tui_pw() {

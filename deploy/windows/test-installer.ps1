@@ -50,4 +50,16 @@ try {
 } finally {
     $env:LOCALAPPDATA = $savedLocal
 }
-Write-Host 'Installer permissions, data migration and installed selftest: OK'
+# The driver installer writes its log after setup; uninstall must remove it.
+$driverLog = Join-Path $installDir 'drivers\install.log'
+Set-Content -LiteralPath $driverLog -Value 'uninstall-test' -Encoding utf8
+$uninst = Join-Path $installDir 'unins000.exe'
+if (-not (Test-Path -LiteralPath $uninst)) { throw 'Uninstaller missing' }
+$p = Start-Process -FilePath $uninst -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART' -Wait -PassThru
+if ($p.ExitCode -ne 0) { throw "Uninstaller failed: $($p.ExitCode)" }
+Start-Sleep -Seconds 2
+if (Test-Path -LiteralPath $driverLog) { throw 'Driver log was not removed on uninstall' }
+if (Test-Path -LiteralPath (Join-Path $installDir 'drivers')) { throw 'Empty drivers folder left after uninstall' }
+# Legacy config/records stay by design; remove the disposable test tree.
+Remove-Item -LiteralPath $installDir -Recurse -Force -ErrorAction SilentlyContinue
+Write-Host 'Installer permissions, data migration, installed selftest and uninstall: OK'

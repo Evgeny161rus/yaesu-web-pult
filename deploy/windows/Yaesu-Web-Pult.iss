@@ -76,6 +76,13 @@ Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile
 Filename: "{app}\{#MyAppExeName}"; Description: "Запустить {#MyAppName}"; \
     Flags: nowait postinstall skipifsilent runasoriginaluser
 
+[UninstallDelete]
+; The driver installer writes its log after installation; remove it and the
+; now-empty folders so uninstall leaves nothing in Program Files.
+Type: files; Name: "{app}\drivers\install.log"
+Type: dirifempty; Name: "{app}\drivers"
+Type: dirifempty; Name: "{app}"
+
 [Code]
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var

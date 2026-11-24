@@ -111,7 +111,7 @@ def cfg_path():
 def load_cfg():
     cfg = dict(DEFAULT_CFG)
     try:
-        with open(cfg_path(), encoding='utf-8') as f:
+        with open(cfg_path(), encoding='utf-8-sig') as f:
             cfg.update(json.load(f))
         # настройки версии 1.1: одно поле на вход и выход
         old = cfg.pop('audio_device', None)

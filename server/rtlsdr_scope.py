@@ -9,11 +9,28 @@ Produces the same binary \x04 frames as the FT4222 scope:
 from __future__ import annotations
 import logging
 import subprocess
+import sys
 import threading
 import time
 import numpy as np
 
 log = logging.getLogger(__name__)
+
+_WINDOWS_CREATE_NO_WINDOW = 0x08000000
+
+
+def _popen_window_flags(platform=None):
+    """Флаги запуска, чтобы консольные SDR-утилиты не открывали окно.
+
+    Установленное Windows-приложение работает как GUI без консоли. Если
+    запустить `rtl_sdr`/`rx_sdr`/`hackrf_transfer` обычным Popen, Windows
+    создаёт для них новое консольное окно — оно мигает на каждом запуске и
+    переподключении. CREATE_NO_WINDOW убирает это окно полностью.
+    """
+    plat = sys.platform if platform is None else platform
+    if plat.startswith('win'):
+        return getattr(subprocess, 'CREATE_NO_WINDOW', _WINDOWS_CREATE_NO_WINDOW)
+    return 0
 
 
 class RtlSdrScope:
@@ -147,7 +164,8 @@ class RtlSdrScope:
             try:
                 self._status('starting', '', sr)
                 proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                        bufsize=fft_n * 16)
+                                        bufsize=fft_n * 16,
+                                        creationflags=_popen_window_flags())
                 self._proc = proc
             except Exception as e:
                 consec_err += 1

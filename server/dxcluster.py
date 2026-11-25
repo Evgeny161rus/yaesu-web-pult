@@ -1,16 +1,33 @@
-"""Receive-only DXSpider client. No spot posting or arbitrary cluster commands."""
+"""Receive-only DX spot feeds.
+
+Telnet DXSpider/AR-Cluster and the public SpotRadio JSON feed. No spot posting
+or arbitrary cluster commands.
+"""
 import asyncio
 import collections
 import contextlib
+import gzip
+import json
+import logging
 import math
 import re
 import time
+import urllib.request
 from datetime import datetime, timezone, timedelta
 
 from dxcc import band_of
 
+log = logging.getLogger(__name__)
+
 SPOT = re.compile(r'^DX de ([A-Z0-9/\-#]+):\s+(\d+(?:\.\d+)?)\s+([A-Z0-9/]+)\s+(.*?)\s+(\d{4})Z(?:\s+.*)?$', re.I)
 ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+
+SPOTRADIO_URL = 'https://spotradio.ru/cluster/spots.php?limit=200'
+SPOTRADIO_POLL = 20.0        # seconds between polls; the feed is public
+SPOTRADIO_TIMEOUT = 15
+SPOTRADIO_MAX_BYTES = 4_000_000
+SPOTRADIO_MAX_ITEMS = 1000   # safety cap for a malformed/hostile response
+KNOWN_MODES = {'CW', 'SSB', 'USB', 'LSB', 'FT8', 'FT4', 'RTTY', 'FM', 'AM', 'PSK31'}
 
 
 def parse_spot(line, now=None):
@@ -43,9 +60,62 @@ def parse_spot(line, now=None):
             'id': f'{call.upper()}:{freq}'}
 
 
+def parse_spotradio_spot(item, now=None):
+    """Convert one SpotRadio JSON record into the internal spot format."""
+    if not isinstance(item, dict):
+        return None
+    now = time.time() if now is None else now
+    call = str(item.get('spotted') or '').strip().upper()
+    reporter = str(item.get('spotter') or '').strip().upper()
+    if (not re.fullmatch(r'[A-Z0-9/\-]{3,24}', call) or not any(c.isdigit() for c in call)
+            or not re.fullmatch(r'[A-Z0-9/\-]{3,24}', reporter)):
+        return None
+    raw_freq = item.get('frequency')
+    if raw_freq in (None, ''):
+        raw_freq = item.get('freq_khz')
+        try:
+            raw_freq = float(raw_freq) * 1000
+        except (TypeError, ValueError):
+            return None
+    try:
+        hz = float(raw_freq)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(hz) or not 10000 <= hz <= 100_000_000_000:
+        return None
+    freq = round(hz)
+    if not 10000 <= freq <= 100_000_000_000:
+        return None
+    try:
+        stamp = float(item.get('ts'))
+    except (TypeError, ValueError):
+        stamp = 0.0
+    if not math.isfinite(stamp) or stamp <= 0 or stamp > now + 300:
+        when = str(item.get('when') or '').strip()
+        try:
+            stamp = datetime.strptime(when, '%Y-%m-%d %H:%M:%S').replace(
+                tzinfo=timezone.utc).timestamp()
+        except ValueError:
+            return None
+    comment = re.sub(r'<[^>]{1,12}>', ' ', str(item.get('message') or ''))
+    comment = ' '.join(''.join(c for c in comment if c.isprintable()).split())[:160]
+    mode = str(item.get('mode') or '').strip().upper()
+    if mode not in KNOWN_MODES:
+        found = re.search(r'\b(FT8|FT4|CW|RTTY|SSB|USB|LSB|FM|AM|PSK31)\b', comment, re.I)
+        mode = found.group(1).upper() if found else ''
+    return {'call': call, 'freq': freq, 'reporter': reporter,
+            'comment': comment, 'time': stamp, 'received': now,
+            'band': band_of(freq), 'mode': mode, 'id': f'{call}:{freq}'}
+
+
 def validate_config(data):
     if not isinstance(data, dict):
         raise ValueError('Неверные настройки кластера')
+    provider = str(data.get('provider') or 'telnet').strip().lower()
+    if provider == 'spotradio':
+        return {'provider': 'spotradio'}
+    if provider != 'telnet':
+        raise ValueError('Неизвестный источник DX-спотов')
     host = str(data.get('host', '')).strip()
     call = str(data.get('call', '')).strip().upper()
     if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9.\-]{0,252}', host):
@@ -59,7 +129,21 @@ def validate_config(data):
         raise ValueError('Порт должен быть числом от 1 до 65535') from None
     if not 1 <= port <= 65535:
         raise ValueError('Порт должен быть числом от 1 до 65535')
-    return {'host': host, 'port': port, 'call': call}
+    return {'provider': 'telnet', 'host': host, 'port': port, 'call': call}
+
+
+def _http_json(url):
+    """Fetch a public JSON feed with a size limit and an honest User-Agent."""
+    request = urllib.request.Request(url, headers={
+        'User-Agent': 'Yaesu-Web-Pult/3.2 (+https://github.com/Evgeny161rus/yaesu-web-pult)',
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+    })
+    with urllib.request.urlopen(request, timeout=SPOTRADIO_TIMEOUT) as response:
+        raw = response.read(SPOTRADIO_MAX_BYTES)
+        if response.headers.get('Content-Encoding', '').lower() == 'gzip':
+            raw = gzip.decompress(raw)
+    return json.loads(raw.decode('utf-8', errors='replace'))
 
 
 class TelnetText:
@@ -114,6 +198,7 @@ class DxCluster:
         self.control_lock = asyncio.Lock()
         self.state, self.reason = 'off', ''
         self.config = dict(station.cfg.get('dx_cluster') or {})
+        self._seen = {}   # SpotRadio dedupe: spot key -> spot timestamp
 
     def _prune(self):
         cutoff = time.time() - self.MAX_AGE
@@ -167,7 +252,36 @@ class DxCluster:
 
     def ingest(self, line):
         spot = parse_spot(line)
-        if spot is None or spot['time'] < time.time() - self.MAX_AGE:
+        return bool(spot) and self._store(spot)
+
+    def ingest_json(self, payload, now=None):
+        """Ingest a SpotRadio snapshot without counting polled repeats again."""
+        if not isinstance(payload, list):
+            return 0
+        now = time.time() if now is None else now
+        cutoff = now - self.MAX_AGE
+        for key, stamp in list(self._seen.items()):
+            if stamp < cutoff:
+                del self._seen[key]
+        fresh = []
+        for item in payload[:SPOTRADIO_MAX_ITEMS]:
+            spot = parse_spotradio_spot(item, now)
+            if spot is None:
+                continue
+            key = (spot['reporter'], spot['call'], spot['freq'], spot['time'])
+            if key in self._seen:
+                continue
+            self._seen[key] = spot['time']
+            fresh.append(spot)
+        fresh.sort(key=lambda s: s['time'])
+        stored = 0
+        for spot in fresh:
+            if self._store(spot):
+                stored += 1
+        return stored
+
+    def _store(self, spot):
+        if spot['time'] < time.time() - self.MAX_AGE:
             return False
         previous = self.spots.pop(spot['id'], None)
         spot['count'] = (previous['count'] if previous else 0) + 1
@@ -200,12 +314,16 @@ class DxCluster:
         self.spots.clear()
         self.dirty.clear()
         self.removed.clear()
+        self._seen.clear()
         self.station.cfg['dx_cluster'] = config
         self.station.save_cfg()
         self.status('connecting', full=True)
         self.task = asyncio.create_task(self.run())
 
     async def run(self):
+        if self.config.get('provider') == 'spotradio':
+            await self._run_spotradio()
+            return
         delay = 5
         while True:
             try:
@@ -224,6 +342,31 @@ class DxCluster:
                         await asyncio.wait_for(writer.wait_closed(), 2)
             await asyncio.sleep(delay)
             delay = min(60, delay * 2)
+
+    async def _run_spotradio(self):
+        """Poll the public SpotRadio JSON feed; no telnet login is involved."""
+        delay, live = 5.0, False
+        while True:
+            try:
+                payload = await asyncio.to_thread(_http_json, SPOTRADIO_URL)
+                stored = self.ingest_json(payload)
+                self.publish()
+                if not live:
+                    live = True
+                    log.info('SpotRadio: подключено, спотов в ответе %s, новых %s',
+                             len(payload) if isinstance(payload, list) else 0, stored)
+                if self.state != 'live':
+                    self.status('live')
+                delay = 5.0
+                await asyncio.sleep(SPOTRADIO_POLL)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                live = False
+                reason = str(exc).splitlines()[0][:160] or 'нет соединения'
+                self.status('retry', f'SpotRadio: {reason}')
+                await asyncio.sleep(delay)
+                delay = min(60.0, delay * 2)
 
     async def receive(self, reader, writer):
         decoder, buffer, logged_in = TelnetText(), '', False

@@ -147,12 +147,14 @@
         <p id="dxReason" class="muted small" role="status"></p>
         <details id="dxSettings" class="dx-settings" open><summary data-i18n="dx.connection">Подключение к кластеру</summary>
           <form id="dxConnectForm" class="dx-connect">
-            <label><span data-i18n="dx.host">Сервер</span><input id="dxHost" value="dxc.hamserve.uk" maxlength="253" required autocomplete="off"></label>
-            <label><span data-i18n="dx.port">Порт</span><input id="dxPort" type="number" min="1" max="65535" value="7300" required></label>
-            <label><span data-i18n="dx.call">Ваш позывной</span><input id="dxCall" maxlength="23" placeholder="R6…" required autocomplete="off" spellcheck="false"></label>
+            <label class="dx-provider"><span data-i18n="dx.provider">Источник</span><select id="dxProvider"><option value="telnet" data-i18n="dx.provider.telnet">DXSpider / AR-Cluster (telnet)</option><option value="spotradio" data-i18n="dx.provider.spotradio">SpotRadio (spotradio.ru)</option></select></label>
+            <label class="dx-host"><span data-i18n="dx.host">Сервер</span><input id="dxHost" value="dxc.hamserve.uk" maxlength="253" required autocomplete="off"></label>
+            <label class="dx-port"><span data-i18n="dx.port">Порт</span><input id="dxPort" type="number" min="1" max="65535" value="7300" required></label>
+            <label class="dx-call"><span data-i18n="dx.call">Ваш позывной</span><input id="dxCall" maxlength="23" placeholder="R6…" required autocomplete="off" spellcheck="false"></label>
             <div class="dx-actions"><button type="submit" id="dxConnect" class="btn primary" data-i18n="dx.connect">Подключить</button><button type="button" id="dxDisconnect" class="btn" data-i18n="dx.disconnect">Отключить</button></div>
           </form>
-          <p class="muted small" data-i18n="dx.shared">Одно подключение для всех пультов. Только приём спотов; позывной передаётся выбранному кластеру.</p>
+          <p class="muted small" data-i18n="dx.shared">Одно подключение для всех пультов. Только приём спотов; для telnet-кластера позывной передаётся серверу.</p>
+          <p id="dxSpotradioHint" class="muted small" hidden data-i18n="dx.spotradio.hint">Публичный поток SpotRadio: позывной, сервер и порт не нужны.</p>
         </details>
         <div class="dx-filters">
           <label><span data-i18n="dx.band">Диапазон</span><select id="dxBand"><option value="" data-i18n="dx.all">Все</option><option value="current" data-i18n="dx.current">Текущий VFO</option></select></label>

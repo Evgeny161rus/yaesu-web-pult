@@ -22,6 +22,17 @@
       store.set('dxFilters', Object.fromEntries(filters.map(k => [k, el(k).type === 'checkbox' ? el(k).checked : el(k).value]))); render();
     });
   }
+  function syncProvider() {
+    const spotradio = el('dxProvider').value === 'spotradio';
+    for (const id of ['dxHost','dxPort','dxCall']) {
+      const input = el(id);
+      input.disabled = spotradio;
+      input.closest('label').hidden = spotradio;
+    }
+    el('dxSpotradioHint').hidden = !spotradio;
+  }
+  el('dxProvider').onchange = syncProvider;
+  syncProvider();
   function filtered() {
     const age = Number(el('dxAge').value) || 30, search = el('dxSearch').value.trim().toUpperCase();
     const band = el('dxBand').value === 'current' ? bandName(bandOf(S.freq_a)) : el('dxBand').value;
@@ -99,7 +110,7 @@
     bandmap.replaceChildren(fragment);
   }
   el('dxConnectForm').onsubmit = e => {
-    e.preventDefault(); collapseOnLive = true; sendDx({t:'dx_connect',config:{host:el('dxHost').value,port:Number(el('dxPort').value),call:el('dxCall').value}});
+    e.preventDefault(); collapseOnLive = true; sendDx({t:'dx_connect',config:{provider:el('dxProvider').value,host:el('dxHost').value,port:Number(el('dxPort').value),call:el('dxCall').value}});
   };
   el('dxDisconnect').onclick = () => { collapseOnLive = false; sendDx({t:'dx_disconnect'}); };
   function mergeSpots(message) {
@@ -122,8 +133,13 @@
         state = Object.assign({state:'off', spots:[], total:0, log_qso:0}, message);
         state.spots = message.spots || [];
         state.total = message.total ?? state.spots.length;
-        if (!initialized && message.config?.host) {
-          el('dxHost').value = message.config.host; el('dxPort').value = message.config.port; el('dxCall').value = message.config.call;
+        if (!initialized && message.config) {
+          const config = message.config;
+          el('dxProvider').value = config.provider === 'spotradio' ? 'spotradio' : 'telnet';
+          if (config.host) el('dxHost').value = config.host;
+          if (config.port) el('dxPort').value = config.port;
+          if (config.call) el('dxCall').value = config.call;
+          syncProvider();
         }
         initialized = true;
       } else if (message.t === 'dx_spots') {

@@ -163,10 +163,9 @@
           <label class="dx-search"><span data-i18n="dx.search">Позывной / страна</span><input id="dxSearch" type="search" maxlength="40" placeholder="DX…" autocomplete="off"></label>
           <label class="dx-check"><input type="checkbox" id="dxNew"><span data-i18n="dx.newonly">Новые страны / диапазоны</span></label>
         </div>
-        <div class="dx-summary"><span id="dxCount"></span><span id="dxLog" class="muted"></span></div>
+        <div class="dx-summary"><span id="dxCount"></span><span id="dxLog" class="muted"></span><label class="dx-check dx-compact-toggle" data-i18n-title="dx.compact.hint"><input type="checkbox" id="dxCompact"><span data-i18n="dx.compact">Компактная схема</span></label></div>
         <div class="dx-table-wrap"><table class="dx-table"><thead><tr><th data-i18n="dx.station">Станция</th><th data-i18n="dx.freq">кГц</th><th data-i18n="dx.details">Сообщение</th><th>UTC</th></tr></thead><tbody id="dxRows"></tbody></table><p id="dxEmpty" class="dx-empty"></p></div>
-        <div class="dx-selection"><span id="dxSelected" class="muted" data-i18n="dx.select">Выберите спот</span><button id="dxTune" class="btn primary" disabled data-i18n="dx.tune">На частоту</button></div>
-        <p class="muted small dx-footnote" data-i18n="dx.hint">Двойной клик — частота приёма. Вид работы и SPLIT не меняются. Во время передачи перестройка заблокирована.</p>
+        <p class="muted small dx-footnote" data-i18n="dx.hint">Клик по позывному — настройка RX. Вид работы и SPLIT не меняются. Во время передачи перестройка заблокирована.</p>
       </div>
     </div>
     <div class="tab on" id="tab-rx">

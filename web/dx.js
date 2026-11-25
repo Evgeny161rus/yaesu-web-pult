@@ -3,7 +3,7 @@
   'use strict';
   const el = id => document.getElementById(id);
   const t = (key, fallback) => window.I18N ? I18N.t(key, fallback) : fallback;
-  let state = {state:'off', spots:[], total:0, log_qso:0}, selected = '', initialized = false;
+  let state = {state:'off', spots:[], total:0, log_qso:0}, initialized = false;
   let shown = [], markerKey = '';
   let collapseOnLive = false;
   const bandName = b => b ? (b[0] === '70' ? '70cm' : b[0] + 'm') : '?';
@@ -33,6 +33,17 @@
   }
   el('dxProvider').onchange = syncProvider;
   syncProvider();
+  el('dxCompact').checked = !!store.get('dxCompact', false);
+  function applyCompact() {
+    document.body.classList.toggle('dx-compact', el('dxCompact').checked);
+    markerKey = '';
+    markers();
+  }
+  el('dxCompact').addEventListener('change', () => {
+    store.set('dxCompact', el('dxCompact').checked);
+    applyCompact();
+  });
+  applyCompact();
   function filtered() {
     const age = Number(el('dxAge').value) || 30, search = el('dxSearch').value.trim().toUpperCase();
     const band = el('dxBand').value === 'current' ? bandName(bandOf(S.freq_a)) : el('dxBand').value;
@@ -41,13 +52,6 @@
       (!mode || (mode === 'unknown' ? !s.mode : mode === 'SSB' ? ['SSB','USB','LSB'].includes(s.mode) : s.mode === mode)) &&
       (!search || (s.call + ' ' + s.country).toUpperCase().includes(search)) &&
       (!el('dxNew').checked || s.tags.some(x => ['newdxcc','newband'].includes(x))));
-  }
-  function select(id) {
-    selected = id;
-    for (const row of el('dxRows').children) row.setAttribute('aria-selected', String(row.dataset.id === id));
-    const spot = shown.find(s => s.id === id);
-    el('dxSelected').textContent = spot ? `${spot.call} · ${(spot.freq/1000).toFixed(1)} kHz` : t('dx.select','Выберите спот');
-    el('dxTune').disabled = !spot || !C.authed || !S.connected || !!S.tx || C.pttBusy || C.txOwner;
   }
   function tune(id) { if (C.authed) sendDx({t:'dx_tune', id}); }
   function node(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; n.textContent = text; return n; }
@@ -63,34 +67,41 @@
     el('dxLog').textContent = state.log_qso ? `${state.log_qso} QSO ` + t('dx.inlog','в журнале') : t('dx.nolog','Журнал пуст — отметки предварительные');
     const fragment = document.createDocumentFragment();
     for (const s of shown) {
-      const row = document.createElement('tr'); row.tabIndex = 0; row.dataset.id = s.id; row.setAttribute('aria-selected', String(selected === s.id));
-      row.setAttribute('aria-label', `${s.call}, ${(s.freq/1000).toFixed(1)} kHz`);
-      const station = document.createElement('td'); station.append(node('b','dx-call',s.call), node('span','dx-country',s.country || '—'));
+      const row = document.createElement('tr'); row.dataset.id = s.id;
+      const callClass = 'dx-call' + (s.tags.includes('newdxcc') ? ' tag-newdxcc' : s.tags.includes('newband') ? ' tag-newband' : '');
+      const call = document.createElement('button');
+      call.type = 'button'; call.className = callClass; call.textContent = s.call; call.dataset.id = s.id;
+      const tuneLabel = t('dx.tune','Настроить RX');
+      call.title = `${(s.freq/1000).toFixed(1)} kHz — ${tuneLabel}`;
+      call.setAttribute('aria-label', `${s.call}, ${(s.freq/1000).toFixed(1)} kHz — ${tuneLabel}`);
+      call.onclick = e => { e.stopPropagation(); tune(s.id); };
+      const station = document.createElement('td');
+      station.append(call, node('span','dx-country',s.country || '—'));
       const tags = {newdxcc:['dx.newdxcc','Новая страна'],newband:['dx.newband','Новый диапазон'],worked:['dx.worked','Уже работали']};
       for (const tag of s.tags) if (tags[tag]) station.append(node('span','dx-tag '+tag,t(...tags[tag])));
       const details = node('td','dx-comment',s.comment || '—'); details.append(node('span','dx-country',`${s.reporter}${s.count > 1 ? ' ×'+s.count : ''}`));
       const time = new Date(s.time*1000); const when = node('td','dx-freq',time.toISOString().slice(11,16));
       when.title = `${Math.max(0,Math.floor((Date.now()/1000-s.time)/60))} min`;
+      row.title = [s.country, s.reporter, s.comment].filter(Boolean).join(' · ');
       row.append(station,node('td','dx-freq',(s.freq/1000).toFixed(1)),details,when);
-      row.onclick = () => select(s.id); row.ondblclick = () => tune(s.id);
-      row.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); select(s.id); tune(s.id); } else if (e.key === ' ') { e.preventDefault(); select(s.id); } };
       fragment.append(row);
     }
-    // Keep keyboard focus on the same spot after live updates.
-    const focus = el('dxRows').contains(document.activeElement) ? document.activeElement.dataset.id : null;
+    // Keep keyboard focus on the same call button after live updates.
+    const active = document.activeElement;
+    const focus = el('dxRows').contains(active) ? active.dataset.id : null;
     const scroll = el('dxRows').parentElement.parentElement.scrollTop;
     el('dxRows').replaceChildren(fragment);
-    if (focus) [...el('dxRows').children].find(r => r.dataset.id === focus)?.focus({preventScroll:true});
+    if (focus) [...el('dxRows').querySelectorAll('.dx-call')].find(b => b.dataset.id === focus)?.focus({preventScroll:true});
     el('dxRows').parentElement.parentElement.scrollTop = scroll;
     el('dxEmpty').hidden = shown.length > 0;
-    el('dxEmpty').textContent = state.spots.length ? t('dx.filtered','Нет спотов по выбранным фильтрам.') : status === 'off' ? t('dx.start','Укажите ваш позывной и подключитесь к кластеру. Здесь появятся реальные DX-споты.') : status === 'offline' ? t('dx.offline','Нет связи с пультом') : t('dx.wait','Ожидаем сообщения кластера. Новые споты появятся автоматически.');
-    select(selected); markers();
+    el('dxEmpty').textContent = state.spots.length ? t('dx.filtered','Нет спотов по выбранным фильтрам.') : status === 'off' ? t('dx.start','Выберите источник и подключитесь. Здесь появятся реальные DX-споты.') : status === 'offline' ? t('dx.offline','Нет связи с пультом') : t('dx.wait','Ожидаем новые споты. Они появятся автоматически.');
+    markers();
   }
   function markers() {
     if (typeof rfView !== 'function' || !rfView() || !C.authed) { markerKey = ''; bandmap.replaceChildren(); return; }
     const {center,span} = wf.rf, width = bandmap.clientWidth;
     const spots = filtered();
-    const key = JSON.stringify([center,span,width,spots.map(s => [s.id,s.comment])]);
+    const key = JSON.stringify([center,span,width,spots.map(s => [s.id,s.comment,s.tags.join(',')])]);
     if (key === markerKey) return;
     markerKey = key;
     const slots = [[],[]], fragment = document.createDocumentFragment();
@@ -101,10 +112,13 @@
       const lane = slots.findIndex(xs => xs.every(v => Math.abs(v-x) > 92));
       if (lane < 0) continue;
       slots[lane].push(x);
-      const b = node('button','',spot.call); b.style.left = x+'px'; b.style.top = (4+lane*24)+'px';
-      b.title = `${spot.call} · ${(spot.freq/1000).toFixed(1)} kHz · ${spot.comment}`;
-      b.onclick = () => select(spot.id); b.ondblclick = () => tune(spot.id);
-      b.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); tune(spot.id); } };
+      const b = node('button','',spot.call);
+      if (spot.tags.includes('newdxcc')) b.classList.add('tag-newdxcc');
+      else if (spot.tags.includes('newband')) b.classList.add('tag-newband');
+      b.style.left = x+'px'; b.style.top = (4+lane*24)+'px';
+      b.title = `${spot.call} · ${(spot.freq/1000).toFixed(1)} kHz · ${spot.comment} — ${t('dx.tune','Настроить RX')}`;
+      b.onclick = () => tune(spot.id);
+      b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tune(spot.id); } };
       fragment.append(b);
     }
     bandmap.replaceChildren(fragment);
@@ -124,7 +138,6 @@
     state.total = message.total ?? state.spots.length;
     if (message.log_qso != null) state.log_qso = message.log_qso;
   }
-  el('dxTune').onclick = () => tune(selected);
   window.dxDesk = {
     on(message) {
       if (message.t === 'dx_error') { collapseOnLive = false; el('dxReason').textContent = message.msg; toast(message.msg,4000); return; }
@@ -156,7 +169,7 @@
     },
     offline() { state.state = 'offline'; render(); }, markers
   };
-  setInterval(() => { if (!el('dxRows').contains(document.activeElement)) render(); else { select(selected); markers(); } },5000);
+  setInterval(() => { if (!el('dxRows').contains(document.activeElement)) render(); else markers(); },5000);
   window.addEventListener('resize',markers);
   window.addEventListener('langchange',render);
   render();

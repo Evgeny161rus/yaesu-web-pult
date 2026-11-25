@@ -59,8 +59,9 @@ download_count сбрасывается. Для честной статисти�
 - `server/rtlsdr_scope.py`, `ft710_scope.py`, `ft4222_transport.py` — SDR/scope.
 - `server/ft8.py` + `server/ftx/` + `_ftx` — FT8/FT4; `_ftx` собирается
   per-platform (`python server/setup_ftx.py build_ext --inplace`).
-- `server/dxcluster.py` — DXSpider, только приём, дедупликация, дельты,
-  защита от переполнения частоты, перестройка только RX VFO.
+- `server/dxcluster.py` — DX-споты: telnet DXSpider/AR-Cluster и публичный
+  SpotRadio JSON (`spots.php?limit=200`, опрос раз в 20 с), только приём,
+  дедупликация, дельты, защита от переполнения частоты, перестройка только RX VFO.
 - `web/` — пульт; `web/dx.js`, `web/dx.css` — DX; `web/appearance.js` —
   темы/компоновки; `web/sw.js` — PWA-кэш.
 - `docs/` — актуальные инструкции; `docs/CONTEXT.md` и `docs/ROADMAP.md` —
@@ -117,6 +118,9 @@ download_count сбрасывается. Для честной статисти�
   ждало порт. Пароли в репозиторий не писать.
 - TX на реальной антенне не проверялся; антенны нет. Не включать передачу
   «просто проверить».
+- SpotRadio проверен живым запросом к `spots.php?limit=200`: публичный JSON,
+  ~135 актуальных спотов за час, опрос раз в 20 с; повторный опрос не раздувает
+  счётчики (дедупликация по spotter+call+frequency+time).
 
 ## Грабли
 

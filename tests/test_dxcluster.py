@@ -1,4 +1,6 @@
 import asyncio
+import gzip
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,7 +11,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'server'))
-from dxcluster import DxCluster, TelnetText, parse_spot, validate_config  # noqa: E402
+from dxcluster import DxCluster, TelnetText, _http_json, parse_spot, parse_spotradio_spot, validate_config  # noqa: E402
 
 
 def line(call='JA1ABC', freq='14025.0', comment='CW CQ', utc=None):
@@ -41,10 +43,20 @@ class ParserTests(unittest.TestCase):
     def test_config_cannot_inject_cluster_commands(self):
         good = {'host': 'dxc.example.org', 'port': 7300, 'call': 'r6abc/p'}
         self.assertEqual(validate_config(good)['call'], 'R6ABC/P')
+        self.assertEqual(validate_config(good)['provider'], 'telnet')
         for key, value in [('call', 'R6ABC\nDX 14025 JA1ABC'), ('host', 'http://example.org'),
                            ('port', 0), ('port', 'oops'), ('call', '1234')]:
             with self.subTest(key=key, value=value), self.assertRaises(ValueError):
                 validate_config(dict(good, **{key: value}))
+
+    def test_spotradio_config_needs_no_callsign(self):
+        self.assertEqual(validate_config({'provider': 'spotradio'}), {'provider': 'spotradio'})
+        self.assertEqual(validate_config({'provider': 'SPOTRADIO', 'call': 'ignored'}),
+                         {'provider': 'spotradio'})
+
+    def test_unknown_provider_is_rejected(self):
+        with self.assertRaises(ValueError):
+            validate_config({'provider': 'web', 'host': 'example.org'})
 
     def test_fragmented_telnet_options_and_subnegotiation(self):
         decoder = TelnetText()
@@ -55,6 +67,64 @@ class ParserTests(unittest.TestCase):
             replies.extend(r)
         self.assertEqual(text, b'login:')
         self.assertEqual(replies, b'\xff\xfe\x01')
+
+
+class SpotRadioParserTests(unittest.TestCase):
+    def base(self, **kwargs):
+        item = {'spotter': 'ua3arc', 'spotted': '4u1itu', 'frequency': 18104000,
+                'message': 'FT8 <TR> +0 dB', 'when': '2026-11-25 08:43:00',
+                'ts': 1795596180, 'mode': 'FT8', 'band': '17m'}
+        item.update(kwargs)
+        return item
+
+    def test_maps_json_record(self):
+        now = 1795596200.0
+        spot = parse_spotradio_spot(self.base(), now)
+        self.assertEqual(spot['call'], '4U1ITU')
+        self.assertEqual(spot['reporter'], 'UA3ARC')
+        self.assertEqual(spot['freq'], 18104000)
+        self.assertEqual(spot['band'], '17m')
+        self.assertEqual(spot['mode'], 'FT8')
+        self.assertEqual(spot['comment'], 'FT8 +0 dB')
+        self.assertEqual(spot['id'], '4U1ITU:18104000')
+        self.assertEqual(spot['time'], 1795596180)
+        self.assertEqual(spot['received'], now)
+
+    def test_frequent_fallbacks(self):
+        now = 1795596200.0
+        spot = parse_spotradio_spot(self.base(ts=None, frequency=None, freq_khz=14025,
+                                              mode=None, message='CW UP 5'), now)
+        self.assertEqual(spot['freq'], 14025000)
+        self.assertEqual(spot['mode'], 'CW')
+        self.assertEqual(spot['band'], '20m')
+        self.assertEqual(spot['time'], 1795596180)
+
+    def test_bad_records_are_ignored(self):
+        now = 1795596200.0
+        bad = [None, {}, {'spotter': 'R6ABC'}, self.base(frequency=0),
+               self.base(frequency='oops'), self.base(spotted='???'),
+               self.base(spotter='bad spotter'), self.base(ts='oops', when='oops'),
+               self.base(ts=now + 400, when='oops')]
+        for item in bad:
+            with self.subTest(item=item):
+                self.assertIsNone(parse_spotradio_spot(item, now))
+
+    def test_unknown_mode_is_not_invented(self):
+        now = 1795596200.0
+        self.assertEqual(parse_spotradio_spot(self.base(mode='Q65', message='Q65'), now)['mode'], '')
+        self.assertEqual(parse_spotradio_spot(self.base(mode=None, message='Q65'), now)['mode'], '')
+
+
+class SpotRadioHttpTests(unittest.TestCase):
+    def test_gzip_json_is_decoded(self):
+        payload = b'[{"spotted":"JA1ABC","frequency":14025000}]'
+        response = Mock()
+        response.headers = {'Content-Encoding': 'gzip'}
+        response.read.return_value = gzip.compress(payload)
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        with patch('dxcluster.urllib.request.urlopen', return_value=response):
+            self.assertEqual(_http_json('https://example.org/feed'), json.loads(payload))
 
 
 class ClusterTests(unittest.IsolatedAsyncioTestCase):
@@ -83,6 +153,24 @@ class ClusterTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(dx.snapshot()['spots']), 500)
         with patch('dxcluster.time.time', return_value=time.time() + 3700):
             self.assertEqual(dx.snapshot()['spots'], [])
+
+    async def test_spotradio_poll_does_not_inflate_counts(self):
+        dx = self.make_cluster()
+        now = time.time()
+        item = {'spotter': 'R6ABC', 'spotted': 'JA1ABC', 'frequency': 14025000,
+                'message': 'CW CQ', 'ts': now - 30, 'mode': 'CW'}
+        self.assertEqual(dx.ingest_json([item], now), 1)
+        self.assertEqual(dx.ingest_json([item], now + 20), 0)
+        spots = dx.snapshot()['spots']
+        self.assertEqual(len(spots), 1)
+        self.assertEqual(spots[0]['count'], 1)
+        extra = dict(item, spotted='JA2ABC', frequency=14026000)
+        self.assertEqual(dx.ingest_json([extra, item], now + 20), 1)
+        self.assertEqual(len(dx.snapshot()['spots']), 2)
+        stale = {'spotter': 'R6ABC', 'spotted': 'JA3ABC', 'frequency': 14027000,
+                 'message': 'CW', 'ts': now - 7200, 'mode': 'CW'}
+        self.assertEqual(dx.ingest_json([stale], now), 0)
+        self.assertEqual(dx.ingest_json({'bad': 'type'}, now), 0)
 
     async def test_publish_sends_only_changes(self):
         dx = self.make_cluster()

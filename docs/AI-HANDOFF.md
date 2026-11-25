@@ -141,6 +141,15 @@ download_count сбрасывается. Для честной статисти�
 - **Альтернативные упаковки удалены**; не добавлять их без полноценного
   теста USB-COM/USB-audio, `_ftx`, `cty.dat` и SDR.
 
+## Аналоговый измеритель
+
+`web/app.js`: `meterGauge`, `renderMeters`, `applyMeterMode`. RX показывает S;
+TX выбирается кнопками PO/SWR (`opts.meterTx`, localStorage). PO использует
+существующую PO_CAL и диапазон 12/120 W для Field/SPA-1; SWR — SWR_CAL.
+Без подключения или показаний отображается «—», стрелка возвращается влево.
+Три размера, режимы analog/bars/off; ширина прибора учтена в console-layout.css.
+Тест `tests/meter-ui.cjs` запускается через `tests/test_meter_ui.py` (Node.js).
+
 ## Следующие шаги
 
 1. Проверить `main`/CI/релизы (`gh run list`, `gh release view`).

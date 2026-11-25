@@ -59,7 +59,7 @@ html[data-appearance="radio-silver"] .display { --lcd:#a0f3da; }
 html[data-appearance="radio-silver"] .console-actions .btn { background:#2b3339; color:#f0f4f7; border-color:#59646e; }
 html[data-appearance="radio-silver"] .ptt:not(.active) { color:#8f1d2a; background:#f3d5d9; border-color:#b06470; }
 @media (min-width:1000px) and (min-height:650px) {
-  body.radio-console.fit .layout { display:grid; padding:14px; gap:10px; grid-template-columns:200px minmax(0,1fr) 260px; grid-template-rows:145px minmax(180px,1fr) auto auto minmax(180px,28%); grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
+  body.radio-console.fit .layout { display:grid; padding:14px; gap:10px; grid-template-columns:var(--console-meter-width,200px) minmax(0,1fr) 260px; grid-template-rows:145px minmax(180px,1fr) auto auto minmax(180px,28%); grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
   body.radio-console.fit .col-left, body.radio-console.fit .tune { display:contents; }
   body.radio-console.fit #display { grid-area:display; }
   body.radio-console.fit #consoleShelf { grid-area:meters; }
@@ -70,7 +70,7 @@ html[data-appearance="radio-silver"] .ptt:not(.active) { color:#8f1d2a; backgrou
   body.radio-console.fit .wfpanel { grid-area:wf; }
   body.radio-console.fit .tabs-panel { grid-area:tabs; }
   body.radio-console.fit.hamlib .layout { grid-template-rows:145px minmax(180px,1fr) minmax(240px,35%); grid-template-areas:'meters display dial' 'meters wf dial' 'tabs tabs tabs'; }
-  body.radio-console:not(.fit) .layout { display:grid; padding:14px; gap:10px; grid-template-columns:180px minmax(0,1fr) 230px; grid-template-rows:145px 360px auto auto auto; grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
+  body.radio-console:not(.fit) .layout { display:grid; padding:14px; gap:10px; grid-template-columns:var(--console-meter-width,180px) minmax(0,1fr) 230px; grid-template-rows:145px 360px auto auto auto; grid-template-areas:'meters display dial' 'meters wf dial' 'bands bands bands' 'modes modes modes' 'tabs tabs tabs'; }
   body.radio-console:not(.fit) .col-left, body.radio-console:not(.fit) .tune { display:contents; }
   body.radio-console:not(.fit) #display { grid-area:display; }
   body.radio-console:not(.fit) #consoleShelf { grid-area:meters; }
@@ -98,3 +98,6 @@ html[data-appearance="radio-silver"] .ptt:not(.active) { color:#8f1d2a; backgrou
   body.radio-console #hamlibControls { grid-template-columns:1fr; }
   body.radio-console #consoleShelf .console-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
+
+/* An analog dial needs room for its calibrated legends. */
+body.radio-console.analog-meter { --console-meter-width:clamp(260px,23vw,340px); }

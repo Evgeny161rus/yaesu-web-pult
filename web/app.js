@@ -87,7 +87,8 @@ const C = {                         // состояние клиента
   span: 4000, bw: 0,                      // действующий обзор и измеренная полоса звука трансивера
 };
 const opts = Object.assign({ echo: false, ns: false, agc: false, muteTx: true, pttMode: 'hold', space: true, palette: 'classic', micGain: 100, micId: '',
-  sqMode: 'radio', sqThr: -60, tail: 500, scale: 'auto', hotkeys: true, rfWf: true }, store.get('opts', {}));
+  sqMode: 'radio', sqThr: -60, tail: 500, scale: 'auto', hotkeys: true, rfWf: true,
+  meterMode: 'analog', meterSize: 'compact', meterReadouts: true, meterTx: 'po' }, store.get('opts', {}));
 if ((opts.v | 0) < 2) {           // 1.8: обработка браузера для эфира по умолчанию выключена (портила голос)
   opts.echo = false; opts.ns = false; opts.agc = false; opts.v = 2; store.set('opts', opts);
 }
@@ -121,7 +122,7 @@ function connect() {
   C.ws = ws;
   ws.onopen = () => send({ t: 'hello', pw: C.pw, rate: C.rate || 16000 });
   ws.onclose = () => {
-    C.authed = false; window.dxDesk?.offline(); setLink(false, tr('conn.lost','Нет связи с сервером'), 'conn.lost');
+    C.authed = false; renderMeters(); window.dxDesk?.offline(); setLink(false, tr('conn.lost','Нет связи с сервером'), 'conn.lost');
     if (C.txOwner) { C.txOwner = false; updatePtt(); }
     setTimeout(connect, 2000);
   };
@@ -316,19 +317,162 @@ function setBar(id, frac, text) {
   const m = $(id); m.querySelector('i').style.width = (clamp(frac, 0, 1) * 100).toFixed(1) + '%';
   m.querySelector('.val').textContent = text;
 }
+
+// ------------------------------------------------------------------ аналоговый S-метр
+const meterGauge = (() => {
+  const cv = $('#meterGauge');
+  if (!cv) return { update() {}, resize() {} };
+  const ctx = cv.getContext('2d');
+  const st = { pos: 0, target: 0, mode: 's', maxW: 100, available: false };
+  let raf = 0, lastTime = 0;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const swrFrac = v => v === Infinity ? 1 : Math.max(0, (v - 1) / (v + 1));
+  const angle = f => (-123 + 66 * f) * Math.PI / 180;
+  const point = (r, f) => [300 + Math.cos(angle(f)) * r, 505 + Math.sin(angle(f)) * r];
+  function arc(r, from, to, color, width) {
+    ctx.beginPath(); ctx.arc(300, 505, r, angle(from), angle(to));
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.stroke();
+  }
+  function tick(r, f, major, color) {
+    const a = point(r, f), b = point(r + (major ? 15 : 8), f);
+    ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b);
+    ctx.strokeStyle = color; ctx.lineWidth = major ? 2.8 : 1.5; ctx.stroke();
+  }
+  function label(r, f, text, color, size = 22) {
+    ctx.fillStyle = color; ctx.font = `600 ${size}px "Segoe UI", Arial, sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, ...point(r, f));
+  }
+  function draw() {
+    const w = cv.clientWidth, h = cv.clientHeight;
+    if (!w || !h) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    // Fixed proportions: a wide instrument window, pivot below the glass.
+    const scale = Math.min(w / 600, h / 268);
+    ctx.translate((w - 600 * scale) / 2, (h - 268 * scale) / 2); ctx.scale(scale, scale);
+    const narrow = w < 210;
+    const ink = mode => st.mode === mode ? '#ffe477' : '#b99b4c';
+    const hot = st.mode === 's' ? '#ff974b' : '#b76e3c';
+    ctx.lineCap = 'butt';
+    ctx.save(); ctx.shadowColor = '#ffc447'; ctx.shadowBlur = st.available ? 2 : 0;
+    arc(460, 0, .6, ink('s'), 3); arc(460, .6, 1, hot, 3);
+    arc(452, 0, .6, ink('s'), 1); arc(452, .6, 1, hot, 1);
+    arc(466, .6, 1, hot, 5);
+    for (let i = 0; i <= 30; i++) tick(460, i / 30, i % 2 === 0, i > 18 ? hot : ink('s'));
+    for (const v of (narrow ? [1, 5, 9, 11, 15] : [1, 3, 5, 7, 9, 11, 13, 15])) {
+      label(491, v / 15, v <= 9 ? String(v) : '+' + ((v - 9) * 10), v > 9 ? hot : ink('s'), narrow ? 29 : 23);
+    }
+    arc(404, 0, 1, ink('po'), 2.5);
+    for (let i = 0; i <= 24; i++) tick(404, i / 24, i % 4 === 0, ink('po'));
+    for (const v of (narrow ? [0, 40, 80, 120] : [0, 20, 40, 60, 80, 100, 120])) {
+      label(429, v / 120, String(v * st.maxW / 100), ink('po'), narrow ? 26 : 20);
+    }
+    arc(348, 0, 1, ink('swr'), 2.5);
+    arc(342, swrFrac(3), 1, st.mode === 'swr' ? '#ed8644' : '#875a31', 4);
+    for (const v of [1, 1.2, 1.5, 1.7, 2, 2.5, 3, 4, 5, 7, 10, Infinity]) {
+      tick(348, swrFrac(v), [1, 1.5, 2, 3, 5, Infinity].includes(v), ink('swr'));
+    }
+    for (const v of (narrow ? [1, 2, 3, Infinity] : [1, 1.5, 2, 3, 5, Infinity])) {
+      label(373, swrFrac(v), v === Infinity ? '∞' : String(v), ink('swr'), narrow ? 26 : 20);
+    }
+    ctx.textAlign = 'left'; ctx.font = `700 ${narrow ? 28 : 24}px "Segoe UI", Arial, sans-serif`;
+    for (const [name, mode, x, y] of [['S', 's', 10, 115], ['PO', 'po', 43, 164], ['SWR', 'swr', 66, 211]]) {
+      ctx.fillStyle = ink(mode); ctx.fillText(name, x, y);
+    }
+    ctx.textAlign = 'right'; ctx.font = '600 18px "Segoe UI", Arial, sans-serif';
+    ctx.fillStyle = hot; ctx.fillText('dB', 586, 115);
+    ctx.fillStyle = ink('po'); ctx.fillText('W', 556, 164);
+    ctx.restore();
+    // Tapered ivory needle with a small shadow, no artificial random movement.
+    const a = angle(st.pos), tip = point(482, st.pos), base = point(245, st.pos);
+    ctx.save(); ctx.shadowColor = '#000'; ctx.shadowBlur = 5; ctx.shadowOffsetX = 3;
+    ctx.fillStyle = st.available ? '#fff3c6' : '#b6a77b';
+    ctx.beginPath(); ctx.moveTo(...tip);
+    ctx.lineTo(base[0] - Math.sin(a) * 2.2, base[1] + Math.cos(a) * 2.2);
+    ctx.lineTo(base[0] + Math.sin(a) * 2.2, base[1] - Math.cos(a) * 2.2);
+    ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.font = '500 15px "Segoe UI", Arial, sans-serif'; ctx.textAlign = 'right';
+    ctx.fillStyle = '#8f805c'; ctx.fillText('S  /  POWER  /  SWR', 555, 251);
+  }
+  function frame(time) {
+    raf = 0;
+    const dt = lastTime ? Math.min(64, time - lastTime) : 16; lastTime = time;
+    const d = st.target - st.pos;
+    st.pos += d * (1 - Math.exp(-dt / (d > 0 ? 90 : 240)));
+    if (Math.abs(d) < .0005 || reduced.matches) st.pos = st.target;
+    draw();
+    if (st.pos !== st.target) raf = requestAnimationFrame(frame);
+    else lastTime = 0;
+  }
+  function update(v) {
+    if (opts.meterMode !== 'analog') {
+      if (raf) cancelAnimationFrame(raf); raf = 0; lastTime = 0; return;
+    }
+    st.mode = v.mode; st.maxW = v.maxW; st.available = v.available;
+    const target = v.mode === 'swr' ? swrFrac(v.swr) : v.mode === 'po' ? v.po / (v.maxW * 1.2) : v.s / 15;
+    st.target = v.available && Number.isFinite(target) ? clamp(target, 0, 1) : 0;
+    if (!raf) raf = requestAnimationFrame(frame);
+  }
+  window.addEventListener('resize', draw);
+  if (window.ResizeObserver) new ResizeObserver(draw).observe(cv);
+  return { update, resize: draw };
+})();
+
+
 function renderMeters() {
   const s = interp(S_CAL, S.smeter || 0);
   const sTxt = s <= 9 ? 'S' + Math.round(s) : `S9+${Math.round((s - 9) * 10)}`;
   setBar('#mS', s / 15, sTxt);
+  const maxW = S.pwr_head === 2 ? 100 : 10;
+  let poW = 0, swr = 1, alcPct = 0;
   if (S.tx) {
-    let w = interp(PO_CAL, S.po || 0);
-    if (S.pwr_head !== 2) w = w / 10;
-    const maxW = S.pwr_head === 2 ? 100 : 10;
-    setBar('#mPo', w / (maxW * 1.2), `≈${w.toFixed(w < 10 ? 1 : 0)} Вт`);
-    const swr = interp(SWR_CAL, S.swr || 0);
+    poW = interp(PO_CAL, S.po || 0);
+    if (S.pwr_head !== 2) poW = poW / 10;
+    setBar('#mPo', poW / (maxW * 1.2), `≈${poW.toFixed(poW < 10 ? 1 : 0)} Вт`);
+    swr = interp(SWR_CAL, S.swr || 0);
     setBar('#mSwr', (swr - 1) / 4, swr.toFixed(1));
-    setBar('#mAlc', (S.alc || 0) / 255, Math.round((S.alc || 0) / 2.55) + '%');
+    alcPct = Math.round((S.alc || 0) / 2.55);
+    setBar('#mAlc', (S.alc || 0) / 255, alcPct + '%');
   }
+  const tx = !!S.tx;
+  const mode = tx ? (opts.meterTx === 'swr' ? 'swr' : 'po') : 's';
+  const raw = mode === 's' ? S.smeter : mode === 'po' ? S.po : S.swr;
+  const available = !!S.connected && C.authed && Number.isFinite(raw);
+  meterGauge.update({ mode, s, swr, po: poW, maxW, available });
+  const value = $('#meterValue');
+  const text = !available ? '—' : mode === 's' ? sTxt : mode === 'swr' ? swr.toFixed(1) : `≈${poW.toFixed(poW < 10 ? 1 : 0)} W`;
+  if (value) value.textContent = text;
+  $('#meterActive').textContent = tx ? 'TX · ' + mode.toUpperCase() : 'RX · S';
+  $('#meterAnalog').dataset.active = mode;
+  $('#meterGauge').setAttribute('aria-label', `${tx ? 'TX' : 'RX'} ${mode.toUpperCase()}: ${text}`);
+  for (const button of $$('[data-meter-tx]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.meterTx === (opts.meterTx === 'swr' ? 'swr' : 'po')));
+  }
+}
+
+
+for (const button of $$('[data-meter-tx]')) {
+  button.addEventListener('click', () => {
+    opts.meterTx = button.dataset.meterTx;
+    store.set('opts', opts); renderMeters();
+  });
+}
+
+function applyMeterMode() {
+  const meters = $('#meters');
+  if (!meters) return;
+  const mode = ['analog', 'bars', 'off'].includes(opts.meterMode) ? opts.meterMode : 'analog';
+  meters.dataset.mode = mode;
+  document.body.classList.toggle('analog-meter', mode === 'analog');
+  const analog = $('#meterAnalog');
+  if (analog) analog.dataset.size = ['compact', 'normal', 'large'].includes(opts.meterSize) ? opts.meterSize : 'compact';
+  const readout = $('#meterReadout');
+  if (readout) readout.hidden = opts.meterReadouts === false;
+  renderMeters();
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
 }
 
 // ------------------------------------------------------------------ частота: цифры, ручка, ввод
@@ -1298,6 +1442,20 @@ function initOpts() {
   $('#optPttMode').onchange = e => { opts.pttMode = e.target.value; saveOpts(); pttUp(); };
   $('#optPalette').value = opts.palette;
   $('#optPalette').onchange = e => { opts.palette = e.target.value; saveOpts(); buildLut(); };
+  const mm = $('#optMeterMode');
+  if (mm) {
+    if (!['analog', 'bars', 'off'].includes(opts.meterMode)) opts.meterMode = 'analog';
+    if (!['compact', 'normal', 'large'].includes(opts.meterSize)) opts.meterSize = 'compact';
+    mm.value = opts.meterMode;
+    mm.onchange = e => { opts.meterMode = e.target.value; saveOpts(); applyMeterMode(); };
+    const ms = $('#optMeterSize');
+    ms.value = opts.meterSize;
+    ms.onchange = e => { opts.meterSize = e.target.value; saveOpts(); applyMeterMode(); };
+    const mr = $('#optMeterReadouts');
+    mr.checked = opts.meterReadouts !== false;
+    mr.onchange = e => { opts.meterReadouts = e.target.checked; saveOpts(); applyMeterMode(); };
+    applyMeterMode();
+  }
   const ol = $('#optLang');
   if (ol && window.I18N) {
     ol.value = I18N.getLang();
@@ -2018,6 +2176,40 @@ function applyScale() {
 }
 let resizeT;
 window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTimeout(applyScale, 60); });
+
+// ------------------------------------------------------------------ высота водопада и сообщений
+(() => {
+  const sp = $('#wfSplitter'), layout = document.querySelector('.layout');
+  if (!sp || !layout) return;
+  let drag = false, raf = 0;
+  const setTabs = pct => {
+    pct = clamp(pct, 22, 72);
+    document.documentElement.style.setProperty('--tabs-h', pct.toFixed(1) + '%');
+    store.set('tabsH', pct);
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; window.dispatchEvent(new Event('resize')); });
+  };
+  const saved = +store.get('tabsH', 0);
+  if (saved) document.documentElement.style.setProperty('--tabs-h', clamp(saved, 22, 72).toFixed(1) + '%');
+  sp.addEventListener('pointerdown', e => {
+    drag = true; document.body.classList.add('resizing');
+    try { sp.setPointerCapture(e.pointerId); } catch (_) { /* без capture */ }
+    e.preventDefault();
+  });
+  sp.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const r = layout.getBoundingClientRect();
+    setTabs((r.bottom - e.clientY) / r.height * 100);
+    e.preventDefault();
+  });
+  const stop = () => { drag = false; document.body.classList.remove('resizing'); };
+  sp.addEventListener('pointerup', stop);
+  sp.addEventListener('pointercancel', stop);
+  sp.addEventListener('dblclick', () => {
+    document.documentElement.style.removeProperty('--tabs-h');
+    store.set('tabsH', 0);
+    window.dispatchEvent(new Event('resize'));
+  });
+})();
 
 // ------------------------------------------------------------------ старт
 initControls();

@@ -48,15 +48,15 @@ code { font-family: var(--mono); color: var(--lcd); }
   background: rgba(11, 15, 20, .92); backdrop-filter: blur(6px);
   border-bottom: 1px solid var(--line);
 }
-.brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
+.brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 0 1 auto; }
 .brand b { white-space: nowrap; }
 .brand b { letter-spacing: .08em; }
 .brand .muted { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex: none; box-shadow: 0 0 0 2px #0006; }
 .dot.ok { background: var(--ok); }
 .dot.bad { background: var(--tx); }
-.top-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.mode-switch { display: inline-flex; align-items: stretch; flex: none; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+.top-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+.mode-switch { display: inline-flex; align-items: stretch; flex: none; margin-left: 4px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
 .mode-switch button { appearance: none; border: 0; background: transparent; color: var(--muted); height: 32px; padding: 0 11px; font: 600 12px var(--mono); letter-spacing: .02em; cursor: pointer; }
 .mode-switch button + button { border-left: 1px solid var(--line); }
 .mode-switch button:hover { color: var(--text); background: #ffffff0a; }
@@ -141,6 +141,7 @@ html[data-density="normal"] body.fit .ft-head { gap: 6px; margin-bottom: 2px; }
   background: #1d3446; color: var(--lcd); letter-spacing: .04em;
 }
 .badge.mode { background: var(--accent-2); color: #fff; }
+.badge.band { background: #173247; color: #9fd8ea; border: 1px solid #24485f; }
 .badge.off { background: transparent; color: #33475a; border: 1px solid #22313f; }
 .badge.tx { background: var(--tx); color: #fff; }
 .badge.busy { background: #1d6b3d; color: #d6ffe4; }
@@ -706,7 +707,9 @@ body.mode-screen .vfo-row { min-width: 0; }
 body.mode-screen .badges > :is(#bVfo, #bVm, #bSplit, #bClar, #bLock) { display: none; }
 body.mode-screen .freq { font-size: 40px; }
 body.mode-screen .sub-row { margin-top: 2px; }
-body.mode-screen .sub-row > :not(#pwrInfo) { display: none; }
+body.mode-screen .sub-row > :not(#pwrInfo):not(#opUtc):not(.spacer) { display: none; }
+.op-utc { display: none; color: var(--muted); font-size: 12px; }
+body.mode-screen .op-utc { display: inline; margin-right: 10px; }
 /* В рабочем экране вместо крупной шкалы — строка приборов: S на приёме,
    PO/SWR/ALC на передаче. Ровно то, что нужно в цифре, и без скачков высоты. */
 body.mode-screen .meters { margin-top: 0; min-height: 74px; align-content: center; gap: 4px; }
@@ -790,5 +793,6 @@ body.layout-dragging #layoutGhost { display: block; }
   .brand .muted { display: none; }
   .mode-switch { order: 1; width: auto; margin-left: auto; }
   .top-actions { order: 2; flex: 1 1 100%; justify-content: flex-start; }
+  #btnLayout, #btnKeys, #btnPanel { display: none; }
   .mode-switch button { padding: 0 7px; }
 }

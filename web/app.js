@@ -293,6 +293,10 @@ function renderBadges() {
   $$('#modes .btn').forEach(b => b.classList.toggle('on', b.dataset.m === S.mode));
   const bd = bandOf(S.freq_a || 0);
   $$('#bands .btn').forEach(b => b.classList.toggle('on', !!bd && b.dataset.b === bd[0]));
+  const bandBadge = $('#bBand');
+  if (bandBadge) bandBadge.textContent = bd
+    ? (/^\d+$/.test(bd[0]) ? (bd[0] === '70' ? tr('app.band.70cm', '70см') : bd[0] + tr('app.band.m', 'м')) : bd[0])
+    : '—';
   if (S.power != null) $('#pwrInfo').textContent = `${S.power}` + tr('status.power_w',' Вт');
 }
 
@@ -1289,6 +1293,7 @@ $$('#tabs button').forEach(b => b.onclick = () => activateTab(b.dataset.tab));
 // Радио-панель сжимается в строку (частота, режим, S-метр), остальное место
 // отдаётся водопаду, спискам и управлению передачей. Ничего не перекрывается.
 function opScreen() { return document.body.dataset.op || ''; }
+let lastRadioTab = 'rx';
 function updateOpButtons() {
   const op = opScreen();
   $$('.mode-switch button').forEach(b => {
@@ -1299,6 +1304,7 @@ function updateOpButtons() {
 }
 function enterOp(name) {
   if (opScreen() === name) { exitOp(); return; }
+  if (!opScreen() && ['dx', 'rx', 'tx', 'vfo', 'menu', 'cat'].includes(C.tab)) lastRadioTab = C.tab;
   document.body.dataset.op = name;
   document.body.classList.add('mode-screen');
   activateTab(name, false);
@@ -1310,7 +1316,7 @@ function exitOp() {
   if (!opScreen()) return;
   delete document.body.dataset.op;
   document.body.classList.remove('mode-screen');
-  activateTab('rx');
+  activateTab(lastRadioTab || 'rx');
   updateOpButtons();
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 }
@@ -2367,6 +2373,12 @@ sizeCanvases();
   activateTab(t, false);
 }
 connect();
+
+// UTC в рабочем экране: время нужно для лога в CW/RTTY/FT8.
+setInterval(() => {
+  const el = $('#opUtc');
+  if (el) el.textContent = new Date().toISOString().slice(11, 19) + ' UTC';
+}, 1000);
 
 // ------------------------------------------------------------------ голосовой автовызов
 const voiceCq = (() => {

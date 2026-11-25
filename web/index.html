@@ -29,6 +29,12 @@
 
 <header class="topbar">
   <div class="brand"><span class="dot" id="linkDot"></span><b>YAESU</b><span id="rigInfo" data-i18n-dynamic class="muted small" data-i18n="rig.nolink">нет связи</span></div>
+  <div class="mode-switch" role="group" aria-label="Режим работы" data-i18n-aria-label="mode.group">
+    <button id="btnRadio" data-op="" class="on" aria-pressed="true" data-i18n="mode.radio" data-i18n-title="mode.radio.title">Радио</button>
+    <button id="btnFt8" data-op="ft8" aria-pressed="false" data-i18n="top.ft8" data-i18n-title="top.ft8.title">FT8</button>
+    <button id="btnDigi" data-op="digi" aria-pressed="false" data-i18n="top.digi" data-i18n-title="top.digi.title">Цифра</button>
+    <button id="btnCw" data-op="cw" aria-pressed="false" data-i18n="mode.cw" data-i18n-title="mode.cw.title">CW</button>
+  </div>
   <div class="top-actions">
     <button id="btnAudio" data-i18n-dynamic class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
@@ -38,12 +44,6 @@
     <button id="btnSettings" class="btn chip icon" title="Настройки" data-i18n="top.settings" data-i18n-title="top.settings.title">⚙</button>
     <button id="btnPanel" class="btn chip icon hidden" title="Панель управления сервером" data-i18n="top.panel" data-i18n-title="top.panel.title">⚙</button>
     <button id="btnFull" class="btn chip icon" title="Во весь экран" data-i18n="top.full" data-i18n-title="top.full.title">⛶</button>
-  </div>
-  <div class="mode-switch" role="group" aria-label="Режим работы" data-i18n-aria-label="mode.group">
-    <button id="btnRadio" data-op="" class="on" data-i18n="mode.radio" data-i18n-title="mode.radio.title">Радио</button>
-    <button id="btnFt8" data-op="ft8" aria-pressed="false" data-i18n="top.ft8" data-i18n-title="top.ft8.title">FT8</button>
-    <button id="btnDigi" data-op="digi" aria-pressed="false" data-i18n="top.digi" data-i18n-title="top.digi.title">Цифра</button>
-    <button id="btnCw" data-op="cw" aria-pressed="false" data-i18n="mode.cw" data-i18n-title="mode.cw.title">CW</button>
   </div>
 </header>
 
@@ -56,6 +56,7 @@
         <button class="badge bb" id="bVfo" title="Основной приёмник MAIN / SUB — переключить" data-i18n-title="disp.main_sub">MAIN</button>
         <button class="badge bb off" id="bVm" title="Режим VFO / каналы памяти — переключить" data-i18n-title="disp.vfo_mem">VFO</button>
         <span class="badge mode" id="bMode">—</span>
+        <span class="badge band" id="bBand" title="Диапазон по текущей частоте">—</span>
         <button class="badge bb off" id="bSplit" title="SPLIT, как на трансивере: частота второго приёмника переносится в основной — частоты меняются местами" data-i18n-title="disp.split">SPLIT</button>
         <button class="badge bb off" id="bClar" title="Расстройка приёма (CLAR) — включить/выключить" data-i18n-title="disp.clar">CLAR</button>
         <button class="badge bb off" id="bLock" title="Блокировка ручки трансивера — включить/выключить" data-i18n-title="disp.lock">LOCK</button>
@@ -66,6 +67,7 @@
       <div class="sub-row">
         <span class="muted" id="lblB">B:</span> <span id="freqB" class="freq-b">—</span> <span class="badge small-b" id="bModeB">—</span> <span class="badge tx small-b hidden" id="bTxB" title="SPLIT: передача на этой частоте" data-i18n-title="disp.tx_split">TX</span>
         <span class="spacer"></span>
+        <span id="opUtc" class="mono op-utc">--:--:-- UTC</span>
         <span class="muted small" id="pwrInfo"></span>
       </div>
     </div>

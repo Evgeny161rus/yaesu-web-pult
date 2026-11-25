@@ -1281,129 +1281,43 @@ function activateTab(name, save = true) {
   if (typeof renderWfMode === 'function') renderWfMode();
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
   if (save) store.set('tab', name);
-  updateFloatPlaceholder();
 }
 $$('#tabs button').forEach(b => b.onclick = () => activateTab(b.dataset.tab));
 
-// ------------------------------------------------------------------ отдельные окна FT8 / DIGI
-const floatWins = {};
-let floatZ = 46;
-function floatTitle(name) {
-  return name === 'ft8' ? 'FT8 / FT4' : tr('float.digi', 'Цифровые виды');
-}
-function ensureFloat(name) {
-  let win = floatWins[name];
-  if (win) return win;
-  win = document.createElement('section');
-  win.className = 'float-window';
-  win.id = 'float-' + name;
-  win.hidden = true;
-  win.innerHTML = `<header class="float-head"><b class="float-title">${floatTitle(name)}</b><span class="spacer"></span><button class="btn chip icon" data-float-close title="${tr('float.close', 'Закрыть')}">✕</button></header><div class="float-body"></div>`;
-  $('#floatLayer').append(win);
-  const saved = store.get('float_' + name, null);
-  const z = parseFloat(document.documentElement.style.zoom) || 1;
-  const vw = innerWidth / z, vh = innerHeight / z;
-  const width = Math.min(vw - 24, name === 'ft8' ? 1200 : 1000);
-  const height = Math.min(vh - 24, name === 'ft8' ? 720 : 620);
-  const def = { left: Math.max(8, Math.round((vw - width) / 2) + (name === 'ft8' ? -60 : 60)),
-                top: Math.max(8, Math.round((vh - height) / 2) - 10), width, height };
-  const g = Object.assign(def, saved || {});
-  if (!saved || g.width < 480 || g.height < 320) { g.width = def.width; g.height = def.height; }
-  g.width = Math.min(g.width, 1240, vw - 12); g.height = Math.min(g.height, 760, vh - 12);
-  g.left = clamp(g.left, 0, Math.max(0, vw - g.width)); g.top = clamp(g.top, 0, Math.max(0, vh - g.height));
-  Object.assign(win.style, { left: g.left + 'px', top: g.top + 'px', width: g.width + 'px', height: g.height + 'px', zIndex: ++floatZ });
-  const saveGeo = () => {
-    if (win.hidden || win.offsetWidth < 480 || win.offsetHeight < 320) return;
-    store.set('float_' + name, { left: Math.round(win.offsetLeft), top: Math.round(win.offsetTop),
-                                 width: Math.round(win.offsetWidth), height: Math.round(win.offsetHeight) });
-  };
-  win._saveGeo = saveGeo;
-  win.addEventListener('pointerup', saveGeo);
-  if (window.ResizeObserver) {
-    let t = 0;
-    new ResizeObserver(() => { clearTimeout(t); t = setTimeout(saveGeo, 150); }).observe(win);
+// ------------------------------------------------------------------ рабочие экраны FT8 / DIGI
+// FT8 и цифровые виды — не окна поверх пульта, а отдельные рабочие экраны.
+// Радио-панель сжимается в строку (частота, режим, S-метр), остальное место
+// отдаётся водопаду, спискам и управлению передачей. Ничего не перекрывается.
+function opScreen() { return document.body.dataset.op || ''; }
+function updateOpButtons() {
+  const op = opScreen();
+  for (const [id, name] of [['#btnFt8', 'ft8'], ['#btnDigi', 'digi']]) {
+    const b = $(id); if (!b) continue;
+    b.classList.toggle('on', op === name);
+    b.setAttribute('aria-pressed', op === name ? 'true' : 'false');
   }
-  win.querySelector('[data-float-close]').onclick = () => closeFloat(name);
-  const head = win.querySelector('.float-head');
-  head.addEventListener('pointerdown', e => {
-    if (e.target.closest('button') || innerWidth <= 900) return;
-    const z = parseFloat(document.documentElement.style.zoom) || 1;
-    const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
-    win.style.zIndex = ++floatZ;
-    const move = ev => {
-      const vw = innerWidth / z, vh = innerHeight / z;
-      win.style.left = clamp((ev.clientX - dx) / z, 0, Math.max(0, vw - 80)) + 'px';
-      win.style.top = clamp((ev.clientY - dy) / z, 0, Math.max(0, vh - 40)) + 'px';
-    };
-    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); saveGeo(); };
-    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
-    e.preventDefault();
-  });
-  win.addEventListener('pointerdown', () => { win.style.zIndex = ++floatZ; }, true);
-  floatWins[name] = win;
-  return win;
+  $('#btnRadio')?.classList.toggle('hidden', !op);
 }
-function updateFloatPlaceholder() {
-  let ph = $('#floatPlaceholder');
-  const open = (C.tab === 'ft8' || C.tab === 'digi') && floatWins[C.tab] && !floatWins[C.tab].hidden;
-  if (!ph) {
-    ph = document.createElement('div');
-    ph.id = 'floatPlaceholder';
-    ph.className = 'tab float-placeholder';
-    $('.tabs-panel').append(ph);
-  }
-  ph.classList.toggle('on', !!open);
-  ph.textContent = open ? tr('float.detached', 'Окно «{name}» открыто отдельно.').replace('{name}', floatTitle(C.tab)) : '';
-  document.body.classList.toggle('float-open', Object.values(floatWins).some(w => !w.hidden));
-  const ft8 = floatWins.ft8 && !floatWins.ft8.hidden, digi = floatWins.digi && !floatWins.digi.hidden;
-  $('#btnFt8')?.classList.toggle('on', !!ft8);
-  $('#btnDigi')?.classList.toggle('on', !!digi);
-}
-function openFloat(name) {
-  const win = ensureFloat(name);
-  const tab = $('#tab-' + name);
-  if (tab && tab.parentElement !== win.querySelector('.float-body')) {
-    win.querySelector('.float-body').append(tab);
-  }
-  tab && tab.classList.add('on');
-  win.hidden = false;
-  win.style.zIndex = ++floatZ;
-  document.body.classList.add('float-open');
+function enterOp(name) {
+  if (opScreen() === name) { exitOp(); return; }
+  document.body.dataset.op = name;
+  document.body.classList.add('mode-screen');
   activateTab(name, false);
-  updateFloatPlaceholder();
+  updateOpButtons();
+  window.scrollTo(0, 0);
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 }
-function closeFloat(name) {
-  const win = floatWins[name];
-  if (!win) return;
-  if (win._saveGeo) win._saveGeo();
-  win.hidden = true;
-  const tab = win.querySelector('.tab');
-  if (tab) {
-    tab.classList.remove('on');
-    $('.tabs-panel').append(tab);
-  }
-  if (C.tab === name) activateTab('rx');
-  updateFloatPlaceholder();
+function exitOp() {
+  if (!opScreen()) return;
+  delete document.body.dataset.op;
+  document.body.classList.remove('mode-screen');
+  activateTab('rx');
+  updateOpButtons();
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
 }
-function toggleFloat(name) {
-  const win = floatWins[name];
-  if (win && !win.hidden) closeFloat(name); else openFloat(name);
-}
-$('#btnFt8').onclick = () => toggleFloat('ft8');
-$('#btnDigi').onclick = () => toggleFloat('digi');
-window.addEventListener('resize', () => {
-  const z = parseFloat(document.documentElement.style.zoom) || 1;
-  const vw = innerWidth / z, vh = innerHeight / z;
-  for (const w of Object.values(floatWins)) {
-    if (w.hidden) continue;
-    const width = Math.min(w.offsetWidth, vw - 8), height = Math.min(w.offsetHeight, vh - 8);
-    w.style.width = width + 'px'; w.style.height = height + 'px';
-    w.style.left = clamp(w.offsetLeft, 0, Math.max(0, vw - width)) + 'px';
-    w.style.top = clamp(w.offsetTop, 0, Math.max(0, vh - height)) + 'px';
-  }
-});
+$('#btnFt8').onclick = () => enterOp('ft8');
+$('#btnDigi').onclick = () => enterOp('digi');
+$('#btnRadio').onclick = () => exitOp();
 
 // ------------------------------------------------------------------ настройки в отдельном окне
 (function setupSettings() {

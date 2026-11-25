@@ -33,8 +33,9 @@
     <button id="btnAudio" data-i18n-dynamic class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
     <label class="vol" title="Громкость на этом устройстве" data-i18n-title="top.vol.title"><input id="volume" type="range" min="0" max="200" value="100"></label>
-    <button id="btnFt8" class="btn chip" title="Отдельное окно FT8/FT4" data-i18n="top.ft8">FT8</button>
-    <button id="btnDigi" class="btn chip" title="Отдельное окно цифровых видов" data-i18n="top.digi">Цифра</button>
+    <button id="btnRadio" class="btn chip hidden" title="Вернуться к пульту радио" data-i18n="top.radio" data-i18n-title="top.radio.title">← Радио</button>
+    <button id="btnFt8" class="btn chip" aria-pressed="false" title="Рабочий экран FT8/FT4: списки, водопад, передача" data-i18n="top.ft8" data-i18n-title="top.ft8.title">FT8</button>
+    <button id="btnDigi" class="btn chip" aria-pressed="false" title="Рабочий экран цифровых видов" data-i18n="top.digi" data-i18n-title="top.digi.title">Цифра</button>
     <button id="btnLayout" class="btn chip icon" title="Компоновка панелей" data-i18n="top.layout" data-i18n-title="top.layout.title">▦</button>
     <button id="btnKeys" class="btn chip icon" title="Горячие клавиши (?)" data-i18n="top.keys" data-i18n-title="top.keys.title">⌨</button>
     <button id="btnSettings" class="btn chip icon" title="Настройки" data-i18n="top.settings" data-i18n-title="top.settings.title">⚙</button>
@@ -690,8 +691,6 @@
     </div>
   </section>
 </main>
-
-<div id="floatLayer" aria-live="polite"></div>
 
 <div id="layoutBar" class="layout-bar hidden">
   <span data-i18n="layout.edit.hint">Перетащите панели: «Радио» — влево/вправо, «Водопад»/«Вкладки» — вверх/вниз.</span>

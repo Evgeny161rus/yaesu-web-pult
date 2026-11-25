@@ -53,7 +53,8 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 ### 📡 DX Cluster
 - **Two receive-only sources**: telnet DXSpider/AR-Cluster (host/port + callsign) or the public [**SpotRadio**](https://spotradio.ru/cluster/) JSON feed (no login)
 - **Filters**: band (incl. current VFO), mode from the comment, age, call/country search, new DXCC/band only
-- **One-click tuning**: double-click a spot to set the RX VFO; mode, split and PTT are never changed
+- **One-click tuning**: click a callsign in the table or over the waterfall to set the RX VFO; mode, split and PTT are never changed
+- **Compact layout**: hides country and text tags, tightens rows and colors new-country/new-band callsigns
 - **Worked tags**: worked / new country / new band from the FT8 log and imported QSOs
 - **Spectrum labels and DX workspace**: spot calls over the RF waterfall, spot list docked next to the spectrum
 

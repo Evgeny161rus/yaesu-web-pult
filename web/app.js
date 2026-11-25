@@ -2144,33 +2144,32 @@ const HOTKEYS = (() => {
 function setZoom(z) {
   const w = window.innerWidth, h = window.innerHeight;
   const consoleView = document.body.classList.contains('radio-console');
-  const fit = consoleView ? w >= 1000 && h >= 820 : w >= 900 && h >= 480;
+  const fit = consoleView ? w >= 1000 && h >= 700 : w >= 900 && h >= 480;
   document.documentElement.style.zoom = z;
   C.zoom = z;
   const root = document.documentElement.style;
   root.setProperty('--app-h', (h / z) + 'px');
   document.body.classList.toggle('fit', fit);
   document.body.classList.toggle('wide', fit && w / z >= 1560);
+  const effH = h / z;
+  const compact = !document.body.classList.contains('radio-console') &&
+    document.documentElement.dataset.workspace !== 'dx';
+  document.body.classList.toggle('short-ui', compact && effH < 1000);
+  document.body.classList.remove('tiny-ui');
+  const col = $('#colLeft');
+  if (compact && fit && col && col.scrollHeight > col.clientHeight + 4) document.body.classList.add('tiny-ui');
   return fit;
 }
 function applyScale() {
   const w = window.innerWidth, h = window.innerHeight;
   let z = parseFloat(opts.scale);
   const auto = !(z > 0);
-  if (auto) z = (document.body.classList.contains('radio-console') || document.documentElement.dataset.workspace === 'dx') ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.55, 2.4));
+  if (auto) z = (document.body.classList.contains('radio-console') || document.documentElement.dataset.workspace === 'dx') ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.9, 2.4));
   const fit = setZoom(z);
   if (fit && auto && !document.body.classList.contains('radio-console') && document.documentElement.dataset.workspace !== 'dx') {
-    z = Math.min(z, w / 840);                     // левая колонка + водопад по ширине
+    // Не мельчить интерфейс на 14″: левая колонка при нехватке высоты прокручивается.
+    z = Math.max(0.9, Math.min(z, w / 840));
     setZoom(z);
-    const cl = $('#colLeft');
-    document.body.classList.add('measure');       // мерить со строкой шумодава, чтобы масштаб не прыгал
-    for (let i = 0; i < 4; i++) {
-      const need = cl.scrollHeight, have = cl.clientHeight;
-      if (need <= have + 1) break;
-      z = Math.max(0.5, z * have / need * 0.99);
-      setZoom(z);
-    }
-    document.body.classList.remove('measure');
   }
   sizeCanvases();
 }
@@ -2573,12 +2572,16 @@ const ft8Desk = (() => {
   $('#ftRx2Tx').onclick = () => setTx(st.rxHz);
   let countryPref = store.get('ftCountry', '');
   $('#ftClear').onclick = () => {
-    list.innerHTML = ''; st.rows = 0;
+    list.querySelectorAll('.ft-row, .ft-sep, .ft-hint').forEach(e => e.remove());
+    st.rows = 0;
     countryPref = ''; store.set('ftCountry', '');
     applyFilter();
   };
   
-  $('#ftClear2').onclick = () => { rxList.innerHTML = ''; st.rxRows = 0; };
+  $('#ftClear2').onclick = () => {
+    rxList.querySelectorAll('.ft-row, .ft-sep').forEach(e => e.remove());
+    st.rxRows = 0;
+  };
   $('#ftFilter').value = store.get('ftFilter', 'all');
   $('#ftSearch').value = store.get('ftSearch', '');
   $('#ftAge').value = store.get('ftAge', '0');
@@ -2841,8 +2844,8 @@ const ft8Desk = (() => {
     r.dataset.seq = String(++st.seq);
     const badge = it.tags.includes('newdxcc') ? '<b class="bd bd-dx" title="Новая страна">страна</b>'
       : it.tags.includes('newband') ? '<b class="bd bd-band" title="Страна не сработана на этом диапазоне">диап.</b>' : it.tags.includes('newcall') ? '<b class="bd bd-call" title="С этим позывным связи не было">нов.</b>' : '';
-    r.innerHTML = `<span>${utc}</span><span class="n">${it.snr}</span><span class="n">${it.dt.toFixed(1)}</span><span class="n">${it.f}</span>` +
-      `<span class="tx"><span class="msg">${esc(it.text)}</span>${badge}<span class="cty">${esc(it.country || '')}</span></span>`;
+    r.innerHTML = `<span class="ft-utc">${utc}</span><span class="n">${it.snr}</span><span class="n">${it.dt.toFixed(1)}</span><span class="n">${it.f}</span>` +
+      `<span class="tx"><span class="msg">${esc(it.text)}</span>${badge}</span><span class="cty" title="${esc(it.country || '')}">${esc(it.country || '')}</span>`;
     r.title = (it.call ? tr('ft.tooltip_call','Нажмите — позвать {call}').replace('{call}', it.call) : '') + (it.country ? tr('ft.tooltip_country','\n{country}{cont}').replace('{country}', it.country).replace('{cont}', it.cont ? ' (' + it.cont + ')' : '') : '') +
       (it.km != null ? `, ${it.km} км` : '') + (it.tags.includes('worked') ? '\nУже работали на этом диапазоне' : '') +
       (it.tags.includes('newgrid') ? '\nНовый квадрат' : '');
@@ -2853,7 +2856,12 @@ const ft8Desk = (() => {
     return r;
   }
   function trim(el, key) {
-    while (st[key] > 500 && el.firstChild) { if (el.firstChild.classList.contains('ft-row')) st[key]--; el.firstChild.remove(); }
+    while (st[key] > 500) {
+      const first = [...el.children].find(x => x.classList.contains('ft-row') || x.classList.contains('ft-sep'));
+      if (!first) break;
+      if (first.classList.contains('ft-row')) st[key]--;
+      first.remove();
+    }
   }
   function sep(text, ts = 0) { const d = document.createElement('div'); d.className = 'ft-sep'; d.textContent = text; d.dataset.ts = String(ts || 0); return d; }
   const seen = new Set();

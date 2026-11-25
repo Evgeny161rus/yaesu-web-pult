@@ -521,15 +521,16 @@
               <option value="country" data-i18n="ft8.sort.country">Страна А–Я</option>
             </select>
           </div>
-          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
-          <div class="ft-list mono" id="ftList"><div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div></div>
+          <div class="ft-list mono" id="ftList">
+            <div class="ft-th mono" id="ftHead"><span data-i18n="ft8.th.utc">UTC</span><span class="n" data-i18n="ft8.th.db">дБ</span><span class="n" data-i18n="ft8.th.dt">DT</span><span class="n" data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span><span class="ft-country" data-i18n="ft8.th.country">Страна</span></div>
+            <div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div>
+          </div>
           <div id="ftEmpty" class="muted small ft-filter-empty" hidden data-i18n="ft8.filters.empty">Нет строк по выбранным фильтрам.</div>
         </div>
         <div class="ft-pane">
           <div class="ft-head"><b data-i18n="ft8.rxpane">Частота RX</b> <span class="mono ft-rxlbl" id="ftRxLbl">1500 Гц</span>
             <span class="spacer"></span><button class="btn small" id="ftClear2" data-i18n="ft8.clear">Очистить</button></div>
-          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
-          <div class="ft-list mono" id="ftRxList"></div>
+          <div class="ft-list mono" id="ftRxList"><div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span class="n" data-i18n="ft8.th.db">дБ</span><span class="n" data-i18n="ft8.th.dt">DT</span><span class="n" data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span><span class="ft-country" data-i18n="ft8.th.country">Страна</span></div></div>
         </div>
       </div>
       <div class="ft-side">

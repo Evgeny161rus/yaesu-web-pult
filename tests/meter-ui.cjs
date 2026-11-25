@@ -8,6 +8,7 @@ let draws = 0;
 const ctx = new Proxy({}, {get: (_, key) => key === 'fill' ? () => draws++ : () => {}, set: () => true});
 const element = () => ({textContent:'',style:{},dataset:{},attrs:{},clientWidth:420,clientHeight:188,
   setAttribute(k,v){this.attrs[k]=v}, addEventListener(k,f){this[k]=f},getContext(){return ctx},
+  getBoundingClientRect(){return {width:this.clientWidth, height:this.clientHeight}},
   querySelector(){return element()}});
 const get = id => {if(!nodes.has(id)) nodes.set(id,element());return nodes.get(id)};
 for(const mode of ['po','swr']) {const b=element(); b.dataset.meterTx=mode; buttons.push(b)}
@@ -30,4 +31,13 @@ buttons[0].click();context.S.pwr_head=1;render();assert.equal(get('#meterValue')
 context.S.po=undefined;render();assert.equal(get('#meterValue').textContent,'—');
 context.S.tx=false;context.C.authed=false;render();assert.equal(get('#meterValue').textContent,'—');
 assert.ok(draws>0,'Actual canvas drawing executes');
+// Canvas backing store must follow the size on screen (CSS zoom / large monitors),
+// otherwise the gauge is a stretched low-res bitmap.
+const meter = get('#meterGauge');
+assert.equal(meter.width, 420, 'backing store matches layout size at scale 1');
+assert.equal(meter.height, 188, 'backing store height matches layout size');
+meter.getBoundingClientRect = () => ({width: 840, height: 376});
+render();
+assert.equal(meter.width, 840, 'backing store follows CSS zoom / screen scale');
+assert.equal(meter.height, 376, 'backing store height follows CSS zoom / screen scale');
 console.log('Meter: RX, PO, SWR, persistence, RX/TX return, QRP and missing telemetry passed');

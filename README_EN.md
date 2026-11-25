@@ -18,7 +18,10 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 ## ✨ Key Features
 
 ### 🎨 Modern Interface
-- **7 Professional Themes**: Modern Dark, Studio, Daylight, Radio Night, Heritage, Field, Tactical
+- **Three Professional Themes**: Dark, Warm (Heritage), Light
+- **Detachable windows**: FT8/FT4 and digital modes open in separate movable windows
+- **Panel layout editor**: drag the radio panel left/right and waterfall/functions up/down
+- **Settings in a separate window**: no more controls jumping between tabs
 - **Fully Responsive**: Adapts to desktop, tablet, and mobile screens
 - **PWA Support**: Install as standalone app on mobile devices
 - **Real-time Updates**: WebSocket-based instant feedback
@@ -114,15 +117,13 @@ python3 server/main.py --console
 
 ## 🎨 Themes Preview
 
-The interface includes 7 professionally designed themes:
+The interface includes 3 professionally designed themes:
 
-- **Modern Dark**: Clean dark theme with blue accents
-- **Studio**: Professional broadcast studio aesthetic
-- **Daylight**: Bright theme for well-lit environments
-- **Radio Night**: Traditional radio equipment look
-- **Heritage**: Classic amateur radio styling
-- **Field**: Rugged outdoor operations theme
-- **Tactical**: Military-inspired low-light interface
+- **Dark**: Clean dark theme with blue accents
+- **Warm (Heritage)**: Classic amateur radio styling
+- **Light**: Bright theme for well-lit environments
+
+Themes change colours only; panel positions stay stable. Layout is configured separately in the panel editor.
 
 See [THEMES.md](docs/THEMES.md) for screenshots and details.
 

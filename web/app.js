@@ -345,7 +345,11 @@ const meterGauge = (() => {
   function draw() {
     const w = cv.clientWidth, h = cv.clientHeight;
     if (!w || !h) return;
-    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    // CSS-zoom (body zoom) не меняет devicePixelRatio, поэтому учитываем
+    // фактический размер на экране — иначе на 27–34″ шкала мылится.
+    const rect = cv.getBoundingClientRect ? cv.getBoundingClientRect() : null;
+    const screenScale = Math.max(1, rect && rect.width ? rect.width / w : 1);
+    const dpr = Math.min(3, (window.devicePixelRatio || 1) * screenScale);
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
       cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
     }
@@ -1264,19 +1268,244 @@ setInterval(() => {
 })();
 
 // ------------------------------------------------------------------ вкладки
-$$('#tabs button').forEach(b => b.onclick = () => {
-  $$('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  $$('.tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
-  if (b.dataset.tab === 'menu' && !menu.items) send({ t: 'menu_list' });
-  C.tab = b.dataset.tab;
-  document.body.classList.toggle('tab-ft8', C.tab === 'ft8');
+function activateTab(name, save = true) {
+  if (!name) name = 'rx';
+  $$('#tabs button').forEach(x => x.classList.toggle('on', x.dataset.tab === name));
+  $$('.tabs-panel > .tab').forEach(t => t.classList.toggle('on', t.id === 'tab-' + name));
+  if (name === 'menu' && !menu.items) send({ t: 'menu_list' });
+  C.tab = name;
+  document.body.classList.toggle('tab-ft8', name === 'ft8');
   window.ft8Desk && ft8Desk.marks();
   if (typeof syncWfSource === 'function') syncWfSource();
   if (typeof updateSpan === 'function') updateSpan();
   if (typeof renderWfMode === 'function') renderWfMode();
   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
-  store.set('tab', b.dataset.tab);
+  if (save) store.set('tab', name);
+  updateFloatPlaceholder();
+}
+$$('#tabs button').forEach(b => b.onclick = () => activateTab(b.dataset.tab));
+
+// ------------------------------------------------------------------ отдельные окна FT8 / DIGI
+const floatWins = {};
+let floatZ = 46;
+function floatTitle(name) {
+  return name === 'ft8' ? 'FT8 / FT4' : tr('float.digi', 'Цифровые виды');
+}
+function ensureFloat(name) {
+  let win = floatWins[name];
+  if (win) return win;
+  win = document.createElement('section');
+  win.className = 'float-window';
+  win.id = 'float-' + name;
+  win.hidden = true;
+  win.innerHTML = `<header class="float-head"><b class="float-title">${floatTitle(name)}</b><span class="spacer"></span><button class="btn chip icon" data-float-close title="${tr('float.close', 'Закрыть')}">✕</button></header><div class="float-body"></div>`;
+  $('#floatLayer').append(win);
+  const saved = store.get('float_' + name, null);
+  const z = parseFloat(document.documentElement.style.zoom) || 1;
+  const vw = innerWidth / z, vh = innerHeight / z;
+  const width = Math.min(vw - 24, name === 'ft8' ? 1200 : 1000);
+  const height = Math.min(vh - 24, name === 'ft8' ? 720 : 620);
+  const def = { left: Math.max(8, Math.round((vw - width) / 2) + (name === 'ft8' ? -60 : 60)),
+                top: Math.max(8, Math.round((vh - height) / 2) - 10), width, height };
+  const g = Object.assign(def, saved || {});
+  if (!saved || g.width < 480 || g.height < 320) { g.width = def.width; g.height = def.height; }
+  g.width = Math.min(g.width, 1240, vw - 12); g.height = Math.min(g.height, 760, vh - 12);
+  g.left = clamp(g.left, 0, Math.max(0, vw - g.width)); g.top = clamp(g.top, 0, Math.max(0, vh - g.height));
+  Object.assign(win.style, { left: g.left + 'px', top: g.top + 'px', width: g.width + 'px', height: g.height + 'px', zIndex: ++floatZ });
+  const saveGeo = () => {
+    if (win.hidden || win.offsetWidth < 480 || win.offsetHeight < 320) return;
+    store.set('float_' + name, { left: Math.round(win.offsetLeft), top: Math.round(win.offsetTop),
+                                 width: Math.round(win.offsetWidth), height: Math.round(win.offsetHeight) });
+  };
+  win._saveGeo = saveGeo;
+  win.addEventListener('pointerup', saveGeo);
+  if (window.ResizeObserver) {
+    let t = 0;
+    new ResizeObserver(() => { clearTimeout(t); t = setTimeout(saveGeo, 150); }).observe(win);
+  }
+  win.querySelector('[data-float-close]').onclick = () => closeFloat(name);
+  const head = win.querySelector('.float-head');
+  head.addEventListener('pointerdown', e => {
+    if (e.target.closest('button') || innerWidth <= 900) return;
+    const z = parseFloat(document.documentElement.style.zoom) || 1;
+    const r = win.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+    win.style.zIndex = ++floatZ;
+    const move = ev => {
+      const vw = innerWidth / z, vh = innerHeight / z;
+      win.style.left = clamp((ev.clientX - dx) / z, 0, Math.max(0, vw - 80)) + 'px';
+      win.style.top = clamp((ev.clientY - dy) / z, 0, Math.max(0, vh - 40)) + 'px';
+    };
+    const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); saveGeo(); };
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    e.preventDefault();
+  });
+  win.addEventListener('pointerdown', () => { win.style.zIndex = ++floatZ; }, true);
+  floatWins[name] = win;
+  return win;
+}
+function updateFloatPlaceholder() {
+  let ph = $('#floatPlaceholder');
+  const open = (C.tab === 'ft8' || C.tab === 'digi') && floatWins[C.tab] && !floatWins[C.tab].hidden;
+  if (!ph) {
+    ph = document.createElement('div');
+    ph.id = 'floatPlaceholder';
+    ph.className = 'tab float-placeholder';
+    $('.tabs-panel').append(ph);
+  }
+  ph.classList.toggle('on', !!open);
+  ph.textContent = open ? tr('float.detached', 'Окно «{name}» открыто отдельно.').replace('{name}', floatTitle(C.tab)) : '';
+  document.body.classList.toggle('float-open', Object.values(floatWins).some(w => !w.hidden));
+  const ft8 = floatWins.ft8 && !floatWins.ft8.hidden, digi = floatWins.digi && !floatWins.digi.hidden;
+  $('#btnFt8')?.classList.toggle('on', !!ft8);
+  $('#btnDigi')?.classList.toggle('on', !!digi);
+}
+function openFloat(name) {
+  const win = ensureFloat(name);
+  const tab = $('#tab-' + name);
+  if (tab && tab.parentElement !== win.querySelector('.float-body')) {
+    win.querySelector('.float-body').append(tab);
+  }
+  tab && tab.classList.add('on');
+  win.hidden = false;
+  win.style.zIndex = ++floatZ;
+  document.body.classList.add('float-open');
+  activateTab(name, false);
+  updateFloatPlaceholder();
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+}
+function closeFloat(name) {
+  const win = floatWins[name];
+  if (!win) return;
+  if (win._saveGeo) win._saveGeo();
+  win.hidden = true;
+  const tab = win.querySelector('.tab');
+  if (tab) {
+    tab.classList.remove('on');
+    $('.tabs-panel').append(tab);
+  }
+  if (C.tab === name) activateTab('rx');
+  updateFloatPlaceholder();
+  requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+}
+function toggleFloat(name) {
+  const win = floatWins[name];
+  if (win && !win.hidden) closeFloat(name); else openFloat(name);
+}
+$('#btnFt8').onclick = () => toggleFloat('ft8');
+$('#btnDigi').onclick = () => toggleFloat('digi');
+window.addEventListener('resize', () => {
+  const z = parseFloat(document.documentElement.style.zoom) || 1;
+  const vw = innerWidth / z, vh = innerHeight / z;
+  for (const w of Object.values(floatWins)) {
+    if (w.hidden) continue;
+    const width = Math.min(w.offsetWidth, vw - 8), height = Math.min(w.offsetHeight, vh - 8);
+    w.style.width = width + 'px'; w.style.height = height + 'px';
+    w.style.left = clamp(w.offsetLeft, 0, Math.max(0, vw - width)) + 'px';
+    w.style.top = clamp(w.offsetTop, 0, Math.max(0, vh - height)) + 'px';
+  }
 });
+
+// ------------------------------------------------------------------ настройки в отдельном окне
+(function setupSettings() {
+  const tab = $('#tab-opts'), body = $('#settingsBody'), modal = $('#settingsModal');
+  if (!tab || !body || !modal) return;
+  tab.classList.add('on');
+  body.append(tab);
+  const open = () => { modal.classList.remove('hidden'); };
+  const close = () => { modal.classList.add('hidden'); };
+  $('#btnSettings').onclick = open;
+  $('#settingsClose').onclick = close;
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) close(); });
+  window.openSettings = open;
+})();
+
+// ------------------------------------------------------------------ компоновка панелей
+const layoutStore = {
+  get mirror() { return !!store.get('layoutMirror', false); },
+  set mirror(v) { store.set('layoutMirror', !!v); },
+  get swap() { return !!store.get('layoutSwap', false); },
+  set swap(v) { store.set('layoutSwap', !!v); },
+  apply() {
+    document.body.classList.toggle('layout-mirror', this.mirror);
+    document.body.classList.toggle('layout-swap', this.swap);
+    window.dispatchEvent(new Event('resize'));
+  }
+};
+(function setupLayout() {
+  const defs = [
+    { name: 'radio', el: () => $('#colLeft'), label: tr('layout.panel.radio', 'Радио') },
+    { name: 'wf', el: () => $('.wfpanel'), label: tr('layout.panel.wf', 'Водопад') },
+    { name: 'work', el: () => $('.tabs-panel'), label: tr('layout.panel.work', 'Функции') }
+  ];
+  const grips = {};
+  function ensureGrips() {
+    for (const d of defs) {
+      const el = d.el();
+      if (!el || grips[d.name]) continue;
+      const g = document.createElement('div');
+      g.className = 'panel-grip';
+      g.textContent = d.label;
+      g.dataset.panel = d.name;
+      el.prepend(g);
+      grips[d.name] = g;
+      g.addEventListener('pointerdown', e => startDrag(e, d.name));
+    }
+  }
+  let ghost = null;
+  function startDrag(e, name) {
+    if (document.documentElement.dataset.workspace !== 'classic') return;
+    e.preventDefault();
+    if (!ghost) { ghost = document.createElement('div'); ghost.id = 'layoutGhost'; document.body.append(ghost); }
+    const layout = $('.layout').getBoundingClientRect();
+    document.body.classList.add('layout-dragging');
+    const move = ev => {
+      let text;
+      if (name === 'radio') text = ev.clientX < layout.left + layout.width / 2
+        ? tr('layout.drop.radio.left', 'Радио → слева') : tr('layout.drop.radio.right', 'Радио → справа');
+      else if (name === 'wf') text = ev.clientY < layout.top + layout.height / 2
+        ? tr('layout.drop.wf.top', 'Водопад → сверху') : tr('layout.drop.wf.bottom', 'Водопад → снизу');
+      else text = ev.clientY < layout.top + layout.height / 2
+        ? tr('layout.drop.work.top', 'Функции → сверху') : tr('layout.drop.work.bottom', 'Функции → снизу');
+      ghost.textContent = text;
+      ghost.style.left = (ev.clientX + 14) + 'px';
+      ghost.style.top = (ev.clientY + 14) + 'px';
+    };
+    const up = ev => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.classList.remove('layout-dragging');
+      if (name === 'radio') {
+        const want = ev.clientX >= layout.left + layout.width / 2;
+        if (want !== layoutStore.mirror) { layoutStore.mirror = want; store.set('layoutMirror', want); }
+      } else {
+        const top = ev.clientY < layout.top + layout.height / 2;
+        const wantSwap = name === 'wf' ? !top : top;
+        if (wantSwap !== layoutStore.swap) { layoutStore.swap = wantSwap; store.set('layoutSwap', wantSwap); }
+      }
+      layoutStore.apply();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  function enter(force) {
+    const on = force != null ? force : !document.body.classList.contains('layout-edit');
+    if (on && document.documentElement.dataset.workspace !== 'classic') {
+      toast(tr('layout.edit.classic', 'Компоновка доступна в классическом workspace'));
+      return;
+    }
+    document.body.classList.toggle('layout-edit', on);
+    $('#layoutBar').classList.toggle('hidden', !on);
+    $('#btnLayout').classList.toggle('on', on);
+    if (on) ensureGrips();
+  }
+  $('#btnLayout').onclick = () => enter();
+  $('#layoutDone').onclick = () => enter(false);
+  $('#layoutReset').onclick = () => { store.set('layoutMirror', false); store.set('layoutSwap', false); layoutStore.apply(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.body.classList.contains('layout-edit')) enter(false); });
+  layoutStore.apply();
+})();
+
 
 // ------------------------------------------------------------------ меню EX
 const menu = { items: null, vals: {} };
@@ -2100,7 +2329,7 @@ const HOTKEYS = (() => {
   function showHelp() { $('#helpBody').innerHTML = helpHtml(); $('#help').classList.remove('hidden'); }
   function hideHelp() { $('#help').classList.add('hidden'); }
   $('#help').addEventListener('click', e => { if (e.target.id === 'help' || e.target.closest('[data-close]')) hideHelp(); });
-  $('#helpEdit').onclick = () => { hideHelp(); $('#tabs button[data-tab="opts"]').click(); $('#hkList').scrollIntoView({ block: 'start' }); };
+  $('#helpEdit').onclick = () => { hideHelp(); window.openSettings?.(); setTimeout(() => $('#hkList')?.scrollIntoView({ block: 'start' }), 60); };
   $('#btnKeys').onclick = showHelp;
 
   // --- переназначение в настройках
@@ -2143,8 +2372,7 @@ const HOTKEYS = (() => {
 // На телефоне — обычная прокручиваемая колонка.
 function setZoom(z) {
   const w = window.innerWidth, h = window.innerHeight;
-  const consoleView = document.body.classList.contains('radio-console');
-  const fit = consoleView ? w >= 1000 && h >= 700 : w >= 900 && h >= 480;
+  const fit = w >= 900 && h >= 480;
   document.documentElement.style.zoom = z;
   C.zoom = z;
   const root = document.documentElement.style;
@@ -2152,8 +2380,7 @@ function setZoom(z) {
   document.body.classList.toggle('fit', fit);
   document.body.classList.toggle('wide', fit && w / z >= 1560);
   const effH = h / z;
-  const compact = !document.body.classList.contains('radio-console') &&
-    document.documentElement.dataset.workspace !== 'dx';
+  const compact = document.documentElement.dataset.workspace !== 'dx';
   document.body.classList.toggle('short-ui', compact && effH < 1000);
   document.body.classList.remove('tiny-ui');
   const col = $('#colLeft');
@@ -2164,9 +2391,9 @@ function applyScale() {
   const w = window.innerWidth, h = window.innerHeight;
   let z = parseFloat(opts.scale);
   const auto = !(z > 0);
-  if (auto) z = (document.body.classList.contains('radio-console') || document.documentElement.dataset.workspace === 'dx') ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.9, 2.4));
+  if (auto) z = document.documentElement.dataset.workspace === 'dx' ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.9, 2.4));
   const fit = setZoom(z);
-  if (fit && auto && !document.body.classList.contains('radio-console') && document.documentElement.dataset.workspace !== 'dx') {
+  if (fit && auto && document.documentElement.dataset.workspace !== 'dx') {
     // Не мельчить интерфейс на 14″: левая колонка при нехватке высоты прокручивается.
     z = Math.max(0.9, Math.min(z, w / 840));
     setZoom(z);
@@ -2219,7 +2446,10 @@ renderFavs();
 buildLut();
 sizeCanvases();
 {
-  const t = store.get('tab', 'rx'); const b = $(`#tabs button[data-tab="${t}"]`); b && b.click();
+  const allowed = ['dx', 'rx', 'tx', 'vfo', 'cw', 'menu', 'cat'];
+  let t = store.get('tab', 'rx');
+  if (!allowed.includes(t)) t = 'rx';
+  activateTab(t, false);
 }
 connect();
 

@@ -13,8 +13,8 @@
 <link rel="stylesheet" href="appearance.css">
 <script src="i18n.js"></script>
 <script src="appearance.js"></script>
-<link rel="stylesheet" href="console-layout.css">
-<script src="console-layout.js"></script>
+<link rel="stylesheet" href="console-layout.css?v=44">
+<script src="console-layout.js?v=44"></script>
 <link rel="stylesheet" href="dx.css">
 </head>
 <body>
@@ -63,7 +63,16 @@
         <span class="muted small" id="pwrInfo"></span>
       </div>
     </div>
-    <div class="meters">
+    <div class="meters" id="meters" data-mode="analog">
+      <div class="meter-analog" id="meterAnalog" data-size="compact">
+        <canvas id="meterGauge" role="img" aria-label="RX S: —"></canvas>
+        <div class="meter-footer">
+          <div class="meter-readout" id="meterReadout"><span id="meterActive">RX · S</span><b id="meterValue">—</b></div>
+          <div class="meter-select" role="group" aria-label="TX meter" data-i18n-aria-label="opts.meter.tx">
+            <span>TX</span><button type="button" data-meter-tx="po" aria-pressed="true" title="Мощность передатчика" data-i18n-title="opts.meter.po">PO</button><button type="button" data-meter-tx="swr" aria-pressed="false" title="Коэффициент стоячей волны" data-i18n-title="opts.meter.swr">SWR</button>
+          </div>
+        </div>
+      </div>
       <div class="meter" id="mS"><label>S</label><div class="bar"><i></i></div><span class="val"></span></div>
       <div class="meter scale-row"><label></label><div class="scale"><span>1</span><span>3</span><span>5</span><span>7</span><span>9</span><span>+20</span><span>+40</span><span>+60</span></div><span></span></div>
       <div class="meter tx" id="mPo"><label>PO</label><div class="bar"><i></i></div><span class="val"></span></div>
@@ -123,6 +132,7 @@
       <div class="wf-cursor" id="wfCursor"></div>
       <div class="wf-msg hidden" id="wfMsg"></div>
     </div>
+    <div class="wf-splitter" id="wfSplitter" role="separator" aria-orientation="horizontal" title="Потяните, чтобы изменить высоту водопада. Двойной клик — по умолчанию" data-i18n-title="wf.splitter.title"></div>
   </section>
 
   <!-- ===== Вкладки ===== -->
@@ -511,15 +521,16 @@
               <option value="country" data-i18n="ft8.sort.country">Страна А–Я</option>
             </select>
           </div>
-          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
-          <div class="ft-list mono" id="ftList"><div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div></div>
+          <div class="ft-list mono" id="ftList">
+            <div class="ft-th mono" id="ftHead"><span data-i18n="ft8.th.utc">UTC</span><span class="n" data-i18n="ft8.th.db">дБ</span><span class="n" data-i18n="ft8.th.dt">DT</span><span class="n" data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span><span class="ft-country" data-i18n="ft8.th.country">Страна</span></div>
+            <div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div>
+          </div>
           <div id="ftEmpty" class="muted small ft-filter-empty" hidden data-i18n="ft8.filters.empty">Нет строк по выбранным фильтрам.</div>
         </div>
         <div class="ft-pane">
           <div class="ft-head"><b data-i18n="ft8.rxpane">Частота RX</b> <span class="mono ft-rxlbl" id="ftRxLbl">1500 Гц</span>
             <span class="spacer"></span><button class="btn small" id="ftClear2" data-i18n="ft8.clear">Очистить</button></div>
-          <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
-          <div class="ft-list mono" id="ftRxList"></div>
+          <div class="ft-list mono" id="ftRxList"><div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span class="n" data-i18n="ft8.th.db">дБ</span><span class="n" data-i18n="ft8.th.dt">DT</span><span class="n" data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span><span class="ft-country" data-i18n="ft8.th.country">Страна</span></div></div>
         </div>
       </div>
       <div class="ft-side">
@@ -634,6 +645,22 @@
         </label>
         <label><span data-i18n="layout.label">Расположение панелей</span><select id="optWorkspace"><option value="classic" data-i18n="layout.classic">Классическое</option><option value="right" data-i18n="layout.right">Управление справа</option><option value="console" data-i18n="layout.console">Передняя панель</option><option value="dx" data-i18n="layout.dx">DX — споты рядом со спектром</option></select></label>
         <label><span data-i18n="layout.density">Размер кнопок</span><select id="optDensity"><option value="normal" data-i18n="layout.normal">Обычный</option><option value="touch" data-i18n="layout.touch">Крупный, для касаний</option></select></label>
+        <h4 style="margin-top:6px" data-i18n="opts.meter">Измеритель</h4>
+        <label><span data-i18n="opts.meter.mode">Вид</span>
+          <select id="optMeterMode">
+            <option value="analog" data-i18n="opts.meter.analog">Аналоговый S-метр</option>
+            <option value="bars" data-i18n="opts.meter.bars">Компактные полосы</option>
+            <option value="off" data-i18n="opts.meter.off">Выключен</option>
+          </select>
+        </label>
+        <label><span data-i18n="opts.meter.size">Размер</span>
+          <select id="optMeterSize">
+            <option value="compact" data-i18n="opts.meter.compact">Компактный</option>
+            <option value="normal" data-i18n="opts.meter.normal">Обычный</option>
+            <option value="large" data-i18n="opts.meter.large">Крупный</option>
+          </select>
+        </label>
+        <label class="chk"><input type="checkbox" id="optMeterReadouts"> <span data-i18n="opts.meter.readouts">Цифровое значение S / PO / SWR</span></label>
         <label><span data-i18n="opts.audio_rate">Качество звука по сети</span>
           <select id="optRate"><option value="48000" data-i18n="opts.rate.48">48 кГц — без сжатия (этот ПК, проводная сеть)</option><option value="16000" data-i18n="opts.rate.16">16 кГц (Wi-Fi, телефон дома)</option><option value="8000" data-i18n="opts.rate.8">8 кГц (мобильный интернет)</option></select></label>
         <p class="muted small" id="audioStat"></p>

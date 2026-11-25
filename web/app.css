@@ -55,7 +55,13 @@ code { font-family: var(--mono); color: var(--lcd); }
 .dot { width: 10px; height: 10px; border-radius: 50%; background: #555; flex: none; box-shadow: 0 0 0 2px #0006; }
 .dot.ok { background: var(--ok); }
 .dot.bad { background: var(--tx); }
-.top-actions { display: flex; align-items: center; gap: 6px; }
+.top-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mode-switch { display: inline-flex; align-items: stretch; flex: none; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+.mode-switch button { appearance: none; border: 0; background: transparent; color: var(--muted); height: 32px; padding: 0 11px; font: 600 12px var(--mono); letter-spacing: .02em; cursor: pointer; }
+.mode-switch button + button { border-left: 1px solid var(--line); }
+.mode-switch button:hover { color: var(--text); background: #ffffff0a; }
+.mode-switch button.on { background: var(--accent-2); color: #fff; }
+.mode-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .vol input { width: 110px; }
 
 /* ---------- раскладка ---------- */
@@ -96,7 +102,9 @@ body.fit .col-left { grid-area: left; display: flex; flex-direction: column; gap
 body.fit .col-left > .panel { flex: none; }
 body.fit .wfpanel { grid-area: wf; display: flex; flex-direction: column; min-height: 0; }
 body.fit .wf-wrap { flex: 1; height: auto; min-height: 120px; }
-body.fit .tabs-panel { grid-area: tabs; display: flex; flex-direction: column; min-height: 0; }
+body.fit .tabs-panel { grid-area: tabs; display: flex; flex-direction: column; min-height: 0; position: relative; }
+body.fit .tabs-panel::after { content: ''; position: absolute; left: 11px; right: 11px; bottom: 1px; height: 16px; pointer-events: none; background: linear-gradient(to top, var(--panel) 20%, transparent); border-radius: 0 0 var(--radius) var(--radius); }
+body.mode-screen .tabs-panel::after { display: none; }
 body.fit .tabs-panel > .tab.on { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-right: 2px; }
 body.fit .menu-list { max-height: none; }
 body.fit .pttbar { position: static; flex: none; }
@@ -250,6 +258,19 @@ input.num { width: 80px; }
 .btn.wide { width: 100%; }
 .btn-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
 
+/* VFO/Память: три ровные группы, кнопки одинаковой ширины */
+#tab-vfo .vfo-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 14px; align-items: start; }
+#tab-vfo .vfo-group h4 { margin: 2px 0 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
+#tab-vfo .vfo-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; align-items: stretch; }
+#tab-vfo .vfo-actions > .btn { width: 100%; min-height: 32px; padding: 4px 8px; font-size: 12.5px; text-align: center; white-space: normal; line-height: 1.2; }
+#tab-vfo .vfo-actions > input.num { width: 100%; text-align: center; }
+@media (max-width: 1100px) {
+  #tab-vfo .vfo-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  #tab-vfo .vfo-groups { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ---------- вкладки ---------- */
 .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--line); margin: -2px -2px 10px; padding-bottom: 6px; scrollbar-width: none; }
 .tabs button { background: none; border: 0; color: var(--muted); padding: 8px 12px; border-radius: 7px; font: inherit; cursor: pointer; white-space: nowrap; }
@@ -368,6 +389,7 @@ kbd { display: inline-block; min-width: 22px; padding: 2px 6px; border: 1px soli
 
 /* ===== CW · Морзе ===== */
 .cw-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.bar-end { display: flex; align-items: center; gap: 8px; flex: none; flex-wrap: nowrap; margin-left: auto; }
 .cw-bar .mini { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .cw-bar .mini input[type=range] { width: 90px; }
 .cw-bar select { min-height: 30px; padding: 3px 6px; }
@@ -480,7 +502,10 @@ body.fit .cw-screen { max-height: 30vh; }
 .ft-list { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; height: clamp(150px, 24vh, 300px); overflow-y: auto; scrollbar-gutter: stable; font-size: 12.5px; line-height: 1.35; }
 #ftList, #ftRxList { display: flex; flex-direction: column; }
 #ftList > *, #ftRxList > * { flex: none; }
-.ft-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.ft-filters, .ft-inline-freq { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 34px; margin: 2px 0 4px; }
+.ft-inline-freq label { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.ft-inline-freq .num { width: 64px; min-height: 28px; padding: 3px 6px; }
+.ft-inline-freq .btn { flex: none; }
 .ft-filters input, .ft-filters select { font-size: 12px; min-height: 28px; padding: 3px 6px; }
 .ft-filters input { flex: 1 1 120px; min-width: 90px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; font-family: inherit; }
 .ft-filters select { flex: 0 1 auto; max-width: 46%; }
@@ -664,7 +689,7 @@ body.me-open { overflow: hidden; }
 .me-tools .btn { padding: 6px 10px; min-height: 32px; } .me-tools select { height: 32px; }
 .me-table .fq.tx { color: #ffb4a8; }
 
-/* ===== Рабочие экраны FT8 / Цифра =====
+/* ===== Рабочие экраны FT8 / Цифра / CW =====
    Пульт не висит окном поверх интерфейса: радио-панель сворачивается в строку
    с частотой и S-метром, а остальное место отдаётся водопаду и самому режиму. */
 body.mode-screen #btnLayout { display: none; }
@@ -697,9 +722,18 @@ html[data-workspace] body.fit.mode-screen .layout {
 html[data-workspace] body.fit.mode-screen[data-op="digi"] .layout {
   grid-template-rows: auto minmax(150px, 28%) minmax(0, 1fr) !important;
 }
+html[data-workspace] body.fit.mode-screen[data-op="cw"] .layout {
+  grid-template-rows: auto minmax(140px, 26%) minmax(0, 1fr) !important;
+}
 body.fit.mode-screen .col-left { grid-area: op; display: block; overflow: hidden; }
 body.fit.mode-screen .display { height: 100%; }
 body.fit.mode-screen .tabs-panel > .tab.on { padding-right: 0; }
+
+/* CW: декодер тянется, разбор и передача — снизу */
+body.mode-screen[data-op="cw"] .tabs-panel > .tab.on { display: flex; flex-direction: column; min-height: 0; }
+body.mode-screen[data-op="cw"] #cwScreen { flex: 1 1 auto; max-height: none; min-height: 110px; }
+body.mode-screen[data-op="cw"] .cw-ai,
+body.mode-screen[data-op="cw"] .cw-tx { flex: none; }
 
 /* Цифровой экран: декодер тянется по высоте, передача и подсказки — под ним,
    чтобы на 14″ ничего не приходилось прокручивать наружу. */
@@ -721,9 +755,17 @@ body.mode-screen:not(.fit) .wf-wrap { height: clamp(160px, 26vh, 240px); }
 .settings-head h2 { margin: 0; font-size: 18px; }
 .settings-body { flex: 1; min-height: 0; overflow: auto; padding: 14px; }
 .settings-body #tab-opts { display: block; }
-.settings-body .opts { max-width: 980px; }
+.settings-body .opts { max-width: 960px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; align-items: start; }
+.settings-body .opts > h4,
+.settings-body .opts > .row,
+.settings-body .opts > details,
+.settings-body .opts > .btn-row,
+.settings-body .opts > #recList,
+.settings-body .opts > #hkList,
+.settings-body .opts > p { grid-column: 1 / -1; }
 @media (max-width: 900px) {
   .settings-dialog { width: calc(100vw - 12px); height: calc(100vh - 12px); }
+  .settings-body .opts { grid-template-columns: minmax(0, 1fr); }
 }
 
 .layout-bar { position: fixed; left: 50%; bottom: 82px; transform: translateX(-50%); z-index: 55; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--panel); border: 1px solid var(--accent); border-radius: 10px; box-shadow: 0 10px 30px #0009; font-size: 13px; max-width: min(92vw, 900px); }
@@ -741,5 +783,10 @@ body.layout-dragging #layoutGhost { display: block; }
 
 .top-actions { flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 700px) {
-  #btnFt8, #btnDigi, #btnRadio { padding-left: 7px; padding-right: 7px; }
+  .topbar { flex-wrap: wrap; align-items: flex-start; }
+  .brand { order: 0; flex: 1 1 auto; }
+  .brand .muted { display: none; }
+  .mode-switch { order: 1; width: auto; margin-left: auto; }
+  .top-actions { order: 2; flex: 1 1 100%; justify-content: flex-start; }
+  .mode-switch button { padding: 0 7px; }
 }

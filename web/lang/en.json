@@ -1409,8 +1409,14 @@
   "layout.drop.wf.bottom": "Waterfall → bottom",
   "layout.drop.work.top": "Functions → top",
   "layout.drop.work.bottom": "Functions → bottom",
-  "top.radio": "← Radio",
-  "top.radio.title": "Back to the radio panel",
   "top.ft8.title": "FT8/FT4 operating screen: decodes, waterfall, TX",
-  "top.digi.title": "Digital modes operating screen"
+  "top.digi.title": "Digital modes operating screen",
+  "mode.radio": "Radio",
+  "mode.radio.title": "Back to the radio panel",
+  "mode.cw": "CW",
+  "mode.cw.title": "CW: decoder, sending and keyer memories",
+  "mode.group": "Operating mode",
+  "vfo.group.rx": "Receiver",
+  "vfo.group.band": "Band and scan",
+  "vfo.group.mem": "Memory and lock"
 }

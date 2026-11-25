@@ -19,7 +19,7 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 
 ### 🎨 Modern Interface
 - **Three Professional Themes**: Dark, Warm (Heritage), Light
-- **Operating screens**: FT8/FT4 and digital modes take over the window; only the frequency, meters and waterfall stay, everything else is hidden
+- **Operating screen switch**: Radio · FT8 · Digital · CW in one place; a mode hides the panels it does not need
 - **Panel layout editor**: drag the radio panel left/right and waterfall/functions up/down
 - **Settings in a separate window**: no more controls jumping between tabs
 - **Fully Responsive**: Adapts to desktop, tablet, and mobile screens

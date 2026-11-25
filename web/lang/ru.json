@@ -1405,8 +1405,14 @@
   "layout.drop.wf.bottom": "Водопад → снизу",
   "layout.drop.work.top": "Функции → сверху",
   "layout.drop.work.bottom": "Функции → снизу",
-  "top.radio": "← Радио",
-  "top.radio.title": "Вернуться к пульту радио",
   "top.ft8.title": "Рабочий экран FT8/FT4: списки, водопад, передача",
-  "top.digi.title": "Рабочий экран цифровых видов"
+  "top.digi.title": "Рабочий экран цифровых видов",
+  "mode.radio": "Радио",
+  "mode.radio.title": "Вернуться к пульту радио",
+  "mode.cw": "CW",
+  "mode.cw.title": "Телеграф: декодер, передача и память ключа",
+  "mode.group": "Режим работы",
+  "vfo.group.rx": "Приёмник",
+  "vfo.group.band": "Диапазон и скан",
+  "vfo.group.mem": "Память и блокировка"
 }

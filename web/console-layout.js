@@ -9,7 +9,7 @@
       meters = document.querySelector('.display .meters');
       anchor = document.createComment('original meter position'); meters.before(anchor);
       shelf = document.createElement('aside'); shelf.id = 'consoleShelf'; shelf.className = 'panel';
-      const label = document.createElement('h2'); label.textContent = 'Измерители'; shelf.append(label);
+      const label = document.createElement('h2'); label.dataset.i18n = 'meter.signal'; label.textContent = window.I18N ? I18N.t('meter.signal', 'Сигнал') : 'Сигнал'; shelf.append(label);
       const noMeters = document.createElement('p'); noMeters.className = 'console-unavailable muted small';
       noMeters.textContent = 'Измерители этой модели пока не подключены'; shelf.append(noMeters);
       const actions = document.createElement('div'); actions.className = 'console-actions';

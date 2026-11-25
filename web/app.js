@@ -378,8 +378,8 @@ const meterGauge = (() => {
     for (const v of (narrow ? [1, 2, 3, Infinity] : [1, 1.5, 2, 3, 5, Infinity])) {
       label(373, swrFrac(v), v === Infinity ? '∞' : String(v), ink('swr'), narrow ? 26 : 20);
     }
-    ctx.textAlign = 'left'; ctx.font = `700 ${narrow ? 28 : 24}px "Segoe UI", Arial, sans-serif`;
-    for (const [name, mode, x, y] of [['S', 's', 10, 115], ['PO', 'po', 43, 164], ['SWR', 'swr', 66, 211]]) {
+    ctx.textAlign = 'right'; ctx.font = '700 24px "Segoe UI", Arial, sans-serif';
+    for (const [name, mode, x, y] of [['S', 's', 35, 125], ['PO', 'po', 67, 173], ['SWR', 'swr', 98, 222]]) {
       ctx.fillStyle = ink(mode); ctx.fillText(name, x, y);
     }
     ctx.textAlign = 'right'; ctx.font = '600 18px "Segoe UI", Arial, sans-serif';

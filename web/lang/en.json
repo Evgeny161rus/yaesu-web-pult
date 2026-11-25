@@ -1387,5 +1387,6 @@
   "layout.touch": "Large, for touch",
   "opts.meter.tx": "Transmit meter",
   "opts.meter.po": "Transmitter power",
-  "opts.meter.swr": "Standing wave ratio"
+  "opts.meter.swr": "Standing wave ratio",
+  "meter.signal": "Signal"
 }

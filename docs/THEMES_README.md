@@ -7,11 +7,10 @@
 | Файл | Назначение |
 |---|---|
 | `web/app.css` | базовая тема `original` (переменные в `:root`) |
-| `web/appearance.css` | темы `studio`, `daylight`, `heritage`, `field` |
-| `web/console-layout.css` | компоновка «передняя панель» (workspace `console`) |
-| `web/dx.css` | компоновки `right`/`dx`, размер кнопок `touch`, стили DX-спотов |
+| `web/appearance.css` | темы `heritage`, `daylight` |
+| `web/dx.css` | DX-компоновка, размер кнопок `touch`, стили DX-спотов |
 | `web/appearance.js` | темы `themes`, компоновки `layouts`, размер, запись в `localStorage` |
-| `web/console-layout.js` | перенос метров/панели для workspace `console` |
+| `web/index.html` | `<select id="optAppearance">`, `#optWorkspace`, `#optDensity` |
 | `web/index.html` | `<select id="optAppearance">`, `#optWorkspace`, `#optDensity` |
 | `web/lang/ru.json`, `en.json` | переводы `opts.appearance.*`, `layout.*` |
 
@@ -23,8 +22,7 @@
    и ставятся `data-workspace` / `data-density`.
 3. CSS применяет переменные по `:root[data-appearance="..."]`, компоновку — по
    `html[data-workspace="..."]`, крупные элементы — по `html[data-density="touch"]`.
-4. `console-layout.js` включает консольную разметку только для `data-workspace="console"`.
-   Старые темы `radio-night`/`radio-silver` и `daylight`/`field` переносятся автоматически.
+4. Компоновка в классике настраивается перетаскиванием панелей; темы её не меняют.
 
 ## Добавить тему (по шагам)
 

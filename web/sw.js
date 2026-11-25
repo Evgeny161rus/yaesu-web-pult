@@ -1,7 +1,7 @@
 // Сервис-воркер: нужен, чтобы пульт ставился на Android как приложение.
 // Только статика пульта: свежая из сети, из кэша — лишь когда сервер недоступен.
 // Всё остальное (WebSocket, записи, панель, API) идёт мимо него.
-const CACHE = 'ftx1-v46-layouts';
+const CACHE = 'ftx1-v49-shell';
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'mem.js', 'sdfile.js', 'worklets.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
@@ -12,9 +12,6 @@ const OWN = new Set(['/', '/index.html', '/app.css', '/app.js', '/mem.js', '/sdf
 FILES.push('dx.js', 'dx.css');
 OWN.add('/dx.js'); OWN.add('/dx.css');
 FILES.push('appearance.css', 'appearance.js', 'backend-ui.js');
-FILES.push('console-layout.css', 'console-layout.js');
-OWN.add('/console-layout.css');
-OWN.add('/console-layout.js');
 OWN.add('/backend-ui.js');
 OWN.add('/appearance.css');
 OWN.add('/appearance.js');

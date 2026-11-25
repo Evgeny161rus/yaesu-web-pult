@@ -13,8 +13,6 @@
 <link rel="stylesheet" href="appearance.css">
 <script src="i18n.js"></script>
 <script src="appearance.js"></script>
-<link rel="stylesheet" href="console-layout.css?v=44">
-<script src="console-layout.js?v=44"></script>
 <link rel="stylesheet" href="dx.css">
 </head>
 <body>
@@ -35,7 +33,11 @@
     <button id="btnAudio" data-i18n-dynamic class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
     <label class="vol" title="Громкость на этом устройстве" data-i18n-title="top.vol.title"><input id="volume" type="range" min="0" max="200" value="100"></label>
+    <button id="btnFt8" class="btn chip" title="Отдельное окно FT8/FT4" data-i18n="top.ft8">FT8</button>
+    <button id="btnDigi" class="btn chip" title="Отдельное окно цифровых видов" data-i18n="top.digi">Цифра</button>
+    <button id="btnLayout" class="btn chip icon" title="Компоновка панелей" data-i18n="top.layout" data-i18n-title="top.layout.title">▦</button>
     <button id="btnKeys" class="btn chip icon" title="Горячие клавиши (?)" data-i18n="top.keys" data-i18n-title="top.keys.title">⌨</button>
+    <button id="btnSettings" class="btn chip icon" title="Настройки" data-i18n="top.settings" data-i18n-title="top.settings.title">⚙</button>
     <button id="btnPanel" class="btn chip icon hidden" title="Панель управления сервером" data-i18n="top.panel" data-i18n-title="top.panel.title">⚙</button>
     <button id="btnFull" class="btn chip icon" title="Во весь экран" data-i18n="top.full" data-i18n-title="top.full.title">⛶</button>
   </div>
@@ -143,11 +145,8 @@
       <button data-tab="tx" data-i18n="tab.tx">Передача</button>
       <button data-tab="vfo" data-i18n="tab.vfo">VFO/Память</button>
       <button data-tab="cw" data-i18n="tab.cw">CW · Морзе</button>
-      <button data-tab="digi" data-i18n="tab.digi">Цифра</button>
-      <button data-tab="ft8" data-i18n="tab.ft8">FT8</button>
       <button data-tab="menu" data-i18n="tab.menu">Меню</button>
       <button data-tab="cat" data-i18n="tab.cat">CAT</button>
-      <button data-tab="opts" data-i18n="tab.opts">Настройки</button>
     </nav>
 
     <div class="tab" id="tab-dx">
@@ -634,16 +633,12 @@
         </label>
         <label><span data-i18n="opts.appearance">Оформление пульта</span>
           <select id="optAppearance">
-            <option value="original" data-i18n="opts.appearance.original">Исходное</option>
-            <option value="studio" data-i18n="opts.appearance.studio">Studio — синий, студийная панель</option>
-            <option value="daylight" data-i18n="opts.appearance.daylight">Daylight — светлый, управление справа</option>
-            <option value="heritage" data-i18n="opts.appearance.heritage">Heritage — янтарный, приборная панель</option>
-            <option value="field" data-i18n="opts.appearance.field">Field — зелёный, крупные кнопки</option>
-            <option value="radio-night" data-i18n="opts.appearance.radio_night">Radio Night — передняя панель, тёмная</option>
-            <option value="radio-silver" data-i18n="opts.appearance.radio_silver">Radio Silver — передняя панель, серебристая</option>
+            <option value="original" data-i18n="opts.appearance.original">Тёмная</option>
+            <option value="heritage" data-i18n="opts.appearance.heritage">Тёплая (Heritage)</option>
+            <option value="daylight" data-i18n="opts.appearance.daylight">Светлая</option>
           </select>
         </label>
-        <label><span data-i18n="layout.label">Расположение панелей</span><select id="optWorkspace"><option value="classic" data-i18n="layout.classic">Классическое</option><option value="right" data-i18n="layout.right">Управление справа</option><option value="console" data-i18n="layout.console">Передняя панель</option><option value="dx" data-i18n="layout.dx">DX — споты рядом со спектром</option></select></label>
+        <label><span data-i18n="layout.label">Рабочее пространство</span><select id="optWorkspace"><option value="classic" data-i18n="layout.classic">Классика</option><option value="dx" data-i18n="layout.dx">DX — споты рядом со спектром</option></select></label>
         <label><span data-i18n="layout.density">Размер кнопок</span><select id="optDensity"><option value="normal" data-i18n="layout.normal">Обычный</option><option value="touch" data-i18n="layout.touch">Крупный, для касаний</option></select></label>
         <h4 style="margin-top:6px" data-i18n="opts.meter">Измеритель</h4>
         <label><span data-i18n="opts.meter.mode">Вид</span>
@@ -695,6 +690,26 @@
     </div>
   </section>
 </main>
+
+<div id="floatLayer" aria-live="polite"></div>
+
+<div id="layoutBar" class="layout-bar hidden">
+  <span data-i18n="layout.edit.hint">Перетащите панели: «Радио» — влево/вправо, «Водопад»/«Вкладки» — вверх/вниз.</span>
+  <span class="spacer"></span>
+  <button class="btn small" id="layoutReset" data-i18n="layout.edit.reset">Сброс</button>
+  <button class="btn small primary" id="layoutDone" data-i18n="layout.edit.done">Готово</button>
+</div>
+
+<div id="settingsModal" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="settings-dialog">
+    <header class="settings-head">
+      <h2 id="settingsTitle" data-i18n="opts.title">Настройки</h2>
+      <span class="spacer"></span>
+      <button class="btn chip icon" id="settingsClose" title="Закрыть" data-i18n-title="help.close">✕</button>
+    </header>
+    <div class="settings-body" id="settingsBody"></div>
+  </div>
+</div>
 
 <!-- PTT -->
 <footer class="pttbar">

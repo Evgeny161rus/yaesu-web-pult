@@ -1658,16 +1658,17 @@ def find_app_browser():
 
 
 def open_window(url, size=(1080, 860)):
-    exe = find_app_browser()
-    if exe:
-        try:
-            flags = 0x08000000 if IS_WIN else 0          # CREATE_NO_WINDOW
-            subprocess.Popen([exe, '--app=' + url, '--window-size=%d,%d' % size],
-                             creationflags=flags, close_fds=True)
-            return
-        except Exception as e:
-            log.debug("app-окно не открылось: %s", e)
-    webbrowser.open(url)
+    """Открыть пульт в браузере по умолчанию (не навязывать Edge/Chrome)."""
+    try:
+        if not webbrowser.open(url):
+            raise RuntimeError('браузер не ответил')
+    except Exception as e:
+        log.warning("Не удалось открыть браузер: %s", e)
+        if IS_WIN:
+            try:
+                os.startfile(url)          # Windows: ассоциация по умолчанию
+            except OSError:
+                pass
 
 
 def start_tray(station, panel_url, pult_url):

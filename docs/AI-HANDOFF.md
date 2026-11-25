@@ -150,8 +150,25 @@ download_count сбрасывается. Для честной статисти�
 TX выбирается кнопками PO/SWR (`opts.meterTx`, localStorage). PO использует
 существующую PO_CAL и диапазон 12/120 W для Field/SPA-1; SWR — SWR_CAL.
 Без подключения или показаний отображается «—», стрелка возвращается влево.
-Три размера, режимы analog/bars/off; ширина прибора учтена в console-layout.css.
+Три размера, режимы analog/bars/off; canvas учитывает CSS-zoom (backing store
+по `getBoundingClientRect`), иначе на 27–34″ шкала мылится.
 Тест `tests/meter-ui.cjs` запускается через `tests/test_meter_ui.py` (Node.js).
+
+## Оболочка (v47+)
+
+- Рабочих пространств два: `classic` и `dx`. «Передняя панель» и «управление справа»
+  удалены; темы (`original`, `heritage`, `daylight`) меняют только цвета.
+- Верхняя панель: звук, запись, громкость, отдельные окна FT8 и «Цифра», компоновка,
+  горячие клавиши, настройки, полный экран.
+- `#tab-ft8` и `#tab-digi` живут в перетаскиваемых/масштабируемых `.float-window`;
+  кнопки `#btnFt8`/`#btnDigi` открывают/закрывают их. Настройки (`#tab-opts`)
+  перенесены в модальное окно `#settingsModal` (`#btnSettings`).
+- Режим «Компоновка» (`#btnLayout`): ручки `.panel-grip` на радио/водопаде/функциях;
+  перетаскивание меняет сторону радио и порядок водопад/функции. Сохраняется в
+  `layoutMirror`/`layoutSwap`, описан CSS-классами `layout-mirror`/`layout-swap`
+  (только `classic`).
+- `open_window()` в `server/main.py` открывает браузер по умолчанию, без `--app` Edge.
+- Старые `console-layout.css/js` удалены.
 
 ## Следующие шаги
 

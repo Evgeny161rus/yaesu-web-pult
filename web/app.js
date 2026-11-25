@@ -347,8 +347,8 @@ const meterGauge = (() => {
     if (!w || !h) return;
     // CSS-zoom (body zoom) не меняет devicePixelRatio, поэтому учитываем
     // фактический размер на экране — иначе на 27–34″ шкала мылится.
-    const rect = cv.getBoundingClientRect();
-    const screenScale = Math.max(1, (rect.width || w) / w);
+    const rect = cv.getBoundingClientRect ? cv.getBoundingClientRect() : null;
+    const screenScale = Math.max(1, rect && rect.width ? rect.width / w : 1);
     const dpr = Math.min(3, (window.devicePixelRatio || 1) * screenScale);
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
       cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);

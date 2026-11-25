@@ -1165,9 +1165,6 @@
   "top.layout.title": "Компоновка панелей",
   "top.settings": "⚙",
   "top.settings.title": "Настройки",
-  "float.digi": "Цифровые виды",
-  "float.close": "Закрыть",
-  "float.detached": "Окно «{name}» открыто отдельно.",
   "top.nolink": "нет связи",
   "top.panel": "⚙",
   "top.panel.title": "Панель управления сервером",
@@ -1407,5 +1404,9 @@
   "layout.drop.wf.top": "Водопад → сверху",
   "layout.drop.wf.bottom": "Водопад → снизу",
   "layout.drop.work.top": "Функции → сверху",
-  "layout.drop.work.bottom": "Функции → снизу"
+  "layout.drop.work.bottom": "Функции → снизу",
+  "top.radio": "← Радио",
+  "top.radio.title": "Вернуться к пульту радио",
+  "top.ft8.title": "Рабочий экран FT8/FT4: списки, водопад, передача",
+  "top.digi.title": "Рабочий экран цифровых видов"
 }

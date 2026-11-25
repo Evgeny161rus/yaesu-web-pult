@@ -1167,9 +1167,6 @@
   "top.layout.title": "Panel layout",
   "top.settings": "⚙",
   "top.settings.title": "Settings",
-  "float.digi": "Digital modes",
-  "float.close": "Close",
-  "float.detached": "The {name} window is open separately.",
   "top.nolink": "no connection",
   "top.panel": "⚙",
   "top.panel.title": "Server control panel",
@@ -1411,5 +1408,9 @@
   "layout.drop.wf.top": "Waterfall → top",
   "layout.drop.wf.bottom": "Waterfall → bottom",
   "layout.drop.work.top": "Functions → top",
-  "layout.drop.work.bottom": "Functions → bottom"
+  "layout.drop.work.bottom": "Functions → bottom",
+  "top.radio": "← Radio",
+  "top.radio.title": "Back to the radio panel",
+  "top.ft8.title": "FT8/FT4 operating screen: decodes, waterfall, TX",
+  "top.digi.title": "Digital modes operating screen"
 }

@@ -124,6 +124,36 @@ class RtlSdrScopeTests(unittest.TestCase):
         self.assertEqual(s._build_cmd(14_100_000, 1_024_000, 40)[0], exe)
 
 
+class HiddenConsoleTests(unittest.TestCase):
+    """Windows GUI-сборка не должна показывать DOS-окно SDR-утилиты."""
+
+    def test_windows_uses_create_no_window(self):
+        import rtlsdr_scope
+        self.assertEqual(rtlsdr_scope._popen_window_flags('win32'), 0x08000000)
+
+    def test_other_platforms_use_no_flags(self):
+        import rtlsdr_scope
+        for plat in ('linux', 'darwin', 'freebsd13'):
+            self.assertEqual(rtlsdr_scope._popen_window_flags(plat), 0)
+
+    def test_sdr_process_starts_with_hidden_console(self):
+        import rtlsdr_scope
+        chunks = make_cu8_frames(n_frames=3, fft_n=1024)
+        proc = FakeProc(chunks)
+        got = threading.Event()
+        with mock.patch('rtlsdr_scope.subprocess.Popen', return_value=proc) as popen, \
+                mock.patch('rtlsdr_scope._popen_window_flags', return_value=0x08000000):
+            s = rtlsdr_scope.RtlSdrScope(on_frame=lambda *a: got.set())
+            s.start(center_hz=145_000_000, sample_rate=1_024_000, gain=40, fft=1024)
+            try:
+                self.assertTrue(got.wait(timeout=5))
+            finally:
+                s.stop()
+        kwargs = popen.call_args.kwargs
+        self.assertEqual(kwargs.get('creationflags'), 0x08000000)
+        self.assertFalse(kwargs.get('shell', False))
+
+
 class SdrExecutableTests(unittest.TestCase):
     def test_local_tool_is_found(self):
         import os

@@ -37,7 +37,7 @@ Full-featured web interface for Yaesu transceivers (FTX-1, FT-710, FTDX10/101, F
 
 ### 📡 Digital Modes
 - **CW**: Decoder with template-based auto-reply
-- **FT8/FT4**: Full automatic QSO handling, ADIF logging, PSK Reporter
+- **FT8/FT4**: Full automatic QSO handling, ADIF logging, PSK Reporter; callsign list filters (search, country, age) and sorting by time or country
 - **RTTY**: TX/RX with multiple baud rates and shifts
 - **PSK31**: TX/RX with auto-tune
 - **NAVTEX**: Maritime weather/warnings decoder

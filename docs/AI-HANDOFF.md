@@ -62,7 +62,8 @@ download_count сбрасывается. Для честной статисти�
 - `server/dxcluster.py` — DX-споты: telnet DXSpider/AR-Cluster и публичный
   SpotRadio JSON (`spots.php?limit=200`, опрос раз в 20 с), только приём,
   дедупликация, дельты, защита от переполнения частоты, перестройка только RX VFO.
-- `web/` — пульт; `web/dx.js`, `web/dx.css` — DX; `web/appearance.js` —
+- `web/` — пульт; `web/app.js` — FT8/FT4 и фильтры/сортировка списка
+  слышимых станций; `web/dx.js`, `web/dx.css` — DX; `web/appearance.js` —
   темы/компоновки; `web/sw.js` — PWA-кэш.
 - `docs/` — актуальные инструкции; `docs/CONTEXT.md` и `docs/ROADMAP.md` —
   исторические заметки (в них есть пометки). `docs/archive/` — архив.

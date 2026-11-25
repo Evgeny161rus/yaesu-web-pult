@@ -416,6 +416,13 @@ body.fit .cw-screen { max-height: 30vh; }
 .ft-th, .ft-row { display: grid; grid-template-columns: 52px 30px 34px 40px minmax(0, 1fr); gap: 6px; padding: 1px 6px; white-space: nowrap; }
 .ft-th { font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--line); }
 .ft-list { background: #05080c; border: 1px solid var(--line); border-radius: 6px; height: clamp(150px, 24vh, 300px); overflow-y: auto; font-size: 12.5px; line-height: 1.45; }
+#ftList { display: flex; flex-direction: column; }
+#ftList > * { flex: none; }
+.ft-filters { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.ft-filters input, .ft-filters select { font-size: 12px; min-height: 28px; padding: 3px 6px; }
+.ft-filters input { flex: 1 1 120px; min-width: 90px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 6px; font-family: inherit; }
+.ft-filters select { flex: 0 1 auto; max-width: 46%; }
+.ft-filter-empty { padding: 4px 8px; }
 .ft-hint { padding: 10px; font-family: inherit; white-space: normal; }
 .ft-sep { color: #6c7f94; font-size: 11px; text-align: center; border-top: 1px dashed #24303d; margin-top: 1px; }
 .ft-row { cursor: pointer; color: #d8e2ec; }

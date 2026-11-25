@@ -493,8 +493,27 @@
               <option value="all" data-i18n="ft8.filter.all">все</option><option value="cq" data-i18n="ft8.filter.cq">CQ и мне</option><option value="new" data-i18n="ft8.filter.new">новые и мне</option></select>
 
             <span class="spacer"></span><button class="btn small" id="ftClear" data-i18n="ft8.clear">Очистить</button></div>
+          <div class="ft-filters">
+            <input id="ftSearch" class="mini-sel" type="search" maxlength="32" data-i18n-placeholder="ft8.filters.search.ph" placeholder="Позывной / страна" autocomplete="off">
+            <select id="ftCountry" class="mini-sel" data-i18n-title="ft8.filters.country" title="Страна">
+              <option value="" data-i18n="ft8.filters.country.all">Все страны</option>
+            </select>
+            <select id="ftAge" class="mini-sel" data-i18n-title="ft8.filters.age.title" title="Показывать строки не старше выбранного времени">
+              <option value="0" data-i18n="ft8.filters.age.all">Всё время</option>
+              <option value="5" data-i18n="ft8.filters.age.5">5 мин</option>
+              <option value="15" data-i18n="ft8.filters.age.15">15 мин</option>
+              <option value="30" data-i18n="ft8.filters.age.30">30 мин</option>
+              <option value="60" data-i18n="ft8.filters.age.60">60 мин</option>
+            </select>
+            <select id="ftSort" class="mini-sel" data-i18n-title="ft8.sort.title" title="Сортировка списка">
+              <option value="time-asc" data-i18n="ft8.sort.time.asc">Время: старые</option>
+              <option value="time-desc" data-i18n="ft8.sort.time.desc">Время: новые</option>
+              <option value="country" data-i18n="ft8.sort.country">Страна А–Я</option>
+            </select>
+          </div>
           <div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span data-i18n="ft8.th.db">дБ</span><span data-i18n="ft8.th.dt">DT</span><span data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span></div>
           <div class="ft-list mono" id="ftList"><div class="muted ft-hint" id="ftHint" data-i18n="ft8.hint">Включите приём и выберите диапазон — трансивер встанет в DATA-U на частоту FT8, полоса 3000 Гц. Расшифровка — в конце каждого периода. Нажмите на строку — позвать станцию (связь проведётся сама).</div></div>
+          <div id="ftEmpty" class="muted small ft-filter-empty" hidden data-i18n="ft8.filters.empty">Нет строк по выбранным фильтрам.</div>
         </div>
         <div class="ft-pane">
           <div class="ft-head"><b data-i18n="ft8.rxpane">Частота RX</b> <span class="mono ft-rxlbl" id="ftRxLbl">1500 Гц</span>

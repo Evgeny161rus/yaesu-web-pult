@@ -2344,7 +2344,7 @@ window.digi2 = digi2;
 const ft8Desk = (() => {
   const st = { on: store.get('ftOn', false), mode: 'FT8', txHz: 1500, rxHz: store.get('ftRx', 1500), txEnable: false, tx: false,
     par: 0, clockOff: 0, rows: 0, rxRows: 0, qsoKey: '', txMsg: '', myCall: '', myGrid: '',
-    rowCount: 0, slotRow: {}, lastK: null, labSpan: 0, labOn: store.get('ftWfLab', true) };
+    rowCount: 0, slotRow: {}, lastK: null, labSpan: 0, labOn: store.get('ftWfLab', true), seq: 0 };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const list = $('#ftList'), rxList = $('#ftRxList'), lab = $('#ftLab');
   const SLOT = () => st.mode === 'FT4' ? 7.5 : 15;
@@ -2379,11 +2379,28 @@ const ft8Desk = (() => {
   $('#ftRxHz').onchange = e => setRx(+e.target.value);
   $('#ftTx2Rx').onclick = () => setRx(st.txHz);
   $('#ftRx2Tx').onclick = () => setTx(st.rxHz);
-  $('#ftClear').onclick = () => { list.innerHTML = ''; st.rows = 0; };
+  let countryPref = store.get('ftCountry', '');
+  $('#ftClear').onclick = () => {
+    list.innerHTML = ''; st.rows = 0;
+    countryPref = ''; store.set('ftCountry', '');
+    applyFilter();
+  };
   
   $('#ftClear2').onclick = () => { rxList.innerHTML = ''; st.rxRows = 0; };
   $('#ftFilter').value = store.get('ftFilter', 'all');
-  $('#ftFilter').onchange = e => { store.set('ftFilter', e.target.value); applyFilter(); };
+  $('#ftSearch').value = store.get('ftSearch', '');
+  $('#ftAge').value = store.get('ftAge', '0');
+  $('#ftSort').value = store.get('ftSort', 'time-asc');
+  $('#ftFilter').onchange = e => { store.set('ftFilter', e.target.value); applyFilter(); list.scrollTop = 0; };
+  $('#ftSearch').oninput = e => { store.set('ftSearch', e.target.value); applyFilter(); list.scrollTop = 0; };
+  $('#ftCountry').onchange = e => { countryPref = e.target.value; store.set('ftCountry', countryPref); applyFilter(); list.scrollTop = 0; };
+  $('#ftAge').onchange = e => { store.set('ftAge', e.target.value); applyFilter(); list.scrollTop = 0; };
+  $('#ftSort').onchange = e => {
+    store.set('ftSort', e.target.value); applyFilter();
+    if (e.target.value === 'time-desc') list.scrollTop = 0;
+    else if (e.target.value === 'time-asc') list.scrollTop = list.scrollHeight;
+  };
+  applyFilter();
   $('#ftAlertSnd').checked = store.get('ftAlertSnd', false);
   $('#ftAlertSnd').onchange = e => store.set('ftAlertSnd', e.target.checked);
   $('#ftHeardBtn').onclick = () => send({ t: 'ft_heard' });
@@ -2564,14 +2581,72 @@ const ft8Desk = (() => {
 
   // ---------------------------------------------------------------- списки расшифровок
   const nearRx = it => Math.abs(it.f - st.rxHz) <= BW() + 10;
-  function applyFilter() {
-    const f = $('#ftFilter').value, has = (r, ...c) => c.some(x => r.classList.contains(x));
-    $$('#ftList .ft-row').forEach(r => r.classList.toggle('hidden',
-      f === 'cq' ? !has(r, 'cq', 'me') : f === 'new' ? !has(r, 'me', 'newdxcc', 'newband', 'newcall') : false));
+  function updateCountries(rows) {
+    const names = [...new Set(rows.map(r => r.dataset.country).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const sel = $('#ftCountry'), current = [...sel.options].map(o => o.value);
+    if (current.length !== names.length + 1 || names.some((n, i) => current[i + 1] !== n)) {
+      let all = sel.options[0];
+      if (!all) { all = document.createElement('option'); all.value = ''; all.textContent = tr('ft8.filters.country.all', 'Все страны'); }
+      sel.replaceChildren(all);
+      for (const n of names) { const o = document.createElement('option'); o.value = n; o.textContent = n; sel.append(o); }
+    }
+    const value = countryPref && names.includes(countryPref) ? countryPref : '';
+    if (countryPref && !value && names.length) countryPref = '';
+    sel.value = value;
+    return names;
   }
-  function row(it, utc, extra = '') {
+  function applyFilter() {
+    const rows = $$('#ftList .ft-row');
+    const f = $('#ftFilter').value, has = (r, ...c) => c.some(x => r.classList.contains(x));
+    const search = $('#ftSearch').value.trim().toUpperCase();
+    const age = +$('#ftAge').value || 0, sort = $('#ftSort').value;
+    const cutoff = age ? now() - age * 60 : 0;
+    updateCountries(rows);
+    let visible = 0;
+    for (const r of rows) {
+      const ts = +r.dataset.ts || 0;
+      let show = f === 'cq' ? has(r, 'cq', 'me') : f === 'new' ? has(r, 'me', 'newdxcc', 'newband', 'newcall') : true;
+      if (show && search) show = ((r.dataset.call || '') + ' ' + (r.dataset.country || '')).toUpperCase().includes(search);
+      if (show && countryPref) show = (r.dataset.country || '') === countryPref;
+      if (show && cutoff) show = ts >= cutoff;
+      r.classList.toggle('hidden', !show);
+      if (show) visible++;
+    }
+    if (sort === 'time-desc' || sort === 'time-asc') {
+      const desc = sort === 'time-desc';
+      [...list.children].filter(el => el.classList.contains('ft-row') || el.classList.contains('ft-sep'))
+        .sort((a, b) => {
+          const ta = +a.dataset.ts || 0, tb = +b.dataset.ts || 0;
+          if (ta !== tb) return desc ? tb - ta : ta - tb;
+          const sa = a.classList.contains('ft-sep') ? 0 : (+a.dataset.seq || 0);
+          const sb = b.classList.contains('ft-sep') ? 0 : (+b.dataset.seq || 0);
+          return sa - sb;                 // разделитель периода — перед своими строками
+        })
+        .forEach((el, i) => { el.style.order = String(i); });
+    } else if (sort === 'country') {
+      [...rows].sort((a, b) => {
+        const ca = a.dataset.country || '', cb = b.dataset.country || '';
+        if (!ca && cb) return 1;
+        if (ca && !cb) return -1;
+        return ca.localeCompare(cb) || (+a.dataset.ts - +b.dataset.ts) || (+a.dataset.seq - +b.dataset.seq);
+      }).forEach((r, i) => { r.style.order = String(i); });
+      $$('#ftList .ft-sep').forEach(s => { s.style.order = ''; });
+    } else {
+      [...list.children].forEach(el => { el.style.order = ''; });
+    }
+    const filtering = !!search || !!countryPref || age > 0 || f !== 'all';
+    $$('#ftList .ft-sep').forEach(s => {
+      s.classList.toggle('hidden', sort !== 'time-asc' || filtering);
+    });
+    $('#ftEmpty').hidden = !(rows.length && !visible);
+  }
+  function row(it, utc, extra = '', ts = 0) {
     const r = document.createElement('div');
     r.className = 'ft-row ' + it.tags.join(' ') + extra;
+    r.dataset.call = it.call || '';
+    r.dataset.country = it.country || '';
+    r.dataset.ts = String(ts || 0);
+    r.dataset.seq = String(++st.seq);
     const badge = it.tags.includes('newdxcc') ? '<b class="bd bd-dx" title="Новая страна">страна</b>'
       : it.tags.includes('newband') ? '<b class="bd bd-band" title="Страна не сработана на этом диапазоне">диап.</b>' : it.tags.includes('newcall') ? '<b class="bd bd-call" title="С этим позывным связи не было">нов.</b>' : '';
     r.innerHTML = `<span>${utc}</span><span class="n">${it.snr}</span><span class="n">${it.dt.toFixed(1)}</span><span class="n">${it.f}</span>` +
@@ -2588,20 +2663,36 @@ const ft8Desk = (() => {
   function trim(el, key) {
     while (st[key] > 500 && el.firstChild) { if (el.firstChild.classList.contains('ft-row')) st[key]--; el.firstChild.remove(); }
   }
-  function sep(text) { const d = document.createElement('div'); d.className = 'ft-sep'; d.textContent = text; return d; }
+  function sep(text, ts = 0) { const d = document.createElement('div'); d.className = 'ft-sep'; d.textContent = text; d.dataset.ts = String(ts || 0); return d; }
   const seen = new Set();
   // списки прокручиваются к новым строкам, пока пользователь сам не отмотал вверх
   const follow = new Map([[list, true], [rxList, true]]);
   for (const el of [list, rxList]) el.addEventListener('scroll', () => follow.set(el, el.scrollTop + el.clientHeight >= el.scrollHeight - 30));
-  const toEnd = el => { if (follow.get(el)) el.scrollTop = el.scrollHeight; };
+  const toEnd = el => {
+    if (!follow.get(el)) return;
+    if (el === list) {
+      const sort = $('#ftSort').value;
+      if (sort === 'time-asc') el.scrollTop = el.scrollHeight;
+      else if (sort === 'time-desc') el.scrollTop = 0;
+      return;                          // при сортировке по стране позицию не трогаем
+    }
+    el.scrollTop = el.scrollHeight;
+  };
   function addSlot(m) {
     const key = m.mode + m.slot;
     if (seen.has(key)) return;                // повтор при переподключении
     seen.add(key);
     $('#ftHint')?.remove();
     const utc = fmtUtc(m.slot), hh = `${m.slot.slice(0, 2)}:${m.slot.slice(2, 4)}:${m.slot.slice(4, 6)}`;
-    list.append(sep(`────── ${hh} ${m.mode} ${m.items.length ? '' : '· тишина '}──────`));
-    for (const it of m.items) { list.append(row(it, utc)); st.rows++; }
+    const ts = +m.t0 || (() => {
+      if (!/^\d{6}$/.test(m.slot || '')) return now();
+      const d = new Date(now() * 1000);
+      const t = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(),
+        +m.slot.slice(0, 2), +m.slot.slice(2, 4), +m.slot.slice(4, 6)) / 1000;
+      return t > now() + 60 ? t - 86400 : t;
+    })();
+    list.append(sep(`────── ${hh} ${m.mode} ${m.items.length ? '' : '· тишина '}──────`, ts));
+    for (const it of m.items) { list.append(row(it, utc, '', ts)); st.rows++; }
     trim(list, 'rows'); applyFilter();
     toEnd(list);
     const mine = m.items.filter(it => nearRx(it) || it.tags.includes('me'));

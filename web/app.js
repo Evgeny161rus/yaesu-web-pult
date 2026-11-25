@@ -1291,12 +1291,11 @@ $$('#tabs button').forEach(b => b.onclick = () => activateTab(b.dataset.tab));
 function opScreen() { return document.body.dataset.op || ''; }
 function updateOpButtons() {
   const op = opScreen();
-  for (const [id, name] of [['#btnFt8', 'ft8'], ['#btnDigi', 'digi']]) {
-    const b = $(id); if (!b) continue;
-    b.classList.toggle('on', op === name);
-    b.setAttribute('aria-pressed', op === name ? 'true' : 'false');
-  }
-  $('#btnRadio')?.classList.toggle('hidden', !op);
+  $$('.mode-switch button').forEach(b => {
+    const on = (b.dataset.op || '') === op;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
 }
 function enterOp(name) {
   if (opScreen() === name) { exitOp(); return; }
@@ -1317,6 +1316,7 @@ function exitOp() {
 }
 $('#btnFt8').onclick = () => enterOp('ft8');
 $('#btnDigi').onclick = () => enterOp('digi');
+$('#btnCw').onclick = () => enterOp('cw');
 $('#btnRadio').onclick = () => exitOp();
 
 // ------------------------------------------------------------------ настройки в отдельном окне
@@ -2362,6 +2362,7 @@ sizeCanvases();
 {
   const allowed = ['dx', 'rx', 'tx', 'vfo', 'cw', 'menu', 'cat'];
   let t = store.get('tab', 'rx');
+  if (t === 'cw' || t === 'ft8' || t === 'digi') t = 'rx';
   if (!allowed.includes(t)) t = 'rx';
   activateTab(t, false);
 }

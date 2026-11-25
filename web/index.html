@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ru">
 <head>
 <meta charset="utf-8">
@@ -33,14 +33,17 @@
     <button id="btnAudio" data-i18n-dynamic class="btn chip" title="Звук приёмника на этом устройстве" data-i18n="top.audio" data-i18n-title="top.audio.title">🔇 Звук</button>
     <button id="btnRec" class="btn chip rec" title="Записать связь (приём и передачу) в файл на ПК с сервером" data-i18n="top.rec" data-i18n-title="top.rec.title">⏺ Запись</button>
     <label class="vol" title="Громкость на этом устройстве" data-i18n-title="top.vol.title"><input id="volume" type="range" min="0" max="200" value="100"></label>
-    <button id="btnRadio" class="btn chip hidden" title="Вернуться к пульту радио" data-i18n="top.radio" data-i18n-title="top.radio.title">← Радио</button>
-    <button id="btnFt8" class="btn chip" aria-pressed="false" title="Рабочий экран FT8/FT4: списки, водопад, передача" data-i18n="top.ft8" data-i18n-title="top.ft8.title">FT8</button>
-    <button id="btnDigi" class="btn chip" aria-pressed="false" title="Рабочий экран цифровых видов" data-i18n="top.digi" data-i18n-title="top.digi.title">Цифра</button>
     <button id="btnLayout" class="btn chip icon" title="Компоновка панелей" data-i18n="top.layout" data-i18n-title="top.layout.title">▦</button>
     <button id="btnKeys" class="btn chip icon" title="Горячие клавиши (?)" data-i18n="top.keys" data-i18n-title="top.keys.title">⌨</button>
     <button id="btnSettings" class="btn chip icon" title="Настройки" data-i18n="top.settings" data-i18n-title="top.settings.title">⚙</button>
     <button id="btnPanel" class="btn chip icon hidden" title="Панель управления сервером" data-i18n="top.panel" data-i18n-title="top.panel.title">⚙</button>
     <button id="btnFull" class="btn chip icon" title="Во весь экран" data-i18n="top.full" data-i18n-title="top.full.title">⛶</button>
+  </div>
+  <div class="mode-switch" role="group" aria-label="Режим работы" data-i18n-aria-label="mode.group">
+    <button id="btnRadio" data-op="" class="on" data-i18n="mode.radio" data-i18n-title="mode.radio.title">Радио</button>
+    <button id="btnFt8" data-op="ft8" aria-pressed="false" data-i18n="top.ft8" data-i18n-title="top.ft8.title">FT8</button>
+    <button id="btnDigi" data-op="digi" aria-pressed="false" data-i18n="top.digi" data-i18n-title="top.digi.title">Цифра</button>
+    <button id="btnCw" data-op="cw" aria-pressed="false" data-i18n="mode.cw" data-i18n-title="mode.cw.title">CW</button>
   </div>
 </header>
 
@@ -145,7 +148,6 @@
       <button data-tab="rx" class="on" data-i18n="tab.rx">Приём</button>
       <button data-tab="tx" data-i18n="tab.tx">Передача</button>
       <button data-tab="vfo" data-i18n="tab.vfo">VFO/Память</button>
-      <button data-tab="cw" data-i18n="tab.cw">CW · Морзе</button>
       <button data-tab="menu" data-i18n="tab.menu">Меню</button>
       <button data-tab="cat" data-i18n="tab.cat">CAT</button>
     </nav>
@@ -252,31 +254,42 @@
     </div>
 
     <div class="tab" id="tab-vfo">
-      <div class="btn-row">
-        <button class="btn" data-set="vfo:0" data-i18n="vfo.work_main">Работать на MAIN</button>
-        <button class="btn" data-set="vfo:1" data-i18n="vfo.work_sub">Работать на SUB</button>
-        <button class="btn" data-act="a_to_b" data-i18n="vfo.a_to_b">A → B</button>
-        <button class="btn" data-act="b_to_a" data-i18n="vfo.b_to_a">B → A</button>
-        <button class="btn" data-act="swap" data-i18n="vfo.swap">A ⇄ B</button>
-        <button class="btn" id="btnSplit" title="Как кнопка SPLIT на трансивере: частоты A и B меняются местами" data-i18n="vfo.split" data-i18n-title="vfo.split.title">SPLIT (A ⇄ B)</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn" data-act="band_down" data-i18n="vfo.band_down">Диапазон ◀</button>
-        <button class="btn" data-act="band_up" data-i18n="vfo.band_up">Диапазон ▶</button>
-        <button class="btn" data-act="scan_down" data-i18n="vfo.scan_down">Скан ◀</button>
-        <button class="btn" data-act="scan_stop" data-i18n="vfo.scan_stop">■ Скан</button>
-        <button class="btn" data-act="scan_up" data-i18n="vfo.scan_up">Скан ▶</button>
-        <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
-      </div>
-      <div class="btn-row">
-        <button class="btn" data-act="vfo_mode" data-i18n="vfo.mode_vfo">Режим VFO</button>
-        <button class="btn" data-act="mem_mode" data-i18n="vfo.mode_mem">Режим памяти</button>
-        <input id="memCh" type="number" min="1" max="999" value="1" class="num">
-        <button class="btn" id="btnMemCh" data-i18n="vfo.mem_go">Вызвать канал</button>
-        <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems" data-i18n-title="vfo.mem_ed.title" data-i18n="vfo.mem_ed">Редактор каналов…</button>
-        <button class="btn" data-act="qmb_store" data-i18n="vfo.qmb_sto">QMB запомнить</button>
-        <button class="btn" data-act="qmb_recall" data-i18n="vfo.qmb_rcl">QMB вызвать</button>
-        <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
+      <div class="vfo-groups">
+        <div class="vfo-group">
+          <h4 data-i18n="vfo.group.rx">Приёмник</h4>
+          <div class="btn-row vfo-actions">
+            <button class="btn" data-set="vfo:0" data-i18n="vfo.work_main">Работать на MAIN</button>
+            <button class="btn" data-set="vfo:1" data-i18n="vfo.work_sub">Работать на SUB</button>
+            <button class="btn" data-act="a_to_b" data-i18n="vfo.a_to_b">A → B</button>
+            <button class="btn" data-act="b_to_a" data-i18n="vfo.b_to_a">B → A</button>
+            <button class="btn" data-act="swap" data-i18n="vfo.swap">A ⇄ B</button>
+            <button class="btn" id="btnSplit" title="Как кнопка SPLIT на трансивере: частоты A и B меняются местами" data-i18n="vfo.split" data-i18n-title="vfo.split.title">SPLIT (A ⇄ B)</button>
+          </div>
+        </div>
+        <div class="vfo-group">
+          <h4 data-i18n="vfo.group.band">Диапазон и скан</h4>
+          <div class="btn-row vfo-actions">
+            <button class="btn" data-act="band_down" data-i18n="vfo.band_down">Диапазон ◀</button>
+            <button class="btn" data-act="band_up" data-i18n="vfo.band_up">Диапазон ▶</button>
+            <button class="btn" data-act="scan_down" data-i18n="vfo.scan_down">Скан ◀</button>
+            <button class="btn" data-act="scan_stop" data-i18n="vfo.scan_stop">■ Скан</button>
+            <button class="btn" data-act="scan_up" data-i18n="vfo.scan_up">Скан ▶</button>
+            <button class="btn" data-act="zero_in" data-i18n="vfo.zero_in">ZERO-IN</button>
+          </div>
+        </div>
+        <div class="vfo-group">
+          <h4 data-i18n="vfo.group.mem">Память и блокировка</h4>
+          <div class="btn-row vfo-actions">
+            <button class="btn" data-act="vfo_mode" data-i18n="vfo.mode_vfo">Режим VFO</button>
+            <button class="btn" data-act="mem_mode" data-i18n="vfo.mode_mem">Режим памяти</button>
+            <input id="memCh" type="number" min="1" max="999" value="1" class="num">
+            <button class="btn" id="btnMemCh" data-i18n="vfo.mem_go">Вызвать канал</button>
+            <button class="btn primary" id="btnMemEd" title="Чтение, правка и запись всех каналов памяти — как ADMS / RT Systems" data-i18n-title="vfo.mem_ed.title" data-i18n="vfo.mem_ed">Редактор каналов…</button>
+            <button class="btn" data-act="qmb_store" data-i18n="vfo.qmb_sto">QMB запомнить</button>
+            <button class="btn" data-act="qmb_recall" data-i18n="vfo.qmb_rcl">QMB вызвать</button>
+            <button class="btn" id="btnLock" data-i18n="vfo.lock">LOCK</button>
+          </div>
+        </div>
       </div>
       <div class="ctl-grid">
         <div class="ctl sel" data-k="mode_b" data-label="VFO-B mode" data-opts="modes" data-label-key="ctl.mode_b"></div>
@@ -412,10 +425,11 @@
           <button class="btn small" id="fxStop" title="Закончить и сохранить картинку" data-i18n="fx.stop_save" data-i18n-title="fx.stop_save.title">Стоп и сохранить</button>
           <span class="mini"><span data-i18n="fx.slant">Наклон</span><button class="btn small" id="fxSlM" title="Shift — шаг 10" data-i18n-title="fx.slant_step.title">◀</button><b class="mono" id="fxSlant">0</b><button class="btn small" id="fxSlP" title="Shift — шаг 10" data-i18n-title="fx.slant_step.title">▶</button></span>
           <span class="cw-meter mono" id="fxInfo">—</span>
-          <span class="spacer"></span>
-          <label class="mini"><span data-i18n="fx.station">Станция</span><select id="fxPreset"></select></label>
-          <button class="btn small" id="fxPng">💾 PNG</button>
-          <button class="btn small" id="fxBig" title="Во весь экран (Esc — назад)" data-i18n-title="fx.full">⛶</button>
+          <span class="bar-end">
+            <label class="mini"><span data-i18n="fx.station">Станция</span><select id="fxPreset"></select></label>
+            <button class="btn small" id="fxPng">💾 PNG</button>
+            <button class="btn small" id="fxBig" title="Во весь экран (Esc — назад)" data-i18n-title="fx.full">⛶</button>
+          </span>
         </div>
         <div class="fx-wrap" id="fxWrap"><button class="btn small fx-close" id="fxClose" title="Esc" data-i18n-title="fx.close.title">✕</button><canvas id="fxCanvas"></canvas><div class="fx-empty muted" id="fxEmpty"><div>Метеофакс принимается в <b>USB</b> на 1,9 кГц ниже частоты станции (выберите станцию в списке — частота и вид работы поставятся сами). Полоса WIDTH — не уже 2,4 кГц: сигнал занимает 1500–2300 Гц.
           <span data-i18n="fx.empty.tail">Картинка начнётся сама по тону старта. Клик по картинке — указать, где левый край карты; ◀ ▶ — исправить наклон.</span></div></div></div>
@@ -530,6 +544,12 @@
         <div class="ft-pane">
           <div class="ft-head"><b data-i18n="ft8.rxpane">Частота RX</b> <span class="mono ft-rxlbl" id="ftRxLbl">1500 Гц</span>
             <span class="spacer"></span><button class="btn small" id="ftClear2" data-i18n="ft8.clear">Очистить</button></div>
+          <div class="ft-inline-freq">
+            <label class="mini"><span data-i18n="ft8.rxhz">RX, Гц</span><input type="number" id="ftRxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
+            <label class="mini"><span data-i18n="ft8.txhz">TX, Гц</span><input type="number" id="ftTxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
+            <button class="btn small" id="ftTx2Rx" title="Частоту RX поставить равной TX" data-i18n="ft8.rx2tx_btn" data-i18n-title="ft8.rx2tx.title">RX ← TX</button>
+            <button class="btn small" id="ftRx2Tx" title="Частоту TX поставить равной RX" data-i18n="ft8.tx2rx_btn" data-i18n-title="ft8.tx2rx.title">TX ← RX</button>
+          </div>
           <div class="ft-list mono" id="ftRxList"><div class="ft-th mono"><span data-i18n="ft8.th.utc">UTC</span><span class="n" data-i18n="ft8.th.db">дБ</span><span class="n" data-i18n="ft8.th.dt">DT</span><span class="n" data-i18n="ft8.th.freq">Част</span><span data-i18n="ft8.th.msg">Сообщение</span><span class="ft-country" data-i18n="ft8.th.country">Страна</span></div></div>
         </div>
       </div>
@@ -546,10 +566,6 @@
           <label class="mini" title="В каком периоде передаём: 1-й (00/30 с) или 2-й (15/45 с)" data-i18n-title="ft8.parity.title"><span data-i18n="ft8.parity">Период</span><select id="ftPar"><option value="0" data-i18n="ft8.parity.0">1-й (чётн.)</option><option value="1" data-i18n="ft8.parity.1">2-й (нечётн.)</option></select></label>
         </div>
         <div class="ft-box ft-freqs">
-          <label class="mini"><span data-i18n="ft8.rxhz">RX, Гц</span><input type="number" id="ftRxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
-          <label class="mini"><span data-i18n="ft8.txhz">TX, Гц</span><input type="number" id="ftTxHz" class="num" min="200" max="3000" step="10" value="1500"></label>
-          <div class="btn-row"><button class="btn small" id="ftTx2Rx" title="Частоту RX поставить равной TX" data-i18n="ft8.rx2tx_btn" data-i18n-title="ft8.rx2tx.title">RX ← TX</button>
-            <button class="btn small" id="ftRx2Tx" title="Частоту TX поставить равной RX" data-i18n="ft8.tx2rx_btn" data-i18n-title="ft8.tx2rx.title">TX ← RX</button></div>
           <label class="mini"><span data-i18n="ft8.dxcall">DX позывной</span><input id="ftDxCall" class="text mono" maxlength="11"></label>
           <label class="mini"><span data-i18n="ft8.dxgrid">DX локатор</span><input id="ftDxGrid" class="text mono" maxlength="4"></label>
           <label class="mini"><span data-i18n="ft8.rpt">Рапорт</span><input id="ftRpt" class="num mono" type="number" min="-30" max="30" value="-10"></label>

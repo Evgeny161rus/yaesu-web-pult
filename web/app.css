@@ -213,8 +213,8 @@ body.txon .meter#mS, body.txon .meter.scale-row { display: none; }
 .wf-wrap { position: relative; height: clamp(220px, 42vh, 560px); background: #000; border-radius: 6px; overflow: hidden; touch-action: none; cursor: crosshair; }
 .wfpanel { position: relative; }
 .wf-splitter { display: none; }
-body.fit .wf-splitter { display: flex; position: absolute; left: 50%; bottom: -9px; width: 84px; height: 16px; transform: translateX(-50%); align-items: center; justify-content: center; cursor: row-resize; touch-action: none; z-index: 9; }
-body.fit .wf-splitter::before { content: ''; width: 52px; height: 5px; border-radius: 3px; background: var(--muted); opacity: .55; box-shadow: 0 0 0 1px #0006; transition: background .15s, opacity .15s; }
+body.fit .wf-splitter { display: flex; position: absolute; left: 50%; bottom: 10px; width: 84px; height: 16px; transform: translateX(-50%); align-items: center; justify-content: center; cursor: row-resize; touch-action: none; z-index: 9; }
+body.fit .wf-splitter::before { content: ''; width: 56px; height: 6px; border-radius: 4px; background: #e8eef5; opacity: .5; box-shadow: 0 0 0 1px #0007, 0 1px 4px #000a; transition: background .15s, opacity .15s; }
 body.fit .wf-splitter:hover::before, body.resizing .wf-splitter::before { background: var(--accent); opacity: 1; }
 body.resizing { user-select: none; cursor: row-resize; }
 .wf-wrap canvas { position: absolute; left: 0; width: 100%; display: block; }

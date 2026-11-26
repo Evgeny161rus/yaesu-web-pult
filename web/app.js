@@ -88,7 +88,10 @@ const C = {                         // состояние клиента
 };
 const opts = Object.assign({ echo: false, ns: false, agc: false, muteTx: true, pttMode: 'hold', space: true, palette: 'classic', micGain: 100, micId: '',
   sqMode: 'radio', sqThr: -60, tail: 500, scale: 'auto', hotkeys: true, rfWf: true,
-  meterMode: 'analog', meterSize: 'compact', meterReadouts: true, meterTx: 'po' }, store.get('opts', {}));
+  meterMode: 'bars', meterSize: 'compact', meterReadouts: true, meterTx: 'po' }, store.get('opts', {}));
+// Аналоговая шкала раньше была основной. Теперь по умолчанию — полосы; если
+// пользователь явно выбрал прибор в настройках, его выбор сохраняется.
+if (!opts.meterChoice) opts.meterMode = 'bars';
 if ((opts.v | 0) < 2) {           // 1.8: обработка браузера для эфира по умолчанию выключена (портила голос)
   opts.echo = false; opts.ns = false; opts.agc = false; opts.v = 2; store.set('opts', opts);
 }
@@ -472,13 +475,18 @@ for (const button of $$('[data-meter-tx]')) {
 function applyMeterMode() {
   const meters = $('#meters');
   if (!meters) return;
-  const mode = ['analog', 'bars', 'off'].includes(opts.meterMode) ? opts.meterMode : 'analog';
+  const mode = ['analog', 'bars', 'off'].includes(opts.meterMode) ? opts.meterMode : 'bars';
   meters.dataset.mode = mode;
   document.body.classList.toggle('analog-meter', mode === 'analog');
   const analog = $('#meterAnalog');
   if (analog) analog.dataset.size = ['compact', 'normal', 'large'].includes(opts.meterSize) ? opts.meterSize : 'compact';
   const readout = $('#meterReadout');
   if (readout) readout.hidden = opts.meterReadouts === false;
+  // Размер и цифровое значение нужны только аналоговой шкале.
+  const sizeLabel = $('#optMeterSize') && $('#optMeterSize').closest('label');
+  const readLabel = $('#optMeterReadouts') && $('#optMeterReadouts').closest('label');
+  if (sizeLabel) sizeLabel.classList.toggle('hidden', mode !== 'analog');
+  if (readLabel) readLabel.classList.toggle('hidden', mode !== 'analog');
   renderMeters();
   setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
 }
@@ -790,11 +798,11 @@ function wfRow(row, binHz) {
   C.wfT = tNow;
   if (C.tab === 'ft8' && !mirrored()) {
     const secs = C.ftSecs ?? 20;     // сколько секунд помещается на водопаде
-    // Замедление по выбранному времени: опираемся на опорную высоту, а не на фактическую
-    // высоту холста — иначе на высоком окне N становится 1 и водопад «летит».
-    // 10/20с — без накопления (быстро), 35с/60с — заметно медленнее.
-    const refRows = 450;
-    const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / refRows)) : 1;
+    // Считаем по фактической высоте холста. Фиксированная опора (450 строк) на
+    // низком окне давала N=1: видно 3–5 с вместо выбранных 20, и подписи позывных
+    // (они стоят на строке начала периода, 15 с назад) не попадали в кадр.
+    const rows = Math.max(60, Math.round(wf.canvas.clientHeight || wf.rows || 450));
+    const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / rows)) : 1;
     if (!C.ftAcc || C.ftAcc.length !== row.length) { C.ftAcc = Uint8Array.from(row); C.ftAccN = 0; }
     else for (let i = 0; i < row.length; i++) if (row[i] > C.ftAcc[i]) C.ftAcc[i] = row[i];
     if (++C.ftAccN < N) return;
@@ -1593,10 +1601,10 @@ function initOpts() {
   $('#optPalette').onchange = e => { opts.palette = e.target.value; saveOpts(); buildLut(); };
   const mm = $('#optMeterMode');
   if (mm) {
-    if (!['analog', 'bars', 'off'].includes(opts.meterMode)) opts.meterMode = 'analog';
+    if (!['analog', 'bars', 'off'].includes(opts.meterMode)) opts.meterMode = 'bars';
     if (!['compact', 'normal', 'large'].includes(opts.meterSize)) opts.meterSize = 'compact';
     mm.value = opts.meterMode;
-    mm.onchange = e => { opts.meterMode = e.target.value; saveOpts(); applyMeterMode(); };
+    mm.onchange = e => { opts.meterMode = e.target.value; opts.meterChoice = true; saveOpts(); applyMeterMode(); };
     const ms = $('#optMeterSize');
     ms.value = opts.meterSize;
     ms.onchange = e => { opts.meterSize = e.target.value; saveOpts(); applyMeterMode(); };
@@ -2312,6 +2320,8 @@ function applyScale() {
   let z = parseFloat(opts.scale);
   const auto = !(z > 0);
   if (auto) z = document.documentElement.dataset.workspace === 'dx' ? 1 : (w < 760 ? 1 : clamp(Math.min(w / 1440, h / 860), 0.9, 2.4));
+  // FT8 uses extra pixels for messages, never magnifies the whole workstation.
+  if (auto && document.body.dataset.op === 'ft8') z = 1;
   const fit = setZoom(z);
   if (fit && auto && document.documentElement.dataset.workspace !== 'dx') {
     // Не мельчить интерфейс на 14″: левая колонка при нехватке высоты прокручивается.
@@ -2328,6 +2338,24 @@ window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTi
   const sp = $('#wfSplitter'), layout = document.querySelector('.layout');
   if (!sp || !layout) return;
   let drag = false, raf = 0;
+  const setFtHeight = px => {
+    const max = Math.max(90, Math.min(260, window.innerHeight - 590));
+    const height = clamp(px, 90, max);
+    document.documentElement.style.setProperty('--ft-wf-height', height + 'px');
+    store.set('ftWfHeight', height);
+    if (!raf) raf = requestAnimationFrame(() => { raf = 0; window.dispatchEvent(new Event('resize')); });
+  };
+  const ftSaved = +store.get('ftWfHeight', 0);
+  if (ftSaved) setFtHeight(ftSaved);
+  sp.tabIndex = 0;
+  sp.addEventListener('keydown', e => {
+    if (document.body.dataset.op !== 'ft8') return;
+    if (!['ArrowUp', 'ArrowDown', 'Home'].includes(e.key)) return;
+    e.preventDefault();
+    if (e.key === 'Home') { document.documentElement.style.removeProperty('--ft-wf-height'); store.set('ftWfHeight', 0); }
+    else setFtHeight($('.wfpanel').getBoundingClientRect().height + (e.key === 'ArrowDown' ? 12 : -12));
+    window.dispatchEvent(new Event('resize'));
+  });
   const setTabs = pct => {
     pct = clamp(pct, 22, 72);
     document.documentElement.style.setProperty('--tabs-h', pct.toFixed(1) + '%');
@@ -2344,13 +2372,18 @@ window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTi
   sp.addEventListener('pointermove', e => {
     if (!drag) return;
     const r = layout.getBoundingClientRect();
-    setTabs((r.bottom - e.clientY) / r.height * 100);
+    if (document.body.dataset.op === 'ft8') setFtHeight(e.clientY - $('.wfpanel').getBoundingClientRect().top);
+    else setTabs((r.bottom - e.clientY) / r.height * 100);
     e.preventDefault();
   });
   const stop = () => { drag = false; document.body.classList.remove('resizing'); };
   sp.addEventListener('pointerup', stop);
   sp.addEventListener('pointercancel', stop);
   sp.addEventListener('dblclick', () => {
+    if (document.body.dataset.op === 'ft8') {
+      document.documentElement.style.removeProperty('--ft-wf-height'); store.set('ftWfHeight', 0);
+      window.dispatchEvent(new Event('resize')); return;
+    }
     document.documentElement.style.removeProperty('--tabs-h');
     store.set('tabsH', 0);
     window.dispatchEvent(new Event('resize'));

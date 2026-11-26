@@ -14,6 +14,7 @@
 <script src="i18n.js"></script>
 <script src="appearance.js"></script>
 <link rel="stylesheet" href="dx.css">
+<link rel="stylesheet" href="ft8-workspace.css">
 </head>
 <body>
 
@@ -575,6 +576,7 @@
         </div>
         <div class="ft-box ft-msgs" id="ftMsgs"></div>
       </div>
+      <details class="ft-extra"><summary data-i18n="ft8.extra">Журнал, PSK Reporter и настройки</summary>
       <div class="ft-bottom">
         <div>
           <h4><span data-i18n="ft8.log.title">Связи</span> <span class="muted small" id="ftLogInfo"></span></h4>
@@ -618,6 +620,7 @@
           <p class="muted small" data-i18n="ft8.log.hint">Каждая связь пишется в файл ft8_log.adi рядом с программой и отправляется по UDP в формате WSJT-X — его принимают HAMLOG-агент, Log4OM, JTAlert, GridTracker. Часы ПК должны быть точными (±0,5 с).</p>
         </details>
       </div>
+      </details>
       </div>
       </div>
     </div>
@@ -662,8 +665,8 @@
         <h4 style="margin-top:6px" data-i18n="opts.meter">Измеритель</h4>
         <label><span data-i18n="opts.meter.mode">Вид</span>
           <select id="optMeterMode">
-            <option value="analog" data-i18n="opts.meter.analog">Аналоговый S-метр</option>
             <option value="bars" data-i18n="opts.meter.bars">Компактные полосы</option>
+            <option value="analog" data-i18n="opts.meter.analog">Аналоговый S-метр</option>
             <option value="off" data-i18n="opts.meter.off">Выключен</option>
           </select>
         </label>

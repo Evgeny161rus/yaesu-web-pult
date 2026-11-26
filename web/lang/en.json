@@ -1418,5 +1418,6 @@
   "mode.group": "Operating mode",
   "vfo.group.rx": "Receiver",
   "vfo.group.band": "Band and scan",
-  "vfo.group.mem": "Memory and lock"
+  "vfo.group.mem": "Memory and lock",
+  "ft8.extra": "Log, PSK Reporter and settings"
 }

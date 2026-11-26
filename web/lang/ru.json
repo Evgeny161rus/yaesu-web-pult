@@ -1414,5 +1414,6 @@
   "mode.group": "Режим работы",
   "vfo.group.rx": "Приёмник",
   "vfo.group.band": "Диапазон и скан",
-  "vfo.group.mem": "Память и блокировка"
+  "vfo.group.mem": "Память и блокировка",
+  "ft8.extra": "Журнал, PSK Reporter и настройки"
 }

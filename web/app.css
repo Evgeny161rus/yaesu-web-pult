@@ -718,6 +718,8 @@ body.mode-screen .meters[data-mode="analog"] > .meter#mS { display: grid !import
 body.mode-screen .meters[data-mode="analog"] > .meter.tx { display: none !important; }
 body.mode-screen.txon .meters[data-mode="analog"] > .meter.tx { display: grid !important; }
 body.mode-screen.txon .meters[data-mode="analog"] > .meter#mS { display: none !important; }
+/* В рабочей полосе шкала-линейка не нужна: только полоса S (или PO/SWR/ALC). */
+body.mode-screen .meters[data-mode="bars"] .scale-row { display: none; }
 
 html[data-workspace] body.fit.mode-screen .layout {
   grid-template-columns: minmax(0, 1fr) !important;

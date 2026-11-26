@@ -6,7 +6,7 @@ body[data-op="ft8"] .freq { font-size:32px; line-height:1.1; }
 body[data-op="ft8"] .sub-row { display:none; }
 body[data-op="ft8"] .meters { min-height:44px; }
 html[data-workspace] body.fit[data-op="ft8"] .layout {
-  grid-template-rows:52px clamp(120px,var(--ft-wf-height,18vh),min(260px,calc(100vh - 590px))) minmax(0,1fr) !important;
+  grid-template-rows:52px clamp(100px,var(--ft-wf-height,18vh),min(900px,calc(100vh - 340px))) minmax(0,1fr) !important;
 }
 body[data-op="ft8"] .wf-tools { gap:8px; margin-bottom:5px; }
 body[data-op="ft8"] #wfHint { display:none; }

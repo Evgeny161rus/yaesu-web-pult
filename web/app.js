@@ -2339,8 +2339,10 @@ window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTi
   if (!sp || !layout) return;
   let drag = false, raf = 0;
   const setFtHeight = px => {
-    const max = Math.max(90, Math.min(260, window.innerHeight - 590));
-    const height = clamp(px, 90, max);
+    // Широкий диапазон: от узкой полоски до почти всего экрана. Сверху оставляем
+    // панель частоты, отступы и минимум под списки/управление (340 px).
+    const max = Math.max(180, Math.min(900, window.innerHeight - 340));
+    const height = clamp(px, 100, max);
     document.documentElement.style.setProperty('--ft-wf-height', height + 'px');
     store.set('ftWfHeight', height);
     if (!raf) raf = requestAnimationFrame(() => { raf = 0; window.dispatchEvent(new Event('resize')); });
@@ -2353,7 +2355,7 @@ window.addEventListener('resize', () => { clearTimeout(resizeT); resizeT = setTi
     if (!['ArrowUp', 'ArrowDown', 'Home'].includes(e.key)) return;
     e.preventDefault();
     if (e.key === 'Home') { document.documentElement.style.removeProperty('--ft-wf-height'); store.set('ftWfHeight', 0); }
-    else setFtHeight($('.wfpanel').getBoundingClientRect().height + (e.key === 'ArrowDown' ? 12 : -12));
+    else setFtHeight($('.wfpanel').getBoundingClientRect().height + (e.key === 'ArrowDown' ? 24 : -24));
     window.dispatchEvent(new Event('resize'));
   });
   const setTabs = pct => {

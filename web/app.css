@@ -100,6 +100,7 @@ html[data-workspace="classic"] body.fit.layout-mirror.layout-swap .layout {
 }
 body.fit.tab-ft8 { --tabs-row: var(--tabs-h, 62%); }
 body.fit .col-left { grid-area: left; display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+body.fit .col-left { background: color-mix(in srgb, var(--panel) 55%, transparent); border: 1px solid var(--line); border-radius: var(--radius); }
 body.fit .col-left > .panel { flex: none; }
 body.fit .wfpanel { grid-area: wf; display: flex; flex-direction: column; min-height: 0; }
 body.fit .wf-wrap { flex: 1; height: auto; min-height: 120px; }

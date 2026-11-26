@@ -1,7 +1,7 @@
 // Сервис-воркер: нужен, чтобы пульт ставился на Android как приложение.
 // Только статика пульта: свежая из сети, из кэша — лишь когда сервер недоступен.
 // Всё остальное (WebSocket, записи, панель, API) идёт мимо него.
-const CACHE = 'ftx1-v53-nav';
+const CACHE = 'ftx1-v54-ft8';
 const FILES = ['./', 'index.html', 'app.css', 'app.js', 'mem.js', 'sdfile.js', 'worklets.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {
@@ -10,6 +10,7 @@ self.addEventListener('activate', e => {
 });
 const OWN = new Set(['/', '/index.html', '/app.css', '/app.js', '/mem.js', '/sdfile.js', '/worklets.js', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']);
 FILES.push('dx.js', 'dx.css');
+FILES.push('ft8-workspace.css'); OWN.add('/ft8-workspace.css');
 OWN.add('/dx.js'); OWN.add('/dx.css');
 FILES.push('appearance.css', 'appearance.js', 'backend-ui.js');
 OWN.add('/backend-ui.js');

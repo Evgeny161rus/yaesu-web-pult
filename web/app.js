@@ -802,7 +802,9 @@ function wfRow(row, binHz) {
     // низком окне давала N=1: видно 3–5 с вместо выбранных 20, и подписи позывных
     // (они стоят на строке начала периода, 15 с назад) не попадали в кадр.
     const rows = Math.max(60, Math.round(wf.canvas.clientHeight || wf.rows || 450));
-    const N = secs ? Math.max(1, Math.round((C.wfRate || 30) * secs / rows)) : 1;
+    // ceil, а не round: окно должно быть не короче выбранного, иначе на высокой
+    // шкале подпись начала периода (15 с) снова уедет за кадр.
+    const N = secs ? Math.max(1, Math.ceil((C.wfRate || 30) * secs / rows)) : 1;
     if (!C.ftAcc || C.ftAcc.length !== row.length) { C.ftAcc = Uint8Array.from(row); C.ftAccN = 0; }
     else for (let i = 0; i < row.length; i++) if (row[i] > C.ftAcc[i]) C.ftAcc[i] = row[i];
     if (++C.ftAccN < N) return;
